@@ -647,7 +647,7 @@ namespace Krabbz.Blynclight
 
         readonly TrayContext tray;
         readonly OverrideStrip strip = new OverrideStrip();
-        readonly LinkLabel testLink = new LinkLabel(), offLink = new LinkLabel();
+        readonly LinkLabel testLink = new LinkLabel(), offLink = new LinkLabel(), teamsLink = new LinkLabel();
         // Only the parts the chosen style uses are created; the rest stay null.
         StatusCard status;
         ModeTile[] tiles;
@@ -777,7 +777,7 @@ namespace Krabbz.Blynclight
         // Test lights and Off, then version, links and the beta note. Flat drops the card and the line above it.
         Panel AddFooter(int top, bool flat)
         {
-            var footer = new Panel { Bounds = new Rectangle(0, top, WindowWidth, 92), BackColor = flat ? Theme.Page : Theme.Card };
+            var footer = new Panel { Bounds = new Rectangle(0, top, WindowWidth, 122), BackColor = flat ? Theme.Page : Theme.Card };
             footer.Paint += (sender, e) =>
             {
                 if (!flat) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, 0, footer.Width, 0);
@@ -785,7 +785,9 @@ namespace Krabbz.Blynclight
                 Theme.Pill(e.Graphics, "Beta", footer.Width - Pad, 12, Theme.OverrideTint, Theme.OverrideText);
             };
             FooterLink(footer, testLink, "Test lights", Pad, LightState.Party);
-            FooterLink(footer, offLink, "Disable USB Light Connection", Pad + 120, null);
+            // Second row: the two integration switches (USB lights, Microsoft Teams).
+            FooterLink(footer, offLink, "Disable USB Light Integration", Pad, null, 40);
+            FooterLink(footer, teamsLink, "Disable Teams Integration", Pad + 220, null, 40);
 
             string versionText = "Version " + Program.VersionText + "  ·  Built " + Program.BuildDate;
             const string UpdatesLink = "Check for updates", ProjectLink = "Project page", HelpLink = "Help";
@@ -799,7 +801,7 @@ namespace Krabbz.Blynclight
                 Font = Theme.Small,
                 AutoSize = true,
                 LinkBehavior = LinkBehavior.HoverUnderline,
-                Location = new Point(Pad, 42),
+                Location = new Point(Pad, 72),
             };
             version.Links.Clear();
             if (Program.UpdateRepo != null)
@@ -831,7 +833,7 @@ namespace Krabbz.Blynclight
             base.Dispose(disposing);
         }
 
-        void FooterLink(Panel footer, LinkLabel link, string text, int x, string state)
+        void FooterLink(Panel footer, LinkLabel link, string text, int x, string state, int y = 12)
         {
             link.Text = text;
             link.Font = Theme.Body;
@@ -839,11 +841,12 @@ namespace Krabbz.Blynclight
             link.LinkColor = Theme.Text;
             link.ActiveLinkColor = Theme.Teams;
             link.LinkBehavior = LinkBehavior.HoverUnderline;
-            link.Location = new Point(x, 12);
+            link.Location = new Point(x, y);
             // No state means the USB light connection switch: it stops writes to the lights but nothing else.
             link.LinkClicked += delegate
             {
                 if (state != null) tray.SetState(state);
+                else if (link == teamsLink) tray.SetTeamsIntegration(!AppSettings.TeamsIntegrationEnabled);
                 else tray.SetLightControl(!AppSettings.LightControlEnabled);
             };
             footer.Controls.Add(link);
@@ -853,7 +856,7 @@ namespace Krabbz.Blynclight
         {
             string picked = tray.Light.State;
             string statusText = tray.StatusText, lights = "Lights: " + tray.Light.LightSummary
-                + (AppSettings.LightControlEnabled ? "" : " (USB connection disabled)");
+                + (AppSettings.LightControlEnabled ? "" : " (USB integration disabled)");
             string left = tray.OverrideTimeLeft;
             if (status != null)
             {
@@ -911,8 +914,11 @@ namespace Krabbz.Blynclight
             testLink.LinkColor = picked == LightState.Party ? Theme.Teams : Theme.Text;
             // The USB switch: highlighted and reading "Enable" while the lights are disconnected from the app.
             bool usbOn = AppSettings.LightControlEnabled;
-            offLink.Text = usbOn ? "Disable USB Light Connection" : "Enable USB Light Connection";
+            offLink.Text = usbOn ? "Disable USB Light Integration" : "Enable USB Light Integration";
             offLink.LinkColor = usbOn ? Theme.Text : Theme.Teams;
+            bool teamsOn = AppSettings.TeamsIntegrationEnabled;
+            teamsLink.Text = teamsOn ? "Disable Teams Integration" : "Enable Teams Integration";
+            teamsLink.LinkColor = teamsOn ? Theme.Text : Theme.Teams;
         }
 
         static string HotkeyTip()

@@ -21,6 +21,8 @@ namespace Krabbz.Blynclight
 
         // Off means the app leaves the lights alone (and turns them off once), e.g. to let another program use them.
         public static bool LightControlEnabled { get { return Get("LightControlEnabled"); } set { Set("LightControlEnabled", value); } }
+        // Off means the app stops talking to Microsoft Teams: no status reading, no Busy or status message set.
+        public static bool TeamsIntegrationEnabled { get { return Get("TeamsIntegrationEnabled"); } set { Set("TeamsIntegrationEnabled", value); } }
         public static bool ShowNotifications { get { return Get("ShowNotifications"); } set { Set("ShowNotifications", value); } }
         public static bool HotkeysEnabled { get { return Get("HotkeysEnabled"); } set { Set("HotkeysEnabled", value); } }
         public static bool AutoUpdate { get { return Get("AutoUpdate"); } set { Set("AutoUpdate", value); } }

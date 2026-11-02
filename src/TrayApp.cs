@@ -191,7 +191,7 @@ namespace Krabbz.Blynclight
         MicApp callApp;
         // Reads Teams status and sets Teams to Busy during non-Teams calls; null when no Teams app is configured.
         TeamsPresence presence;
-        ToolStripMenuItem presenceItem, lightControlItem;
+        ToolStripMenuItem presenceItem, lightControlItem, teamsIntegrationItem;
         readonly System.Threading.Timer teamsPoll;
         // Last Teams availability read while signed in (e.g. "Available"), or null.
         string teamsAvailability;
@@ -228,7 +228,6 @@ namespace Krabbz.Blynclight
             AddStateItem(menu, "Available (green)", LightState.Green);
             AddStateItem(menu, "On a call (flashing red/blue)", LightState.CallFlash);
             AddStateItem(menu, "Test lights (cycling colors)", LightState.Party);
-            AddStateItem(menu, "Off", LightState.Off);
             AddStateItem(menu, "Follow Teams Status", LightState.FollowTeams);
             menu.Items.Add(new ToolStripSeparator());
             presence = CreatePresence();
@@ -241,9 +240,12 @@ namespace Krabbz.Blynclight
             menu.Items.Add(presenceItem);
             menu.Items.Add(new ToolStripSeparator());
             light.Enabled = AppSettings.LightControlEnabled;
-            lightControlItem = new ToolStripMenuItem("USB light connection enabled", null, delegate { SetLightControl(!AppSettings.LightControlEnabled); });
+            lightControlItem = new ToolStripMenuItem("USB light integration enabled", null, delegate { SetLightControl(!AppSettings.LightControlEnabled); });
             lightControlItem.Checked = AppSettings.LightControlEnabled;
             menu.Items.Add(lightControlItem);
+            teamsIntegrationItem = new ToolStripMenuItem("Teams integration enabled", null, delegate { SetTeamsIntegration(!AppSettings.TeamsIntegrationEnabled); });
+            teamsIntegrationItem.Checked = AppSettings.TeamsIntegrationEnabled;
+            menu.Items.Add(teamsIntegrationItem);
             menu.Items.Add(new ToolStripSeparator());
             // Setup checklist and the project page are in Settings.
             menu.Items.Add("Settings...", null, delegate { ShowSettings(); });
@@ -417,7 +419,7 @@ namespace Krabbz.Blynclight
         {
             bool wasOverriding = light.OverrideActive;
             // Teams already shows its own calls as Busy; other apps need presence set.
-            if (presence != null)
+            if (presence != null && AppSettings.TeamsIntegrationEnabled)
             {
                 if (app != null && !app.IsTeams && AppSettings.TeamsBusyOnCalls) presence.CallStarted();
                 else presence.CallEnded();
@@ -527,6 +529,28 @@ namespace Krabbz.Blynclight
             Refresh();
             if (AppSettings.ShowNotifications)
                 tray.ShowBalloonTip(3000, Program.AppName, on ? "Light control is on." : "Light control is off. The lights are left alone.", ToolTipIcon.Info);
+        }
+
+        // Switches all Microsoft Teams syncing on or off: reading your status, setting Busy during calls and the status
+        // message. Your sign-in is kept. Mic detection and the lights are not affected.
+        public void SetTeamsIntegration(bool on)
+        {
+            AppSettings.TeamsIntegrationEnabled = on;
+            if (teamsIntegrationItem != null) teamsIntegrationItem.Checked = on;
+            if (!on)
+            {
+                if (presence != null) presence.CallEnded(); // Clears the Busy this app set for a non-Teams call.
+                teamsAvailability = null;
+                light.SetTeamsColor(null);
+            }
+            else
+            {
+                calls.Recheck(); // Sets Busy again if a call is already in progress.
+                Program.Background("Teams status check", delegate { PollTeams(); });
+            }
+            Refresh();
+            if (AppSettings.ShowNotifications)
+                tray.ShowBalloonTip(3000, Program.AppName, on ? "Teams integration is on." : "Teams integration is off. Teams is left alone.", ToolTipIcon.Info);
         }
 
         public void OpenProjectPage()
@@ -718,7 +742,7 @@ namespace Krabbz.Blynclight
         // Reads Teams presence and colors the light from it, when signed in and following Teams status.
         void PollTeams()
         {
-            if (presence == null || !presence.SignedIn || light.State != LightState.FollowTeams) return;
+            if (presence == null || !presence.SignedIn || light.State != LightState.FollowTeams || !AppSettings.TeamsIntegrationEnabled) return;
             string availability = presence.ReadAvailability();
             if (availability == null) return;
 
@@ -769,6 +793,7 @@ namespace Krabbz.Blynclight
         // (restarted so it repaints from current Teams/Calendar presence).
         void HandBackToTeams()
         {
+            if (!AppSettings.TeamsIntegrationEnabled) return;
             if (presence != null && presence.SignedIn)
             {
                 Program.Background("Teams status check", delegate { PollTeams(); });
@@ -806,6 +831,13 @@ namespace Krabbz.Blynclight
         void UpdateTeamsMessage()
         {
             if (presence == null) return;
+            if (!AppSettings.TeamsIntegrationEnabled)
+            {
+                // Puts back the user's own Teams status message and status, then leaves Teams alone.
+                presence.ShowStatusMessage(null);
+                presence.ShowPresence(null);
+                return;
+            }
             bool picked = light.State == LightState.Red || light.State == LightState.CallFlash;
             bool red = picked || callApp != null;
             presence.ShowStatusMessage(red && AppSettings.TeamsStatusMessageOn ? AppSettings.TeamsStatusMessage : null);
@@ -824,6 +856,7 @@ namespace Krabbz.Blynclight
             {
                 if (light.LightCount == 0) return "Light not found";
                 if (light.OverrideActive) return callApp == null ? "Testing the light" : "On a call (" + callApp.Name + ")";
+                if (light.State == LightState.FollowTeams && !AppSettings.TeamsIntegrationEnabled) return "Teams integration disabled";
                 if (light.State == LightState.FollowTeams && teamsAvailability != null) return "Teams: " + DescribeAvailability(teamsAvailability);
                 return LightState.Describe(State);
             }

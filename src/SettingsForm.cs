@@ -10,7 +10,7 @@ namespace Krabbz.Blynclight
         const int RefreshMs = 2000;
 
         readonly TrayContext tray;
-        readonly CheckBox startWithWindows, openWindow, lightControl;
+        readonly CheckBox startWithWindows, openWindow, lightControl, teamsIntegration;
         readonly Label teamsStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
         readonly Button connectButton = new Button();
         readonly Timer refresh = new Timer { Interval = RefreshMs };
@@ -28,8 +28,10 @@ namespace Krabbz.Blynclight
             const int width = 500;
 
             Heading("General");
-            lightControl = Box("USB light connection on (untick to leave my lights alone)", AppSettings.LightControlEnabled,
+            lightControl = Box("USB light integration on (untick to leave my lights alone)", AppSettings.LightControlEnabled,
                 v => { if (v != AppSettings.LightControlEnabled) tray.SetLightControl(v); });
+            teamsIntegration = Box("Teams integration on (untick to stop all syncing with Teams)", AppSettings.TeamsIntegrationEnabled,
+                v => { if (v != AppSettings.TeamsIntegrationEnabled) tray.SetTeamsIntegration(v); });
             AppearancePickers();
             startWithWindows = Box("Start with Windows", AppSettings.StartWithWindows, v => AppSettings.StartWithWindows = v);
             openWindow = Box("Open the window at sign-in (untick to start in the tray only)", AppSettings.OpenWindowAtSignIn,
@@ -149,7 +151,7 @@ namespace Krabbz.Blynclight
 
             Load += delegate { Theme.Apply(this); };
             // Keeps the box right if light control is switched from the tray menu while this window is open.
-            refresh.Tick += delegate { RefreshTeams(); lightControl.Checked = AppSettings.LightControlEnabled; };
+            refresh.Tick += delegate { RefreshTeams(); lightControl.Checked = AppSettings.LightControlEnabled; teamsIntegration.Checked = AppSettings.TeamsIntegrationEnabled; };
             Shown += delegate { RefreshTeams(); refresh.Start(); };
             FormClosed += delegate { refresh.Dispose(); };
         }
