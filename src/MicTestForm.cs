@@ -94,7 +94,7 @@ namespace Krabbz.Blynclight
             access.Text = problems.Count == 0 ? "Windows lets apps use the microphone." : string.Join(".\r\n", problems.ToArray()) + ".";
             openSettings.Visible = problems.Count > 0;
 
-            var apps = CallDetector.AppsInRecord();
+            var apps = CallDetector.AppsUsingMic();
             var ignoredIds = CallDetector.IgnoredIds();
             var ignored = new HashSet<string>(ignoredIds, StringComparer.OrdinalIgnoreCase);
             var rows = new List<string[]>();

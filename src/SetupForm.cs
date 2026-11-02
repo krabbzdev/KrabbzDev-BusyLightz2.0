@@ -282,7 +282,7 @@ namespace Krabbz.Blynclight
     class IgnoreAppsDialog : Form
     {
         readonly CheckedListBox list = new CheckedListBox { CheckOnClick = true, IntegralHeight = false };
-        readonly List<MicApp> apps = CallDetector.AppsInRecord();
+        readonly List<MicApp> apps = CallDetector.AppsUsingMic();
 
         public IgnoreAppsDialog()
         {

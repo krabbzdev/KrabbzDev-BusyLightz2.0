@@ -128,9 +128,13 @@ namespace Krabbz.Blynclight
             var problems = CallDetector.MicAccessProblems();
             text.AppendLine(problems.Count == 0 ? "Windows microphone access: on" : string.Join("\r\n", problems.ToArray()));
             var ignored = CallDetector.IgnoredIds();
+            text.AppendLine("Windows' usage record:");
             foreach (var app in CallDetector.AppsInRecord())
-                text.AppendLine(app.Name + ": " + (app.InUse ? "in use now" : "last used " + app.LastUsed.ToString("s"))
+                text.AppendLine("  " + app.Name + ": " + (app.InUse ? "in use now" : "last used " + app.LastUsed.ToString("s"))
                     + (ignored.Contains(app.Id) ? ", ignored" : "") + "  (" + app.Id.Replace('#', '\\') + ")");
+            var recording = AudioSessions.RecordingApps();
+            text.AppendLine("Recording now, from Windows audio:" + (recording.Count == 0 ? " none" : ""));
+            foreach (string path in recording) text.AppendLine("  " + path);
         }
 
         const int MAPI_LOGON_UI = 0x1, MAPI_DIALOG = 0x8, MAPI_TO = 1, SUCCESS_SUCCESS = 0, MAPI_USER_ABORT = 1;

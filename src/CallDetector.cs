@@ -15,11 +15,14 @@ namespace Krabbz.Blynclight
         public string Name;
         public bool InUse;
         public DateTime LastUsed;
+        // Seen recording by Windows audio, rather than (or as well as) in the usage record.
+        public bool FromAudio;
         public bool IsTeams { get { return Name == "Teams"; } }
     }
 
     // Treats any app with the microphone open as being on a call, except apps on the user's ignore list.
-    // Windows sets LastUsedTimeStop to 0 while an app has the microphone open.
+    // Windows sets LastUsedTimeStop to 0 while an app has the microphone open. Apps Windows audio sees recording
+    // count too, for PCs where that record misses an app.
     public class CallDetector : IDisposable
     {
         const int PollMs = 1000;
@@ -60,7 +63,7 @@ namespace Krabbz.Blynclight
         void Poll()
         {
             MicApp app;
-            try { app = CallApp(AppsInRecord(), IgnoredIds()); }
+            try { app = CallApp(AppsUsingMic(), IgnoredIds()); }
             catch (Exception) { return; } // Registry briefly unreadable; try again next poll.
 
             string id = app == null ? null : app.Id;
@@ -114,6 +117,32 @@ namespace Krabbz.Blynclight
                     return key != null && 2.Equals(key.GetValue("LetAppsAccessMicrophone"));
             }
             catch (Exception) { return false; }
+        }
+
+        // The usage record, with apps Windows audio sees recording marked in use (added if the record lacks them).
+        public static List<MicApp> AppsUsingMic()
+        {
+            var apps = AppsInRecord();
+            var recording = new List<MicApp>();
+            foreach (string path in AudioSessions.RecordingApps())
+            {
+                string id = path.Replace('\\', '#');
+                string name;
+                string exe = ExeName(id);
+                if (!KnownNames.TryGetValue(exe, out name)) name = exe;
+                // Same app if the path matches, or the name does (e.g. new Teams, recorded by its package name).
+                var match = apps.Find(a => string.Equals(a.Id, id, StringComparison.OrdinalIgnoreCase))
+                    ?? apps.Find(a => a.Name == name);
+                if (match == null)
+                    recording.Add(new MicApp { Id = id, Name = name, InUse = true, LastUsed = DateTime.Now, FromAudio = true });
+                else
+                {
+                    match.InUse = true;
+                    match.FromAudio = true;
+                }
+            }
+            apps.InsertRange(0, recording);
+            return apps;
         }
 
         // Every app Windows has recorded using the microphone, most recently used first.

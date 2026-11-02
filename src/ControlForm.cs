@@ -361,6 +361,12 @@ namespace Krabbz.Blynclight
             new Mode(LightState.FollowTeams, "Follow Teams Status", Theme.Teams),
         };
 
+        // The title with its hotkey while hotkeys are on, e.g. "Busy (Alt+R)".
+        public string Label
+        {
+            get { return Keys != null && AppSettings.HotkeysEnabled ? Title + " (" + Keys + ")" : Title; }
+        }
+
         public static Mode For(string state)
         {
             foreach (var mode in All) if (mode.State == state) return mode;
@@ -505,8 +511,14 @@ namespace Krabbz.Blynclight
                 int content = IconSize + Gap + TextRenderer.MeasureText(g, mode.Title, font).Width;
                 int x = r.X + (r.Width - content) / 2;
                 mode.DrawIcon(g, new Rectangle(x, r.Y + (r.Height - IconSize) / 2, IconSize, IconSize), active ? Color.White : mode.Accent, back);
-                TextRenderer.DrawText(g, mode.Title, font, new Rectangle(x + IconSize + Gap, r.Y, r.Right - x - IconSize - Gap, r.Height),
-                    active ? Color.White : Theme.Text, TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
+                // The hotkey goes in small text under the title, as there's no room beside it for all four modes.
+                bool keys = mode.Label != mode.Title;
+                var text = new Rectangle(x + IconSize + Gap, r.Y, r.Right - x - IconSize - Gap, keys ? r.Height / 2 + 5 : r.Height);
+                TextRenderer.DrawText(g, mode.Title, font, text, active ? Color.White : Theme.Text,
+                    (keys ? TextFormatFlags.Bottom : TextFormatFlags.VerticalCenter) | TextFormatFlags.SingleLine);
+                if (keys)
+                    TextRenderer.DrawText(g, mode.Keys, Theme.Tiny, new Point(text.X + 1, text.Bottom - 1),
+                        active ? Theme.Tint(mode.Accent, 0.75) : Theme.Muted);
             }
         }
 
@@ -764,7 +776,7 @@ namespace Krabbz.Blynclight
             for (int i = 0; i < tiles.Length; i++)
             {
                 var mode = Mode.All[i];
-                var tile = new ModeTile(mode.State, mode.Title, "", mode.Accent) { Compact = true };
+                var tile = new ModeTile(mode.State, mode.Label, "", mode.Accent) { Compact = true };
                 tile.Bounds = new Rectangle(Pad + (i % 2) * (tileWidth + 8), y + (i / 2) * (tileHeight + 8), tileWidth, tileHeight);
                 tile.TabIndex = i;
                 tile.Click += delegate { tray.SetState(tile.State); };
