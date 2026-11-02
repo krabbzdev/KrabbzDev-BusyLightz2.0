@@ -241,7 +241,7 @@ namespace Krabbz.Blynclight
             menu.Items.Add(presenceItem);
             menu.Items.Add(new ToolStripSeparator());
             light.Enabled = AppSettings.LightControlEnabled;
-            lightControlItem = new ToolStripMenuItem("Light control enabled", null, delegate { SetLightControl(!AppSettings.LightControlEnabled); });
+            lightControlItem = new ToolStripMenuItem("USB light connection enabled", null, delegate { SetLightControl(!AppSettings.LightControlEnabled); });
             lightControlItem.Checked = AppSettings.LightControlEnabled;
             menu.Items.Add(lightControlItem);
             menu.Items.Add(new ToolStripSeparator());

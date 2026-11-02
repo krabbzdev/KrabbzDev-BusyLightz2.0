@@ -28,7 +28,7 @@ namespace Krabbz.Blynclight
             const int width = 500;
 
             Heading("General");
-            lightControl = Box("Light control on (untick to leave my lights alone)", AppSettings.LightControlEnabled,
+            lightControl = Box("USB light connection on (untick to leave my lights alone)", AppSettings.LightControlEnabled,
                 v => { if (v != AppSettings.LightControlEnabled) tray.SetLightControl(v); });
             AppearancePickers();
             startWithWindows = Box("Start with Windows", AppSettings.StartWithWindows, v => AppSettings.StartWithWindows = v);

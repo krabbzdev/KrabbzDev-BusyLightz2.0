@@ -785,7 +785,7 @@ namespace Krabbz.Blynclight
                 Theme.Pill(e.Graphics, "Beta", footer.Width - Pad, 12, Theme.OverrideTint, Theme.OverrideText);
             };
             FooterLink(footer, testLink, "Test lights", Pad, LightState.Party);
-            FooterLink(footer, offLink, "Off", Pad + 120, LightState.Off);
+            FooterLink(footer, offLink, "Disable USB Light Connection", Pad + 120, null);
 
             string versionText = "Version " + Program.VersionText + "  ·  Built " + Program.BuildDate;
             const string UpdatesLink = "Check for updates", ProjectLink = "Project page", HelpLink = "Help";
@@ -840,14 +840,20 @@ namespace Krabbz.Blynclight
             link.ActiveLinkColor = Theme.Teams;
             link.LinkBehavior = LinkBehavior.HoverUnderline;
             link.Location = new Point(x, 12);
-            link.LinkClicked += delegate { tray.SetState(state); };
+            // No state means the USB light connection switch: it stops writes to the lights but nothing else.
+            link.LinkClicked += delegate
+            {
+                if (state != null) tray.SetState(state);
+                else tray.SetLightControl(!AppSettings.LightControlEnabled);
+            };
             footer.Controls.Add(link);
         }
 
         void RefreshDisplay()
         {
             string picked = tray.Light.State;
-            string statusText = tray.StatusText, lights = "Lights: " + tray.Light.LightSummary;
+            string statusText = tray.StatusText, lights = "Lights: " + tray.Light.LightSummary
+                + (AppSettings.LightControlEnabled ? "" : " (USB connection disabled)");
             string left = tray.OverrideTimeLeft;
             if (status != null)
             {
@@ -903,7 +909,10 @@ namespace Krabbz.Blynclight
             if (pills != null) { pills.Active = picked; pills.Invalidate(); }
             if (list != null) { list.Active = picked; list.Invalidate(); }
             testLink.LinkColor = picked == LightState.Party ? Theme.Teams : Theme.Text;
-            offLink.LinkColor = picked == LightState.Off ? Theme.Teams : Theme.Text;
+            // The USB switch: highlighted and reading "Enable" while the lights are disconnected from the app.
+            bool usbOn = AppSettings.LightControlEnabled;
+            offLink.Text = usbOn ? "Disable USB Light Connection" : "Enable USB Light Connection";
+            offLink.LinkColor = usbOn ? Theme.Text : Theme.Teams;
         }
 
         static string HotkeyTip()
