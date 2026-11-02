@@ -10,7 +10,7 @@ namespace Krabbz.Blynclight
         const int RefreshMs = 2000;
 
         readonly TrayContext tray;
-        readonly CheckBox startWithWindows, openWindow;
+        readonly CheckBox startWithWindows, openWindow, lightControl;
         readonly Label teamsStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
         readonly Button connectButton = new Button();
         readonly Timer refresh = new Timer { Interval = RefreshMs };
@@ -28,6 +28,8 @@ namespace Krabbz.Blynclight
             const int width = 500;
 
             Heading("General");
+            lightControl = Box("Light control on (untick to leave my lights alone)", AppSettings.LightControlEnabled,
+                v => { if (v != AppSettings.LightControlEnabled) tray.SetLightControl(v); });
             AppearancePickers();
             startWithWindows = Box("Start with Windows", AppSettings.StartWithWindows, v => AppSettings.StartWithWindows = v);
             openWindow = Box("Open the window at sign-in (untick to start in the tray only)", AppSettings.OpenWindowAtSignIn,
@@ -117,6 +119,20 @@ namespace Krabbz.Blynclight
             };
             crashLog.LinkClicked += delegate { CrashReport.Email(); };
             Controls.Add(crashLog);
+            if (Program.UpdateRepo != null)
+            {
+                var project = new LinkLabel
+                {
+                    Text = "Project page",
+                    AutoSize = true,
+                    Location = new Point(150, y + 2),
+                    LinkColor = crashLog.LinkColor,
+                    ActiveLinkColor = Theme.Teams,
+                    LinkBehavior = LinkBehavior.HoverUnderline,
+                };
+                project.LinkClicked += delegate { tray.OpenProjectPage(); };
+                Controls.Add(project);
+            }
             y += 32;
 
             var setup = new Button { Text = "Setup checklist...", Bounds = new Rectangle(20, y, 150, 34) };
@@ -132,7 +148,8 @@ namespace Krabbz.Blynclight
             ClientSize = new Size(width, close.Bottom + 16);
 
             Load += delegate { Theme.Apply(this); };
-            refresh.Tick += delegate { RefreshTeams(); };
+            // Keeps the box right if light control is switched from the tray menu while this window is open.
+            refresh.Tick += delegate { RefreshTeams(); lightControl.Checked = AppSettings.LightControlEnabled; };
             Shown += delegate { RefreshTeams(); refresh.Start(); };
             FormClosed += delegate { refresh.Dispose(); };
         }

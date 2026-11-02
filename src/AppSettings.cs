@@ -19,6 +19,8 @@ namespace Krabbz.Blynclight
         const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
         const string RunValue = "Krabbz9999 Blynclight App Control";
 
+        // Off means the app leaves the lights alone (and turns them off once), e.g. to let another program use them.
+        public static bool LightControlEnabled { get { return Get("LightControlEnabled"); } set { Set("LightControlEnabled", value); } }
         public static bool ShowNotifications { get { return Get("ShowNotifications"); } set { Set("ShowNotifications", value); } }
         public static bool HotkeysEnabled { get { return Get("HotkeysEnabled"); } set { Set("HotkeysEnabled", value); } }
         public static bool AutoUpdate { get { return Get("AutoUpdate"); } set { Set("AutoUpdate", value); } }

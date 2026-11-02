@@ -46,6 +46,20 @@ namespace Krabbz.Blynclight
             lightThread.Start();
         }
 
+        // False while light control is switched off: nothing is written to the lights. Turning it off sends one
+        // Off so the lights aren't left showing the last color; turning it on re-sends the color within seconds.
+        bool enabled = true;
+        public bool Enabled
+        {
+            get { lock (sync) return enabled; }
+            set
+            {
+                bool was;
+                lock (sync) { was = enabled; enabled = value; }
+                if (was && !value) WriteAll(LightColor.Off, true);
+            }
+        }
+
         // The state the user picked (saved across restarts).
         public string State { get { lock (sync) return state; } }
         // What the light is actually showing: the call override if one is active, then the Teams color
@@ -222,10 +236,14 @@ namespace Krabbz.Blynclight
         }
 
         // Sends the color to every connected light, each in its own report format.
-        void WriteAll(LightColor color)
+        void WriteAll(LightColor color, bool force = false)
         {
             List<LightDevice> lights;
-            lock (sync) lights = knownLights;
+            lock (sync)
+            {
+                if (!enabled && !force) return;
+                lights = knownLights;
+            }
             foreach (var light in lights)
             {
                 try { BlyncDevice.Write(light.Path, BlyncDevice.ReportFor(light.Kind, color)); }

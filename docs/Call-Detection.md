@@ -25,7 +25,7 @@ Some apps use the microphone without being on a call, for example:
 
 To ignore them:
 
-1. Open the **[Setup Checklist](Setup-Checklist.md)** (tray menu > **Setup checklist...**).
+1. Open the **[Setup Checklist](Setup-Checklist.md)** (tray menu > **Settings...** > **Setup checklist...**).
 2. Next to *Red while your microphone is in use*, click **Ignore apps...**.
 3. Tick the apps that shouldn't turn the light red. The list shows every app Windows has seen use the microphone on this PC, and when each last used it.
 4. Click **Save**.

@@ -191,7 +191,7 @@ namespace Krabbz.Blynclight
         MicApp callApp;
         // Reads Teams status and sets Teams to Busy during non-Teams calls; null when no Teams app is configured.
         TeamsPresence presence;
-        ToolStripMenuItem presenceItem;
+        ToolStripMenuItem presenceItem, lightControlItem;
         readonly System.Threading.Timer teamsPoll;
         // Last Teams availability read while signed in (e.g. "Available"), or null.
         string teamsAvailability;
@@ -240,18 +240,23 @@ namespace Krabbz.Blynclight
             });
             menu.Items.Add(presenceItem);
             menu.Items.Add(new ToolStripSeparator());
+            light.Enabled = AppSettings.LightControlEnabled;
+            lightControlItem = new ToolStripMenuItem("Light control enabled", null, delegate { SetLightControl(!AppSettings.LightControlEnabled); });
+            lightControlItem.Checked = AppSettings.LightControlEnabled;
+            menu.Items.Add(lightControlItem);
+            menu.Items.Add(new ToolStripSeparator());
+            // Setup checklist and the project page are in Settings.
             menu.Items.Add("Settings...", null, delegate { ShowSettings(); });
-            menu.Items.Add("Setup checklist...", null, delegate { ShowSetup(); });
-            menu.Items.Add("Version " + Program.VersionText + " (built " + Program.BuildDate + ")").Enabled = false;
             if (Program.UpdateRepo != null)
             {
                 menu.Items.Add("Check for updates", null, delegate { CheckForUpdates(true); });
-                menu.Items.Add("Project page on GitHub", null, delegate { OpenProjectPage(); });
                 menu.Items.Add("Help (user guide)", null, delegate { OpenHelp(); });
             }
             menu.Items.Add("Email crash log...", null, delegate { CrashReport.Email(); });
             menu.Items.Add("☕ Buy me a coffee", null, delegate { OpenCoffee(); });
             menu.Items.Add("Exit tray app", null, delegate { Application.Exit(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Version " + Program.VersionText + " (built " + Program.BuildDate + ")").Enabled = false;
 
             tray = new NotifyIcon();
             tray.ContextMenuStrip = menu;
@@ -511,6 +516,17 @@ namespace Krabbz.Blynclight
         public void OpenCoffee()
         {
             System.Diagnostics.Process.Start(CoffeeUrl);
+        }
+
+        // Switches light control on or off from the tray menu or Settings. Off leaves the lights alone.
+        public void SetLightControl(bool on)
+        {
+            AppSettings.LightControlEnabled = on;
+            light.Enabled = on;
+            if (lightControlItem != null) lightControlItem.Checked = on;
+            Refresh();
+            if (AppSettings.ShowNotifications)
+                tray.ShowBalloonTip(3000, Program.AppName, on ? "Light control is on." : "Light control is off. The lights are left alone.", ToolTipIcon.Info);
         }
 
         public void OpenProjectPage()
