@@ -58,10 +58,33 @@ namespace Krabbz.Blynclight
                     LogError("Unexpected error, the app closed", e.ExceptionObject as Exception);
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
+                // A marker left from last time means the app didn't exit normally, e.g. a crash too low-level to log.
+                string marker = RunningMarkerPath;
+                try
+                {
+                    if (File.Exists(marker))
+                        LogNote("The previous run ended unexpectedly (started " + File.GetLastWriteTime(marker).ToString("s")
+                            + "). No error was recorded, so check the Windows event log (Application) for a crash at that time.");
+                    Directory.CreateDirectory(Path.GetDirectoryName(marker));
+                    File.WriteAllText(marker, VersionText);
+                }
+                catch (Exception) { }
                 try { Application.Run(new TrayContext(showSignal, !trayOnly, justUpdated)); }
                 catch (Exception ex) { LogError("Unexpected error, the app closed", ex); throw; }
+                try { File.Delete(marker); } catch (Exception) { }
             }
             return 0;
+        }
+
+        static string RunningMarkerPath
+        {
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Krabbz9999 Blynclight", "running.flag"); }
+        }
+
+        // Appends a plain message (not an exception) to app.log.
+        public static void LogNote(string message)
+        {
+            LogError(message, null, false);
         }
 
         // Runs background work and logs anything it throws, instead of letting it close the app.
@@ -83,6 +106,11 @@ namespace Krabbz.Blynclight
         // moves to app.old.log first, so crash details can't fill the disk.
         public static void LogError(string what, Exception ex)
         {
+            LogError(what, ex, true);
+        }
+
+        static void LogError(string what, Exception ex, bool isError)
+        {
             try
             {
                 string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Krabbz9999 Blynclight");
@@ -97,7 +125,7 @@ namespace Krabbz.Blynclight
                         File.Move(log, old);
                     }
                     File.AppendAllText(log, DateTime.Now.ToString("s") + "  " + what + " (version " + VersionText + ", " + WindowsVersion
-                        + "): " + (ex == null ? "unknown error" : ex.ToString()) + Environment.NewLine);
+                        + "): " + (ex != null ? ex.ToString() : isError ? "unknown error" : "") + Environment.NewLine);
                 }
             }
             catch (Exception) { } // Logging must never cause a crash of its own.

@@ -49,18 +49,63 @@ namespace Krabbz.Blynclight
             text.AppendLine(Program.AppName + " " + Program.VersionText + " (built " + Program.BuildDate + ")");
             text.AppendLine(Program.WindowsVersion + (Environment.Is64BitOperatingSystem ? ", 64-bit" : ", 32-bit"));
             text.AppendLine("Saved " + DateTime.Now.ToString("s"));
+            bool anyLog = false;
             foreach (string name in new[] { "app.old.log", "app.log" })
             {
                 string path = Path.Combine(DataDir, name);
                 if (!File.Exists(path)) continue;
+                anyLog = true;
                 text.AppendLine();
                 text.AppendLine("===== " + name + " =====");
                 try { text.Append(File.ReadAllText(path)); }
                 catch (IOException ex) { text.AppendLine("Couldn't read it: " + ex.Message); }
             }
+            if (!anyLog)
+            {
+                text.AppendLine();
+                text.AppendLine("No app.log found in " + DataDir + ": the app has not logged any errors on this PC.");
+                text.AppendLine("If it still closes by itself, the Windows event log below usually shows why.");
+            }
+            AppendEventLog(text);
             string file = Path.Combine(Path.GetTempPath(), "BusyLightz-crash-log-" + DateTime.Now.ToString("yyyy-MM-dd-HHmm") + ".txt");
             File.WriteAllText(file, text.ToString());
             return file;
+        }
+
+        // Adds this app's crashes and hangs from the Windows Application event log (last 14 days). A crash inside
+        // Windows itself or a USB driver never reaches app.log, but Windows records it here with the faulting module.
+        static void AppendEventLog(StringBuilder text)
+        {
+            text.AppendLine();
+            text.AppendLine("===== Windows event log (Application), last 14 days =====");
+            try
+            {
+                string exe = Path.GetFileName(Process.GetCurrentProcess().MainModule.FileName);
+                DateTime since = DateTime.Now.AddDays(-14);
+                int found = 0, scanned = 0;
+                using (var log = new EventLog("Application"))
+                {
+                    var entries = log.Entries;
+                    // Newest entries are last; walk backwards and stop at the cutoff or after a sensible number.
+                    for (int i = entries.Count - 1; i >= 0 && scanned < 5000 && found < 15; i--, scanned++)
+                    {
+                        EventLogEntry entry = entries[i];
+                        if (entry.TimeGenerated < since) break;
+                        string source = entry.Source ?? "";
+                        if (source != "Application Error" && source != ".NET Runtime" && source != "Application Hang"
+                            && source != "Windows Error Reporting") continue;
+                        string message = entry.Message ?? "";
+                        if (message.IndexOf(exe, StringComparison.OrdinalIgnoreCase) < 0
+                            && message.IndexOf("Blynclight", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                        found++;
+                        text.AppendLine();
+                        text.AppendLine(entry.TimeGenerated.ToString("s") + "  " + source + " (event " + (entry.InstanceId & 0xFFFF) + ")");
+                        text.AppendLine(message.Length > 3000 ? message.Substring(0, 3000) + "..." : message);
+                    }
+                }
+                if (found == 0) text.AppendLine("No crash or hang entries for this app.");
+            }
+            catch (Exception ex) { text.AppendLine("Couldn't read the Windows event log: " + ex.Message); }
         }
 
         const int MAPI_LOGON_UI = 0x1, MAPI_DIALOG = 0x8, MAPI_TO = 1, SUCCESS_SUCCESS = 0, MAPI_USER_ABORT = 1;
