@@ -242,7 +242,7 @@ namespace Krabbz.Blynclight
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Settings...", null, delegate { ShowSettings(); });
             menu.Items.Add("Setup checklist...", null, delegate { ShowSetup(); });
-            menu.Items.Add("Version " + Program.VersionText).Enabled = false;
+            menu.Items.Add("Version " + Program.VersionText + " (built " + Program.BuildDate + ")").Enabled = false;
             if (Program.UpdateRepo != null)
             {
                 menu.Items.Add("Check for updates", null, delegate { CheckForUpdates(true); });
