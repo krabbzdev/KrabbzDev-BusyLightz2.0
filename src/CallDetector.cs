@@ -59,23 +59,61 @@ namespace Krabbz.Blynclight
 
         void Poll()
         {
-            MicApp app = null;
-            try
-            {
-                var ignored = new HashSet<string>(IgnoredIds(), StringComparer.OrdinalIgnoreCase);
-                foreach (var candidate in AppsInRecord())
-                {
-                    if (!candidate.InUse || ignored.Contains(candidate.Id)) continue;
-                    // Prefer a calling app if several have the mic, so the status names the call.
-                    if (app == null || candidate.IsTeams) app = candidate;
-                }
-            }
+            MicApp app;
+            try { app = CallApp(AppsInRecord(), IgnoredIds()); }
             catch (Exception) { return; } // Registry briefly unreadable; try again next poll.
 
             string id = app == null ? null : app.Id;
             if (id == currentId) return;
             currentId = id;
             callChanged(app);
+        }
+
+        // The app that counts as being on a call, or null: one using the mic that isn't ignored.
+        public static MicApp CallApp(List<MicApp> apps, List<string> ignoredIds)
+        {
+            var ignored = new HashSet<string>(ignoredIds, StringComparer.OrdinalIgnoreCase);
+            MicApp app = null;
+            foreach (var candidate in apps)
+            {
+                if (!candidate.InUse || ignored.Contains(candidate.Id)) continue;
+                // Prefer a calling app if several have the mic, so the status names the call.
+                if (app == null || candidate.IsTeams) app = candidate;
+            }
+            return app;
+        }
+
+        // Windows microphone privacy switches that are off, in the words of Settings > Privacy & security >
+        // Microphone. While one is off, Windows blocks those apps from the mic and doesn't record their use.
+        public static List<string> MicAccessProblems()
+        {
+            var problems = new List<string>();
+            if (PolicyBlocksMic()) problems.Add("Your organization's policy blocks apps from using the microphone");
+            if (Denied(Registry.LocalMachine, MicUsageKey)) problems.Add("Microphone access is off");
+            if (Denied(Registry.CurrentUser, MicUsageKey)) problems.Add("Let apps access your microphone is off");
+            if (Denied(Registry.CurrentUser, MicUsageKey + @"\NonPackaged")) problems.Add("Let desktop apps access your microphone is off");
+            return problems;
+        }
+
+        static bool Denied(RegistryKey root, string path)
+        {
+            try
+            {
+                using (var key = root.OpenSubKey(path))
+                    return key != null && "Deny".Equals(key.GetValue("Value") as string, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (Exception) { return false; }
+        }
+
+        // Group Policy "Let Windows apps access the microphone" set to Force Deny.
+        static bool PolicyBlocksMic()
+        {
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"))
+                    return key != null && 2.Equals(key.GetValue("LetAppsAccessMicrophone"));
+            }
+            catch (Exception) { return false; }
         }
 
         // Every app Windows has recorded using the microphone, most recently used first.

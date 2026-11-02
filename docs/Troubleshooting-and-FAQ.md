@@ -24,9 +24,13 @@ An app is holding your microphone open. The window says which one: *On a call (A
 
 ## The light didn't go red on a call
 
+Start a call, then open **Settings > Test microphone...**. It shows live what Windows reports about the microphone, which is all the app can see. See [Test microphone](Call-Detection.md#test-microphone).
+
 - The calling app must use the microphone. Calls through a desk phone aren't detected.
-- An app only appears after it has used the microphone once. Make one call, then check the Setup Checklist.
+- An app only appears after it has used the microphone once. Make one call, then check again.
 - Check the app isn't on the [ignore list](Call-Detection.md#ignoring-apps).
+- Check Windows lets apps use the microphone: Windows Settings > Privacy & security > Microphone, with **Microphone access** and **Let desktop apps access your microphone** on. Test microphone says if either is off.
+- A call app running as administrator, in a browser (it shows as Chrome or Edge), or in a remote desktop or Citrix session may not show up as itself, or at all.
 
 ## Follow Teams Status doesn't follow my Teams status
 
@@ -59,7 +63,13 @@ The app writes any unexpected error to its log, with the version and Windows ver
 
 With classic Outlook and most desktop mail apps, the log is attached for you. With the new Outlook or webmail, the folder with the log file opens next to the email: drag the file into the email.
 
-The log is `%LOCALAPPDATA%\Krabbz9999 Blynclight\app.log`. It holds error messages, such as Teams or light errors, and sometimes the text of a Teams status message you set yourself. It never holds passwords or sign-in tokens. You can open the attached file and read it before sending.
+The log is `%LOCALAPPDATA%\Krabbz9999 Blynclight\app.log`. It holds error messages, such as Teams or light errors, each time the app started and closed, and sometimes the text of a Teams status message you set yourself. It never holds passwords or sign-in tokens. You can open the attached file and read it before sending.
+
+The attached file also includes:
+
+- **Windows crash records** for the app from the last 30 days. These catch crashes the app can't log itself.
+- **Updates downloaded**, with dates. Installing an update closes and reopens the app, which can look like a crash.
+- **Microphone details**: Windows' microphone switches and the apps it has seen use the mic, for when calls aren't detected.
 
 ## Windows says the installer is from an unknown publisher
 

@@ -120,7 +120,7 @@ namespace Krabbz.Blynclight
                 button.FlatAppearance.BorderColor = Border;
                 button.FlatAppearance.MouseOverBackColor = Wash(Teams, 0.75);
             }
-            if (control is ComboBox || control is TextBox || control is ListBox) control.BackColor = Card;
+            if (control is ComboBox || control is TextBox || control is ListBox || control is ListView) control.BackColor = Card;
             if (control is ComboBox) ((ComboBox)control).FlatStyle = FlatStyle.Flat;
             foreach (Control child in control.Controls) Style(child);
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -42,25 +43,94 @@ namespace Krabbz.Blynclight
                 + "&body=" + Uri.EscapeDataString(body + "Please attach the log file from the folder that just opened:\r\n" + file));
         }
 
-        // Writes the version, Windows version and both logs (newest last) into one file in %TEMP%.
+        // Writes the version, Windows version, both logs (newest last), Windows' crash records, update history and
+        // microphone details into one file in %TEMP%.
         static string WriteReport()
         {
             var text = new StringBuilder();
             text.AppendLine(Program.AppName + " " + Program.VersionText + " (built " + Program.BuildDate + ")");
             text.AppendLine(Program.WindowsVersion + (Environment.Is64BitOperatingSystem ? ", 64-bit" : ", 32-bit"));
             text.AppendLine("Saved " + DateTime.Now.ToString("s"));
+            bool anyLog = false;
             foreach (string name in new[] { "app.old.log", "app.log" })
             {
                 string path = Path.Combine(DataDir, name);
                 if (!File.Exists(path)) continue;
+                anyLog = true;
                 text.AppendLine();
                 text.AppendLine("===== " + name + " =====");
                 try { text.Append(File.ReadAllText(path)); }
                 catch (IOException ex) { text.AppendLine("Couldn't read it: " + ex.Message); }
             }
+            if (!anyLog)
+            {
+                text.AppendLine();
+                text.AppendLine("===== app.log =====");
+                text.AppendLine("No errors logged.");
+            }
+            Section(text, "Windows crash records (last 30 days)", WindowsCrashRecords);
+            Section(text, "Updates downloaded", UpdateHistory);
+            Section(text, "Microphone", MicDetails);
             string file = Path.Combine(Path.GetTempPath(), "BusyLightz-crash-log-" + DateTime.Now.ToString("yyyy-MM-dd-HHmm") + ".txt");
             File.WriteAllText(file, text.ToString());
             return file;
+        }
+
+        // A titled part of the report. A part that fails says so instead of stopping the report.
+        static void Section(StringBuilder text, string title, Action<StringBuilder> write)
+        {
+            text.AppendLine();
+            text.AppendLine("===== " + title + " =====");
+            try { write(text); }
+            catch (Exception ex) { text.AppendLine("Couldn't read it: " + ex.Message); }
+        }
+
+        // Crashes and hangs Windows recorded for the app in the Application event log. These catch what app.log
+        // can't: crashes outside .NET, and the app being ended because it stopped responding.
+        static void WindowsCrashRecords(StringBuilder text)
+        {
+            const string query = "*[System[Provider[@Name='Application Error' or @Name='Application Hang' or @Name='.NET Runtime'" +
+                " or @Name='Windows Error Reporting'] and TimeCreated[timediff(@SystemTime) <= 2592000000]]]";
+            int found = 0;
+            using (var reader = new EventLogReader(new EventLogQuery("Application", PathType.LogName, query) { ReverseDirection = true }))
+            {
+                for (EventRecord record = reader.ReadEvent(); record != null && found < 20; record = reader.ReadEvent())
+                {
+                    using (record)
+                    {
+                        string message = record.FormatDescription() ?? "";
+                        if (message.IndexOf("Krabbz9999", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                        found++;
+                        text.AppendLine(record.TimeCreated.HasValue ? record.TimeCreated.Value.ToString("s") : "(no time)");
+                        text.AppendLine(record.ProviderName + ", event " + record.Id);
+                        text.AppendLine(message.Trim());
+                        text.AppendLine();
+                    }
+                }
+            }
+            if (found == 0) text.AppendLine("None.");
+        }
+
+        // Each update the app downloaded, with when. An install closes and reopens the app, which can look like a crash.
+        static void UpdateHistory(StringBuilder text)
+        {
+            var dir = new DirectoryInfo(Path.Combine(DataDir, "updates"));
+            var files = dir.Exists ? dir.GetFiles() : new FileInfo[0];
+            Array.Sort(files, (a, b) => a.LastWriteTime.CompareTo(b.LastWriteTime));
+            foreach (var file in files) text.AppendLine(file.LastWriteTime.ToString("s") + "  " + file.Name);
+            if (files.Length == 0) text.AppendLine("None.");
+        }
+
+        // What call detection sees: Windows' microphone switches and its record of apps using the mic.
+        static void MicDetails(StringBuilder text)
+        {
+            text.AppendLine("Turn lights red when my mic is in use: " + (AppSettings.CallsTurnRed ? "on" : "off"));
+            var problems = CallDetector.MicAccessProblems();
+            text.AppendLine(problems.Count == 0 ? "Windows microphone access: on" : string.Join("\r\n", problems.ToArray()));
+            var ignored = CallDetector.IgnoredIds();
+            foreach (var app in CallDetector.AppsInRecord())
+                text.AppendLine(app.Name + ": " + (app.InUse ? "in use now" : "last used " + app.LastUsed.ToString("s"))
+                    + (ignored.Contains(app.Id) ? ", ignored" : "") + "  (" + app.Id.Replace('#', '\\') + ")");
         }
 
         const int MAPI_LOGON_UI = 0x1, MAPI_DIALOG = 0x8, MAPI_TO = 1, SUCCESS_SUCCESS = 0, MAPI_USER_ABORT = 1;

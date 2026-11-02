@@ -52,9 +52,9 @@ namespace Krabbz.Blynclight
             teamsStep = AddStep(ref y, "Connect to Microsoft Teams", "Connect", delegate { tray.ConnectTeams(); });
             embravaStep = AddStep(ref y, "Close Embrava Connect", "Quit it", delegate { EmbravaConnect.Quit(); Recheck(); });
             followStep = AddStep(ref y, "Light follows your Teams status", "Turn on", delegate { tray.SetState(LightState.FollowTeams); Recheck(); });
-            callsStep = AddStep(ref y, "Red while your microphone is in use", "Ignore apps...", delegate
+            callsStep = AddStep(ref y, "Red while your microphone is in use", "Test microphone...", delegate
             {
-                using (var dialog = new IgnoreAppsDialog()) dialog.ShowDialog(this);
+                using (var dialog = new MicTestForm()) dialog.ShowDialog(this);
                 Recheck();
             });
 
@@ -141,8 +141,12 @@ namespace Krabbz.Blynclight
                 following ? "On. Red or Green from the tray menu overrides it until you choose Follow Teams Status again."
                           : "Off: the light stays on the color you picked.", !following);
 
+            var micProblems = CallDetector.MicAccessProblems();
             int ignored = CallDetector.IgnoredIds().Count;
-            Show(callsStep, Mark.Done,
+            if (micProblems.Count > 0)
+                Show(callsStep, Mark.Todo, "Windows is blocking apps from the microphone, so calls can't be detected: " +
+                    micProblems[0] + ". Click Test microphone for the fix.", true);
+            else Show(callsStep, Mark.Done,
                 "Any app using your microphone (Teams, Zoom, softphones and so on) turns the light red. " +
                 (ignored == 0 ? "No apps ignored." : ignored + (ignored == 1 ? " app ignored." : " apps ignored.")), true);
         }

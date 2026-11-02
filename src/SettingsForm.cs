@@ -55,6 +55,11 @@ namespace Krabbz.Blynclight
             });
             var flash = Box("Flash red and blue instead of steady red", AppSettings.FlashOnCalls,
                 v => { AppSettings.FlashOnCalls = v; tray.ApplySettings(); }, 24);
+            SideButton(flash, "Test microphone...", delegate
+            {
+                using (var dialog = new MicTestForm()) dialog.ShowDialog(this);
+                tray.ApplySettings();
+            });
             red.CheckedChanged += delegate { flash.Enabled = red.Checked; };
             flash.Enabled = red.Checked;
             Box("Show me as Busy in Teams during calls in other apps", AppSettings.TeamsBusyOnCalls,

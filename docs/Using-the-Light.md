@@ -112,6 +112,7 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 | **Install updates automatically** | When off, the app only updates when you click **Check now** / **Check for updates**. |
 | **Turn lights red when my mic is in use** | [Call Detection](Call-Detection.md) on or off. **Ignore apps...** picks apps that shouldn't count. |
 | **Flash red and blue instead of steady red** | On by default: lights flash red and blue quickly during calls. Untick for steady red. |
+| **Test microphone...** | Shows live which apps Windows reports using the microphone, for when a call doesn't turn the lights red. See [Call Detection](Call-Detection.md#test-microphone). |
 | **Show me as Busy in Teams during calls in other apps** | See [Teams Status](Teams-Status.md#busy-in-teams-during-other-calls). |
 | **Microsoft Teams** | Shows who you're connected as, with **Connect** / **Disconnect**, and **Organization's Teams app...** for [organization setup](Setting-Up-Teams-for-Your-Organization.md). |
 | **Match my Teams status when I pick Busy, Available or On a call** | See [Teams Status](Teams-Status.md#teams-matches-what-you-pick). |

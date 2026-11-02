@@ -56,10 +56,16 @@ namespace Krabbz.Blynclight
                 Application.ThreadException += (sender, e) => LogError("Unexpected error", e.Exception);
                 AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
                     LogError("Unexpected error, the app closed", e.ExceptionObject as Exception);
+                // Starts and stops go in app.log too, so a start with no stop before it shows the app was closed
+                // without a chance to log why (Windows ended it, or it crashed outside .NET).
+                LogEvent("Started" + (justUpdated ? " after updating" : trayOnly ? " in the tray" : ""));
+                Microsoft.Win32.SystemEvents.SessionEnding += (sender, e) =>
+                    LogEvent(e.Reason == Microsoft.Win32.SessionEndReasons.Logoff ? "Windows is signing out" : "Windows is shutting down");
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 try { Application.Run(new TrayContext(showSignal, !trayOnly, justUpdated)); }
                 catch (Exception ex) { LogError("Unexpected error, the app closed", ex); throw; }
+                LogEvent("Closed");
             }
             return 0;
         }
@@ -83,6 +89,17 @@ namespace Krabbz.Blynclight
         // moves to app.old.log first, so crash details can't fill the disk.
         public static void LogError(string what, Exception ex)
         {
+            Log(what + " (version " + VersionText + ", " + WindowsVersion + "): " + (ex == null ? "unknown error" : ex.ToString()));
+        }
+
+        // A one-line note in app.log, e.g. "Started" or "Closed".
+        public static void LogEvent(string what)
+        {
+            Log(what + " (version " + VersionText + ")");
+        }
+
+        static void Log(string line)
+        {
             try
             {
                 string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Krabbz9999 Blynclight");
@@ -96,8 +113,7 @@ namespace Krabbz.Blynclight
                         File.Delete(old);
                         File.Move(log, old);
                     }
-                    File.AppendAllText(log, DateTime.Now.ToString("s") + "  " + what + " (version " + VersionText + ", " + WindowsVersion
-                        + "): " + (ex == null ? "unknown error" : ex.ToString()) + Environment.NewLine);
+                    File.AppendAllText(log, DateTime.Now.ToString("s") + "  " + line + Environment.NewLine);
                 }
             }
             catch (Exception) { } // Logging must never cause a crash of its own.
@@ -544,6 +560,7 @@ namespace Krabbz.Blynclight
                         if (update != null)
                         {
                             // Reopen the way the user had it: window showing, or tray only.
+                            Program.LogEvent("Closing to install version " + update.Version);
                             Updater.Install(update, Application.ExecutablePath, form != null && form.Visible);
                             Application.Exit();
                         }
