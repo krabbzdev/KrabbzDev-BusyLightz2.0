@@ -102,7 +102,9 @@ namespace Krabbz.Blynclight
         {
             var light = tray.Light;
             bool lightFound = light.LightCount > 0;
-            Show(lightStep, lightFound ? Mark.Done : Mark.Todo,
+            if (!light.LightsEnabled)
+                Show(lightStep, Mark.Done, "Skipped: USB lights are turned off (Disable USB Light Integration in the tray menu).", false);
+            else Show(lightStep, lightFound ? Mark.Done : Mark.Todo,
                 lightFound ? "Found: " + light.LightSummary + "."
                            : "No Blynclight or Luxafor Flag found. Plug one in (with a data cable, not charge-only), then click Check again.", !lightFound);
 

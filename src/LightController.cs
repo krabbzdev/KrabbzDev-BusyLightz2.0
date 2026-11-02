@@ -36,8 +36,12 @@ namespace Krabbz.Blynclight
         // Raised on a background thread when a light is plugged in or removed.
         public event Action LightsChanged;
 
-        public LightController()
+        // False while USB light integration is turned off: no scanning and no writes.
+        bool lightsEnabled;
+
+        public LightController(bool lightsEnabled)
         {
+            this.lightsEnabled = lightsEnabled;
             Directory.CreateDirectory(dataDir);
             state = LoadState();
             returnToTeamsAt = LoadReturnToTeams();
@@ -65,7 +69,25 @@ namespace Krabbz.Blynclight
         public bool OverrideActive { get { lock (sync) return callOverride != null; } }
         public int LightCount { get { lock (sync) return knownLights.Count; } }
 
-        // e.g. "Blynclight + 2 Luxafor", or "none".
+        // Turning USB lights off switches connected lights off and then leaves them alone; turning them back on
+        // finds them again on the next device check and shows the current state.
+        public bool LightsEnabled
+        {
+            get { lock (sync) return lightsEnabled; }
+            set
+            {
+                lock (sync)
+                {
+                    if (lightsEnabled == value) return;
+                    if (!value) WriteAll(LightColor.Off);
+                    lightsEnabled = value;
+                    if (!value) knownLights = new List<LightDevice>();
+                }
+                if (LightsChanged != null) LightsChanged();
+            }
+        }
+
+        // e.g. "Blynclight + 2 Luxafor", "none", or "turned off" when USB lights are disabled.
         public string LightSummary
         {
             get
@@ -73,6 +95,7 @@ namespace Krabbz.Blynclight
                 int blync, lux;
                 lock (sync)
                 {
+                    if (!lightsEnabled) return "turned off";
                     blync = knownLights.FindAll(l => l.Kind == LightKind.Blynclight).Count;
                     lux = knownLights.Count - blync;
                 }
@@ -83,10 +106,12 @@ namespace Krabbz.Blynclight
             }
         }
 
-        // Colors picked by hand that override Teams status, so they go back to following Teams after a while.
+        // States picked by hand that override Teams status, so they go back to following Teams after a while.
+        // Every state but Follow Teams Status, so the tray menu's "[:15 Min Override]" holds for all of them.
         public static bool OverridesTeams(string state)
         {
-            return state == LightState.Red || state == LightState.Green || state == LightState.CallFlash;
+            return state == LightState.Red || state == LightState.Green || state == LightState.CallFlash
+                || state == LightState.Party || state == LightState.Off;
         }
 
         public DateTime? ReturnToTeamsAt { get { lock (sync) return returnToTeamsAt; } }
@@ -175,6 +200,8 @@ namespace Krabbz.Blynclight
         // One tick of LightLoop: scan for lights every DeviceCheckMs, and animate Party Mode and call flashing.
         void LightStep(ref int hue, ref int flashMs, ref int sinceDeviceCheck)
         {
+            // Scan right away when lights are turned back on.
+            if (!LightsEnabled) { sinceDeviceCheck = DeviceCheckMs; return; }
             string current = ShownState;
 
             if (sinceDeviceCheck >= DeviceCheckMs)

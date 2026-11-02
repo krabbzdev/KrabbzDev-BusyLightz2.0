@@ -33,7 +33,7 @@ namespace Krabbz.Blynclight
                 case Red: return "Busy";
                 case Green: return "Available";
                 case Party: return "Test lights";
-                case Off: return "Off";
+                case Off: return "Lights off";
                 case FollowTeams: return "Following Teams status";
                 case CallFlash: return "On a call";
                 default: return "Unknown";

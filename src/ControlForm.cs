@@ -785,7 +785,7 @@ namespace Krabbz.Blynclight
                 Theme.Pill(e.Graphics, "Beta", footer.Width - Pad, 12, Theme.OverrideTint, Theme.OverrideText);
             };
             FooterLink(footer, testLink, "Test lights", Pad, LightState.Party);
-            FooterLink(footer, offLink, "Off", Pad + 120, LightState.Off);
+            FooterLink(footer, offLink, "Lights off", Pad + 120, LightState.Off);
 
             string versionText = "Version " + Program.VersionText + "  ·  Built " + Program.BuildDate;
             const string UpdatesLink = "Check for updates", ProjectLink = "Project page", HelpLink = "Help";

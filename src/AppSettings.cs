@@ -84,6 +84,8 @@ namespace Krabbz.Blynclight
         }
         // Light (the default) or Dark colors for the app's windows.
         public static bool DarkMode { get { return Get("DarkMode", false); } set { Set("DarkMode", value); } }
+        // Leaves USB lights alone, for Teams status and call detection only. Off unless changed.
+        public static bool UsbLightsDisabled { get { return Get("UsbLightsDisabled", false); } set { Set("UsbLightsDisabled", value); } }
         public static string TeamsStatusMessage
         {
             get

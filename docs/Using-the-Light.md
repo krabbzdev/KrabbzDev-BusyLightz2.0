@@ -37,8 +37,8 @@ Every style has the same parts:
 | **Available (Alt+G)** (check mark) | Sets the light green, then back to Follow Teams Status after the override time. |
 | **On a call** (phone) | Flashes red and blue quickly, then back to Follow Teams Status after the override time. Handy for a call the app can't detect, such as a desk phone. |
 | **Follow Teams Status** (people) | The light shows your Microsoft Teams status. See [Teams Status](Teams-Status.md). |
-| **Test lights** (bottom left) | Smoothly cycles through every color, about once every 2.4 seconds. Handy for checking every light is working and matched. |
-| **Off** (bottom left) | Turns the light off. |
+| **Test lights** (bottom left) | Smoothly cycles through every color, about once every 2.4 seconds, then back to Follow Teams Status after the override time. Handy for checking every light is working and matched. |
+| **Lights off** (bottom left) | Turns the lights off, then back to Follow Teams Status after the override time. A detected call still makes them flash. |
 | **⚙ Settings** (top right) | Opens [Settings](#settings). |
 | **Version line** | Shows the version and build date, plus **Check for updates**, **Project page** and **Help** (this guide) links. |
 
@@ -46,7 +46,7 @@ The mode you picked is filled in with its color. The mode you pick is remembered
 
 ### Override timer
 
-Busy, Available and On a call *override* your Teams status, so it's easy to forget one is still on. While one is on, the window shows the countdown and the tray icon gets a small white badge. After **15 minutes** the lights go back to **Follow Teams Status** on their own, and a notification says so. The countdown shows in the window and when you hover over the tray icon, and it keeps counting through restarts. Picking any mode again starts the timer over.
+Busy, Available, On a call, Test lights and Lights off *override* your Teams status, so it's easy to forget one is still on. While one is on, the window shows the countdown and the tray icon gets a small white badge. After **15 minutes** the lights go back to **Follow Teams Status** on their own, and a notification says so. The countdown shows in the window and when you hover over the tray icon, and it keeps counting through restarts. Picking any mode again starts the timer over.
 
 Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). To keep overrides on until you change them, untick **Go back to Follow Teams Status after**.
 
@@ -57,21 +57,21 @@ Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). 
 | Item | What it does |
 | --- | --- |
 | **Open KrabbzDev-BusyLightz2.0** | Opens the window. |
-| **Busy (red)** / **Available (green)** | Same as the window buttons. They take over from Teams status until the [override timer](#override-timer) runs out. |
-| **On a call (flashing red/blue)** | Same as the window's On a call button. |
-| **Test lights (cycling colors)** | Same as the window's Test lights button. |
-| **Off** | Light off. |
+| **[:15 Min Override] Red/Busy** / **Green/Available** | Same as the window's Busy and Available buttons. The time in brackets is your [override time](#override-timer) from Settings, e.g. *[1 Hr Override]*, or *[Override]* when overrides stay on until you change them. |
+| **[:15 Min Override] On A Call** | Same as the window's On a call button. |
+| **[:15 Min Override] Test Lights aka Party Mode!** | Same as the window's Test lights button. |
+| **[:15 Min Override] Disable Lights** | Same as the window's Lights off button. |
 | **Follow Teams Status** | Light follows Teams. |
 | **Connect to Microsoft Teams** | Sign in so the app can read your Teams status (ticked when connected; click again to disconnect). |
+| **Disable USB Light Integration** | When ticked, the app turns your USB lights off and stops controlling them. Teams status, call detection and the Teams status message keep working. Handy on a PC without a busy light, or when another app runs the light. Click again to turn the lights back on. Remembered after a restart. |
 | **Settings...** | Opens [Settings](#settings). |
 | **Setup checklist...** | Opens the [Setup Checklist](Setup-Checklist.md). |
-| **Version x** | The version you're running. |
 | **Check for updates** | Looks for a newer version now. |
-| **Project page on GitHub** | Opens this project's page. |
 | **Help (user guide)** | Opens this guide. |
 | **Email crash log...** | Starts an email with the app's log attached. See [If the app crashes](Troubleshooting-and-FAQ.md#if-the-app-crashes). |
 | **☕ Buy me a coffee** | Opens KrabbzDev's Buy Me a Coffee page. |
 | **Exit tray app** | Closes the app. The light stays on its last color (Test Lights and flashing turn off). The app starts again at your next sign-in. |
+| **Version x** (at the bottom) | The version you're running. |
 
 The tick in the menu shows the color *you* chose, even while a call is temporarily showing red.
 

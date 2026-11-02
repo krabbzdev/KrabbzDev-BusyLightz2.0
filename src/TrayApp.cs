@@ -157,13 +157,13 @@ namespace Krabbz.Blynclight
         // How often to read Teams presence while following Teams status.
         const int TeamsPollMs = 20 * 1000;
 
-        readonly LightController light = new LightController();
+        readonly LightController light = new LightController(!AppSettings.UsbLightsDisabled);
         readonly CallDetector calls;
         // App that has the microphone open, or null when not on a call.
         MicApp callApp;
         // Reads Teams status and sets Teams to Busy during non-Teams calls; null when no Teams app is configured.
         TeamsPresence presence;
-        ToolStripMenuItem presenceItem;
+        ToolStripMenuItem presenceItem, usbItem;
         readonly System.Threading.Timer teamsPoll;
         // Last Teams availability read while signed in (e.g. "Available"), or null.
         string teamsAvailability;
@@ -196,11 +196,11 @@ namespace Krabbz.Blynclight
             var menu = new ContextMenuStrip();
             menu.Items.Add("Open " + Program.AppName, null, delegate { ShowWindow(); }).Font = new Font(menu.Font, FontStyle.Bold);
             menu.Items.Add(new ToolStripSeparator());
-            AddStateItem(menu, "Busy (red)", LightState.Red);
-            AddStateItem(menu, "Available (green)", LightState.Green);
-            AddStateItem(menu, "On a call (flashing red/blue)", LightState.CallFlash);
-            AddStateItem(menu, "Test lights (cycling colors)", LightState.Party);
-            AddStateItem(menu, "Off", LightState.Off);
+            AddStateItem(menu, "Red/Busy", LightState.Red);
+            AddStateItem(menu, "Green/Available", LightState.Green);
+            AddStateItem(menu, "On A Call", LightState.CallFlash);
+            AddStateItem(menu, "Test Lights aka Party Mode!", LightState.Party);
+            AddStateItem(menu, "Disable Lights", LightState.Off);
             AddStateItem(menu, "Follow Teams Status", LightState.FollowTeams);
             menu.Items.Add(new ToolStripSeparator());
             presence = CreatePresence();
@@ -211,19 +211,26 @@ namespace Krabbz.Blynclight
                 else TogglePresence();
             });
             menu.Items.Add(presenceItem);
+            // Ticked while the app leaves USB lights alone (Teams status and call detection keep working).
+            usbItem = new ToolStripMenuItem("Disable USB Light Integration", null, delegate { ToggleUsbLights(); })
+            {
+                Checked = AppSettings.UsbLightsDisabled,
+                ToolTipText = "Turns the lights off and stops controlling them. Teams status and call detection keep working.",
+            };
+            menu.Items.Add(usbItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Settings...", null, delegate { ShowSettings(); });
             menu.Items.Add("Setup checklist...", null, delegate { ShowSetup(); });
-            menu.Items.Add("Version " + Program.VersionText).Enabled = false;
             if (Program.UpdateRepo != null)
             {
                 menu.Items.Add("Check for updates", null, delegate { CheckForUpdates(true); });
-                menu.Items.Add("Project page on GitHub", null, delegate { OpenProjectPage(); });
                 menu.Items.Add("Help (user guide)", null, delegate { OpenHelp(); });
             }
             menu.Items.Add("Email crash log...", null, delegate { CrashReport.Email(); });
             menu.Items.Add("☕ Buy me a coffee", null, delegate { OpenCoffee(); });
             menu.Items.Add("Exit tray app", null, delegate { Application.Exit(); });
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Version " + Program.VersionText).Enabled = false;
 
             tray = new NotifyIcon();
             tray.ContextMenuStrip = menu;
@@ -442,11 +449,35 @@ namespace Krabbz.Blynclight
 
         void AddStateItem(ContextMenuStrip menu, string text, string state)
         {
-            var item = new ToolStripMenuItem(text, null, delegate { SetState(state); });
+            var item = new ToolStripMenuItem(text, null, delegate { SetState(state); }) { Tag = text };
             string keys;
             if (HotkeyText.TryGetValue(state, out keys)) item.ShortcutKeyDisplayString = keys;
             stateItems[state] = item;
             menu.Items.Add(item);
+        }
+
+        // e.g. "[:15 Min Override]" or "[2 Hr Override]", matching the override time in Settings; "[Override]"
+        // when overrides stay on until changed.
+        static string OverrideTag
+        {
+            get
+            {
+                if (!AppSettings.OverrideTimesOut) return "[Override]";
+                int minutes = AppSettings.OverrideMinutes;
+                if (minutes < 60) return "[:" + minutes.ToString("00") + " Min Override]";
+                return "[" + (minutes / 60) + " Hr Override]";
+            }
+        }
+
+        // Puts the current override time in front of each override item's name.
+        void UpdateStateItemNames()
+        {
+            string tag = OverrideTag;
+            foreach (var pair in stateItems)
+            {
+                string name = (string)pair.Value.Tag;
+                pair.Value.Text = LightController.OverridesTeams(pair.Key) ? tag + " " + name : name;
+            }
         }
 
         void RegisterHotkeys()
@@ -750,7 +781,7 @@ namespace Krabbz.Blynclight
 
         void Refresh()
         {
-            bool partying = State == LightState.Party && light.LightCount > 0;
+            bool partying = State == LightState.Party && !NoLight;
             if (partying && !flashTimer.Enabled) partyHue = 0;
             flashTimer.Enabled = partying;
             UpdateDisplay();
@@ -774,11 +805,27 @@ namespace Krabbz.Blynclight
             presence.ShowPresence(status);
         }
 
+        // Turns USB light integration off (lights go dark and are left alone) or back on.
+        void ToggleUsbLights()
+        {
+            bool disable = !AppSettings.UsbLightsDisabled;
+            AppSettings.UsbLightsDisabled = disable;
+            usbItem.Checked = disable;
+            light.LightsEnabled = !disable;
+            Refresh();
+            ShowBalloon(disable
+                ? "USB lights turned off. Teams status and call detection keep working."
+                : "USB lights turned back on.", ToolTipIcon.Info);
+        }
+
+        // No light plugged in, while the app is meant to be controlling lights.
+        bool NoLight { get { return light.LightsEnabled && light.LightCount == 0; } }
+
         public string StatusText
         {
             get
             {
-                if (light.LightCount == 0) return "Light not found";
+                if (NoLight) return "Light not found";
                 if (light.OverrideActive) return callApp == null ? "Testing the light" : "On a call (" + callApp.Name + ")";
                 if (light.State == LightState.FollowTeams && teamsAvailability != null) return "Teams: " + DescribeAvailability(teamsAvailability);
                 return LightState.Describe(State);
@@ -787,7 +834,7 @@ namespace Krabbz.Blynclight
 
         void UpdateDisplay()
         {
-            if (light.LightCount == 0) DisplayColor = Color.Gray;
+            if (NoLight) DisplayColor = Color.Gray;
             // A flashing call shows as red in the tray and window; flashing an icon would be distracting.
             else if (State == LightState.Red || State == LightState.CallFlash) DisplayColor = Color.Red;
             else if (State == LightState.Green) DisplayColor = Color.Lime;
@@ -808,6 +855,7 @@ namespace Krabbz.Blynclight
             UpdateTooltip();
             // Check the user's own choice, even while a call is overriding it.
             foreach (var pair in stateItems) pair.Value.Checked = pair.Key == light.State;
+            UpdateStateItemNames();
             if (presenceItem != null)
             {
                 presenceItem.Checked = presence != null && presence.SignedIn;
@@ -822,14 +870,14 @@ namespace Krabbz.Blynclight
         // Shows a notification when what the light shows changes (not for each Party Mode color, and not at startup).
         void NotifyIfChanged()
         {
-            string key = light.LightCount == 0 ? "no light" : State + "|" + StatusText;
+            string key = NoLight ? "no light" : State + "|" + StatusText;
             if (key == lastNotifiedKey) return;
             bool first = lastNotifiedKey == null;
             lastNotifiedKey = key;
-            if (first || !AppSettings.ShowNotifications) return;
+            if (first || !AppSettings.ShowNotifications || !light.LightsEnabled) return; // No light changes to report while USB lights are off.
 
             string message;
-            if (light.LightCount == 0) message = "No light found. Plug your Blynclight or Luxafor back in.";
+            if (NoLight) message = "No light found. Plug your Blynclight or Luxafor back in.";
             else if (State == LightState.Party) message = "Testing the lights: cycling through every color.";
             else if (State == LightState.FollowTeams) message = "Light handed to Embrava Connect to show your Teams status.";
             else if (State == LightState.Off) message = "Light turned off.";
