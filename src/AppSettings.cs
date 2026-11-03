@@ -84,15 +84,8 @@ namespace Krabbz.Blynclight
         }
         // Light (the default) or Dark colors for the app's windows.
         public static bool DarkMode { get { return Get("DarkMode", false); } set { Set("DarkMode", value); } }
-        // How long Test lights takes to go once round every color: 0.25 to 5 seconds.
-        public const int MinTestLightsCycleMs = 250, MaxTestLightsCycleMs = 5000, DefaultTestLightsCycleMs = 1000;
-        public static int TestLightsCycleMs
-        {
-            get { return Ranged("TestLightsCycleMs", MinTestLightsCycleMs, MaxTestLightsCycleMs, DefaultTestLightsCycleMs); }
-            set { SetInt("TestLightsCycleMs", value); }
-        }
         // How long On a call shows each of its two flash colors: 0.1 to 2 seconds.
-        public const int MinCallFlashMs = 100, MaxCallFlashMs = 2000, DefaultCallFlashMs = 300;
+        public const int MinCallFlashMs = 100, MaxCallFlashMs = 2000, DefaultCallFlashMs = 1000;
         public static int CallFlashMs
         {
             get { return Ranged("CallFlashMs", MinCallFlashMs, MaxCallFlashMs, DefaultCallFlashMs); }

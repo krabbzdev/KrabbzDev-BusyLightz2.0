@@ -281,7 +281,7 @@ namespace Krabbz.Blynclight
         public TrayContext(EventWaitHandle showSignal, bool showWindow, bool justUpdated)
         {
             var menu = new ContextMenuStrip();
-            menu.Items.Add("Open " + Program.AppName, null, delegate { ShowWindow(); }).Font = new Font(menu.Font, FontStyle.Bold);
+            AddItem(menu, "Open " + Program.AppName, OpenGlyph, delegate { ShowWindow(); }).Font = new Font("Segoe UI Semibold", 9.5f);
             menu.Items.Add(new ToolStripSeparator());
             AddStateItem(menu, "Red/Busy", LightState.Red);
             AddStateItem(menu, "Green/Available", LightState.Green);
@@ -298,6 +298,7 @@ namespace Krabbz.Blynclight
                 else TogglePresence();
             });
             menu.Items.Add(presenceItem);
+            menuRenderer.Glyph(presenceItem, TeamsGlyph);
             // Ticked while the app leaves USB lights alone (Teams status and call detection keep working).
             usbItem = new ToolStripMenuItem("Disable USB Light Integration", null, delegate { ToggleUsbLights(); })
             {
@@ -305,19 +306,25 @@ namespace Krabbz.Blynclight
                 ToolTipText = "Turns the lights off and stops controlling them. Teams status and call detection keep working.",
             };
             menu.Items.Add(usbItem);
+            menuRenderer.Glyph(usbItem, UsbGlyph);
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Settings...", null, delegate { ShowSettings(); });
-            menu.Items.Add("Setup checklist...", null, delegate { ShowSetup(); });
+            AddItem(menu, "Settings...", SettingsGlyph, delegate { ShowSettings(); });
+            AddItem(menu, "Setup checklist...", ChecklistGlyph, delegate { ShowSetup(); });
             if (Program.UpdateRepo != null)
             {
-                menu.Items.Add("Check for updates", null, delegate { CheckForUpdates(true); });
-                menu.Items.Add("Help (user guide)", null, delegate { OpenHelp(); });
+                AddItem(menu, "Check for updates", UpdateGlyph, delegate { CheckForUpdates(true); });
+                AddItem(menu, "Help (user guide)", HelpGlyph, delegate { OpenHelp(); });
             }
-            menu.Items.Add("Email crash log...", null, delegate { CrashReport.Email(); });
-            menu.Items.Add("☕ Buy me a coffee", null, delegate { OpenCoffee(); });
-            menu.Items.Add("Exit tray app", null, delegate { Application.Exit(); });
+            AddItem(menu, "Email crash log...", MailGlyph, delegate { CrashReport.Email(); });
+            // A coffee-yellow dot: the coffee emoji came out as a half-drawn circle in the menu's font.
+            var coffee = AddItem(menu, "Buy me a coffee", null, delegate { OpenCoffee(); });
+            menuRenderer.Dot(coffee, () => new[] { Color.FromArgb(255, 221, 0) });
+            AddItem(menu, "Exit tray app", ExitGlyph, delegate { Application.Exit(); });
             menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Version " + Program.VersionText).Enabled = false;
+            var version = menu.Items.Add("Version " + Program.VersionText);
+            version.Enabled = false;
+            version.Font = new Font("Segoe UI", 8.5f);
+            ModernMenuRenderer.Style(menu, menuRenderer);
 
             tray = new NotifyIcon();
             tray.ContextMenuStrip = menu;
@@ -536,6 +543,19 @@ namespace Krabbz.Blynclight
             settingsForm.Activate();
         }
 
+        // Tray menu icons: Segoe MDL2 Assets characters.
+        const string OpenGlyph = "", TeamsGlyph = "", UsbGlyph = "", SettingsGlyph = "",
+            ChecklistGlyph = "", UpdateGlyph = "", HelpGlyph = "", MailGlyph = "", ExitGlyph = "";
+
+        readonly ModernMenuRenderer menuRenderer = new ModernMenuRenderer();
+
+        ToolStripItem AddItem(ContextMenuStrip menu, string text, string glyph, EventHandler click)
+        {
+            var item = menu.Items.Add(text, null, click);
+            if (glyph != null) menuRenderer.Glyph(item, glyph);
+            return item;
+        }
+
         void AddStateItem(ContextMenuStrip menu, string text, string state)
         {
             var item = new ToolStripMenuItem(text, null, delegate { SetState(state); }) { Tag = text };
@@ -543,6 +563,22 @@ namespace Krabbz.Blynclight
             if (HotkeyText.TryGetValue(state, out keys)) item.ShortcutKeyDisplayString = keys;
             stateItems[state] = item;
             menu.Items.Add(item);
+            menuRenderer.Dot(item, () => DotColors(state));
+        }
+
+        // The dot beside a mode in the tray menu, in the colors that mode shows (empty for Disable Lights).
+        static Color[] DotColors(string state)
+        {
+            switch (state)
+            {
+                case LightState.Red: return new[] { Theme.Soften(PickedColor("BusyColor", Color.Red)) };
+                case LightState.Green: return new[] { Theme.Soften(PickedColor("AvailableColor", Color.Lime)) };
+                case LightState.CallFlash:
+                    return new[] { Theme.Soften(PickedColor("CallColor1", Color.Red)), Theme.Soften(PickedColor("CallColor2", Color.Blue)) };
+                case LightState.Party: return new[] { Theme.Red, Color.FromArgb(234, 179, 8), Theme.Green, Theme.CallBlue };
+                case LightState.FollowTeams: return new[] { Theme.Teams };
+                default: return new Color[0];
+            }
         }
 
         // e.g. "[:15 Min Override]" or "[2 Hr Override]", matching the override time in Settings; "[Override]"

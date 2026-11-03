@@ -130,7 +130,7 @@ namespace Krabbz.Blynclight
             var help = new Button { Text = "Help", Bounds = new Rectangle(178, y, 80, 34) };
             help.Click += delegate { tray.OpenHelp(); };
             Controls.Add(help);
-            // Brightness, Test lights speed and colors, in their own window to keep this one short.
+            // Brightness, call flash speed and colors, in their own window to keep this one short.
             var lights = new Button { Text = "Light Control", Bounds = new Rectangle(266, y, 106, 34) };
             lights.Click += delegate
             {
@@ -296,7 +296,7 @@ namespace Krabbz.Blynclight
         }
     }
 
-    // Light Control: brightness, Test lights speed and the color for each status. Each change is saved at once and
+    // Light Control: brightness, call flash speed and the color for each status. Each change is saved at once and
     // shown on the lights for a few seconds, whatever they were showing.
     class LightsDialog : Form
     {
@@ -332,14 +332,6 @@ namespace Krabbz.Blynclight
                 AppSettings.Brightness = v * 5;
                 tray.ApplySettings();
                 tray.Light.Preview(null, PreviewMs);
-            });
-            // Test lights cycle in steps of a quarter second; the preview runs Test lights at the new speed.
-            Slider("Test lights: full cycle every", AppSettings.MinTestLightsCycleMs / 250, AppSettings.MaxTestLightsCycleMs / 250,
-                AppSettings.TestLightsCycleMs / 250, v => (v * 0.25).ToString("0.##") + (v == 4 ? " second" : " seconds"), v =>
-            {
-                AppSettings.TestLightsCycleMs = v * 250;
-                tray.ApplySettings();
-                tray.Light.Preview(LightState.Party, PreviewMs);
             });
             // On a call's flash, in steps of a tenth of a second per color; the preview flashes at the new speed.
             Slider("On a call: switch colors every", AppSettings.MinCallFlashMs / 100, AppSettings.MaxCallFlashMs / 100,

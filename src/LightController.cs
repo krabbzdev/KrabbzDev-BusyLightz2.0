@@ -11,6 +11,8 @@ namespace Krabbz.Blynclight
     {
         // How often the light thread runs: Party Mode and call flashing move on this often.
         public const int PartyStepMs = 100;
+        // Party Mode goes once round every color in this time.
+        const int PartyCycleMs = 250;
         // Look for newly plugged-in or removed lights, and re-send the current color, this often.
         const int DeviceCheckMs = 2000;
 
@@ -38,9 +40,9 @@ namespace Krabbz.Blynclight
         int previewEnds;
         // Set when something changed that the light thread should show; turnOffPending when lights were just disabled.
         bool applyPending, turnOffPending;
-        // From Settings, read again by ApplySettings: brightness in percent, Test lights cycle length, how long a call
-        // flash shows each color, and the color per state.
-        int brightness, cycleMs, callFlashMs;
+        // From Settings, read again by ApplySettings: brightness in percent, how long a call flash shows each color,
+        // and the color per state.
+        int brightness, callFlashMs;
         Dictionary<string, LightColor> colors;
 
         // Raised on a background thread when a light is plugged in or removed.
@@ -81,7 +83,7 @@ namespace Krabbz.Blynclight
         public bool OverrideActive { get { lock (sync) return callOverride != null; } }
         public int LightCount { get { lock (sync) return knownLights.Count; } }
         // How far round the color wheel Test lights moves every PartyStepMs.
-        public int PartyHueStep { get { lock (sync) return Math.Max(1, 360 * PartyStepMs / cycleMs); } }
+        public int PartyHueStep { get { return 360 * PartyStepMs / PartyCycleMs % 360; } }
 
         // Turning USB lights off switches connected lights off and then leaves them alone; turning them back on
         // finds them again on the next device check and shows the current state.
@@ -178,7 +180,7 @@ namespace Krabbz.Blynclight
             RequestApply();
         }
 
-        // Reads brightness, Test lights speed and colors from Settings again and shows the change.
+        // Reads brightness, call flash speed and colors from Settings again and shows the change.
         public void ApplySettings()
         {
             LoadSettings();
@@ -212,12 +214,11 @@ namespace Krabbz.Blynclight
             loaded["purple"] = BlyncDevice.ColorFor(AppSettings.LightColorName("DndColor"));
             loaded["call1"] = BlyncDevice.ColorFor(AppSettings.LightColorName("CallColor1"));
             loaded["call2"] = BlyncDevice.ColorFor(AppSettings.LightColorName("CallColor2"));
-            int percent = AppSettings.Brightness, cycle = AppSettings.TestLightsCycleMs, flash = AppSettings.CallFlashMs;
+            int percent = AppSettings.Brightness, flash = AppSettings.CallFlashMs;
             lock (sync)
             {
                 colors = loaded;
                 brightness = percent;
-                cycleMs = cycle;
                 callFlashMs = flash;
             }
         }
@@ -281,14 +282,13 @@ namespace Krabbz.Blynclight
         void LightStep(int elapsed, ref double hue, ref int flashMs, ref int sinceDeviceCheck)
         {
             bool enabled, turnOff, apply;
-            int cycle, flashEvery;
+            int flashEvery;
             lock (sync)
             {
                 enabled = lightsEnabled;
                 turnOff = turnOffPending;
                 apply = applyPending;
                 turnOffPending = applyPending = false;
-                cycle = cycleMs;
                 flashEvery = callFlashMs;
                 if (preview != null && Environment.TickCount - previewEnds >= 0)
                 {
@@ -333,7 +333,7 @@ namespace Krabbz.Blynclight
                 byte r, g, b;
                 BlyncDevice.HueToRgb((int)hue, out r, out g, out b);
                 WriteAll(LightColor.Rgb(r, g, b));
-                hue = (hue + 360.0 * elapsed / cycle) % 360;
+                hue = (hue + 360.0 * elapsed / PartyCycleMs) % 360;
             }
             if (current == LightState.CallFlash)
             {
