@@ -48,7 +48,7 @@ The mode you picked is filled in with its color. The mode you pick is remembered
 
 Busy, Available, On a call, Test lights and Lights off *override* your Teams status, so it's easy to forget one is still on. While one is on, the window shows the countdown and the tray icon gets a small white badge. After **15 minutes** the lights go back to **Follow Teams Status** on their own, and a notification says so. The countdown shows in the window and when you hover over the tray icon, and it keeps counting through restarts. Picking any mode again starts the timer over.
 
-Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). To keep overrides on until you change them, untick **Go back to Follow Teams Status after**.
+Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). To keep overrides on until you change them, switch off **Go back to Follow Teams Status after**.
 
 **During a call** the light flashes red and blue automatically (or shows steady red, if you turn flashing off in Settings) and goes back to your choice afterwards. See [Call Detection](Call-Detection.md). If you pick a color *during* a call, your choice wins until that call ends.
 
@@ -100,7 +100,7 @@ Test Lights's color changes don't notify. Turn notifications off in [Settings](#
 
 ## Settings
 
-Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Changes take effect immediately. Every checkbox is on by default.
+Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Settings are grouped into General, Calls and Microsoft Teams, with an on/off switch for each. Changes take effect immediately. Every switch is on by default.
 
 | Setting | What it does |
 | --- | --- |

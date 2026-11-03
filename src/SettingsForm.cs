@@ -5,17 +5,24 @@ using System.Windows.Forms;
 
 namespace Krabbz.Blynclight
 {
-    // All of the app's settings in one place. Changes take effect as soon as a box is ticked or unticked.
+    // All of the app's settings in one place, in the style of Windows 11 Settings: each section is a rounded card,
+    // with on/off switches. Changes take effect as soon as a switch is flipped.
     class SettingsForm : Form
     {
         const int RefreshMs = 2000;
+        const int width = 500;
+        // Section icons: Segoe MDL2 Assets settings gear, phone and people.
+        const string GeneralGlyph = "", CallsGlyph = "", TeamsGlyph = "";
 
         readonly TrayContext tray;
         readonly CheckBox startWithWindows, openWindow;
         readonly Label teamsStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
-        readonly Button connectButton = new Button();
+        readonly Button connectButton = new ModernButton();
         readonly Timer refresh = new Timer { Interval = RefreshMs };
-        int y = 16;
+        // The cards drawn behind each section, and where the open one started (-1 when none is open).
+        readonly List<Rectangle> cards = new List<Rectangle>();
+        int cardTop = -1;
+        int y = 8;
 
         public SettingsForm(TrayContext tray)
         {
@@ -26,13 +33,14 @@ namespace Krabbz.Blynclight
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
             Font = new Font("Segoe UI", 10);
-            const int width = 500;
+            BackColor = Theme.Page;
+            DoubleBuffered = true;
 
-            Heading("General");
+            Heading("General", GeneralGlyph);
             AppearancePickers();
             startWithWindows = Box("Start with Windows", AppSettings.StartWithWindows, v => AppSettings.StartWithWindows = v);
-            openWindow = Box("Open the window at sign-in (untick to start in the tray only)", AppSettings.OpenWindowAtSignIn,
-                v => AppSettings.OpenWindowAtSignIn = v, 24);
+            openWindow = Box("Open the window at sign-in (off: start in the tray only)", AppSettings.OpenWindowAtSignIn,
+                v => AppSettings.OpenWindowAtSignIn = v, true);
             startWithWindows.CheckedChanged += delegate { openWindow.Enabled = startWithWindows.Checked; };
             openWindow.Enabled = startWithWindows.Checked;
             // Red, Green and On A Call override Teams status until this runs out.
@@ -46,7 +54,7 @@ namespace Krabbz.Blynclight
             var updates = Box("Install updates automatically", AppSettings.AutoUpdate, v => AppSettings.AutoUpdate = v);
             if (Program.UpdateRepo != null) SideButton(updates, "Check now", delegate { tray.CheckForUpdates(true); });
 
-            Heading("Calls");
+            Heading("Calls", CallsGlyph);
             var red = Box("Turn lights red when my mic is in use", AppSettings.CallsTurnRed,
                 v => { AppSettings.CallsTurnRed = v; tray.ApplySettings(); });
             SideButton(red, "Ignore apps...", delegate
@@ -55,7 +63,7 @@ namespace Krabbz.Blynclight
                 tray.ApplySettings();
             });
             var flash = Box("Flash red and blue instead of steady red", AppSettings.FlashOnCalls,
-                v => { AppSettings.FlashOnCalls = v; tray.ApplySettings(); }, 24);
+                v => { AppSettings.FlashOnCalls = v; tray.ApplySettings(); }, true);
             SideButton(flash, "Test microphone...", delegate
             {
                 using (var dialog = new MicTestForm()) dialog.ShowDialog(this);
@@ -66,10 +74,10 @@ namespace Krabbz.Blynclight
             Box("Show me as Busy in Teams during calls in other apps", AppSettings.TeamsBusyOnCalls,
                 v => { AppSettings.TeamsBusyOnCalls = v; tray.ApplySettings(); });
 
-            Heading("Microsoft Teams");
+            Heading("Microsoft Teams", TeamsGlyph);
             teamsStatus.Location = new Point(24, y + 6);
             Controls.Add(teamsStatus);
-            connectButton.Bounds = new Rectangle(width - 150, y, 130, 32);
+            connectButton.Bounds = new Rectangle(350, y, 130, 32);
             connectButton.Click += delegate
             {
                 if (tray.Presence != null && tray.Presence.SignedIn) tray.DisconnectTeams();
@@ -79,7 +87,7 @@ namespace Krabbz.Blynclight
             };
             Controls.Add(connectButton);
             y += 44;
-            var orgApp = new Button { Text = "Organization's Teams app...", Bounds = new Rectangle(24, y, 220, 32) };
+            var orgApp = new ModernButton { Text = "Organization's Teams app...", Bounds = new Rectangle(24, y, 220, 32) };
             orgApp.Click += delegate { ShowTeamsAppDialog(); };
             Controls.Add(orgApp);
             y += 44;
@@ -87,16 +95,17 @@ namespace Krabbz.Blynclight
                 v => { AppSettings.TeamsBusyWhenPicked = v; tray.ApplySettings(); });
             var messageOn = Box("Set my Teams status message while my lights are red:",
                 AppSettings.TeamsStatusMessageOn, v => { AppSettings.TeamsStatusMessageOn = v; tray.ApplySettings(); });
-            var message = StatusMessagePicker(24 + 24);
+            var message = StatusMessagePicker(24 + 46);
             messageOn.CheckedChanged += delegate { message.Enabled = messageOn.Checked; };
             message.Enabled = messageOn.Checked;
-            y += 16;
+            CloseCard();
+            y += 6;
 
             // Small and yellow, on its own line above the bottom buttons.
             var yellow = Color.FromArgb(255, 221, 0);
             var coffee = new Button
             {
-                Text = "☕  Buy me a coffee",
+                Text = "Buy me a coffee",
                 Tag = Theme.KeepColors,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = yellow,
@@ -107,7 +116,7 @@ namespace Krabbz.Blynclight
             coffee.FlatAppearance.BorderSize = 0;
             coffee.FlatAppearance.MouseOverBackColor = Theme.Mix(yellow, Color.Black, 0.08);
             coffee.Size = new Size(TextRenderer.MeasureText(coffee.Text, coffee.Font).Width + 8, 20);
-            coffee.Location = new Point(width - 20 - coffee.Width, y);
+            coffee.Location = new Point(width - 12 - coffee.Width, y);
             coffee.Click += delegate { tray.OpenCoffee(); };
             Controls.Add(coffee);
             // On the same line, at the left: for sending what went wrong after a crash.
@@ -115,7 +124,7 @@ namespace Krabbz.Blynclight
             {
                 Text = "Email crash log...",
                 AutoSize = true,
-                Location = new Point(20, y + 2),
+                Location = new Point(14, y + 2),
                 // Lightened in Dark mode, where the plain accent is hard to read on the dark page.
                 LinkColor = AppSettings.DarkMode ? Theme.Mix(Theme.Teams, Color.White, 0.45) : Theme.Teams,
                 ActiveLinkColor = Theme.Teams,
@@ -125,26 +134,30 @@ namespace Krabbz.Blynclight
             Controls.Add(crashLog);
             y += 32;
 
-            var setup = new Button { Text = "Setup checklist...", Bounds = new Rectangle(20, y, 150, 34) };
+            var setup = new ModernButton { Text = "Setup checklist...", Bounds = new Rectangle(12, y, 150, 34) };
             setup.Click += delegate { tray.ShowSetup(); };
-            var help = new Button { Text = "Help", Bounds = new Rectangle(178, y, 80, 34) };
+            var help = new ModernButton { Text = "Help", Bounds = new Rectangle(170, y, 80, 34) };
             help.Click += delegate { tray.OpenHelp(); };
             Controls.Add(help);
             // Brightness, call flash speed and colors, in their own window to keep this one short.
-            var lights = new Button { Text = "Light Control", Bounds = new Rectangle(266, y, 106, 34) };
+            var lights = new ModernButton { Text = "Light Control", Bounds = new Rectangle(258, y, 116, 34) };
             lights.Click += delegate
             {
                 using (var dialog = new LightsDialog(tray)) dialog.ShowDialog(this);
             };
             Controls.Add(lights);
-            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 120, y, 100, 34) };
+            var close = new ModernButton { Text = "Close", Accent = true, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 112, y, 100, 34) };
             close.Click += delegate { Close(); };
             Controls.Add(setup);
             Controls.Add(close);
             CancelButton = close;
-            ClientSize = new Size(width, close.Bottom + 16);
+            FitToScreen(close.Bottom + 14);
 
-            Load += delegate { Theme.Apply(this); };
+            Load += delegate
+            {
+                Theme.Apply(this);
+                ColorSurfaces();
+            };
             refresh.Tick += delegate { RefreshTeams(); };
             Shown += delegate { RefreshTeams(); refresh.Start(); };
             FormClosed += delegate { refresh.Dispose(); };
@@ -176,20 +189,81 @@ namespace Krabbz.Blynclight
             }
         }
 
-        void Heading(string text)
+        // A section title with its icon, starting a new card for the rows below it.
+        void Heading(string text, string glyph)
         {
-            if (y > 16) y += 10;
-            Controls.Add(new Label { Text = text, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), AutoSize = true, Location = new Point(16, y) });
-            y += 30;
+            CloseCard();
+            y += cards.Count == 0 ? 4 : 12;
+            int x = 16;
+            if (Theme.Icons != null)
+            {
+                Controls.Add(new Label { Text = glyph, Font = new Font(Theme.Icons.FontFamily, 12f), AutoSize = true, Location = new Point(x, y + 4) });
+                x += 26;
+            }
+            Controls.Add(new Label { Text = text, Font = new Font("Segoe UI Semibold", 11f), AutoSize = true, Location = new Point(x, y) });
+            y += 32;
+            cardTop = y;
+            y += 12;
         }
 
-        CheckBox Box(string text, bool value, Action<bool> save, int indent = 0)
+        void CloseCard()
         {
-            var box = new CheckBox { Text = text, Checked = value, AutoSize = true, Location = new Point(24 + indent, y) };
+            if (cardTop < 0) return;
+            cards.Add(new Rectangle(12, cardTop, width - 24, y + 2 - cardTop));
+            y += 4;
+            cardTop = -1;
+        }
+
+        // An on/off switch row; indented ones line up under the text of the row above, which they depend on.
+        CheckBox Box(string text, bool value, Action<bool> save, bool indented = false)
+        {
+            int x = indented ? 24 + 46 : 24;
+            var box = new ToggleBox { Text = text, Checked = value, AutoSize = true, Location = new Point(x, y), MaximumSize = new Size(width - 24 - x, 0) };
             box.CheckedChanged += delegate { save(box.Checked); };
             Controls.Add(box);
-            y += 30;
+            y += Math.Max(32, box.Height + 10);
             return box;
+        }
+
+        // Puts the page and card colors behind the controls (Theme.Apply only colors them in Dark mode, and with
+        // the page color), so each control blends into the card it sits on.
+        void ColorSurfaces()
+        {
+            foreach (Control control in Controls)
+            {
+                if (Theme.KeepColors.Equals(control.Tag) || control is ComboBox || control is TextBox) continue;
+                bool onCard = cards.Exists(c => c.Contains(control.Location));
+                control.BackColor = onCard ? Theme.Card : Theme.Page;
+                if (control is Label && !(control is LinkLabel)) control.ForeColor = Theme.Text;
+            }
+            Invalidate();
+        }
+
+        // As tall as the content, or as tall as the screen allows with a scroll bar.
+        void FitToScreen(int contentHeight)
+        {
+            int room = Screen.FromPoint(Cursor.Position).WorkingArea.Height - 80;
+            if (contentHeight <= room) ClientSize = new Size(width, contentHeight);
+            else
+            {
+                AutoScroll = true;
+                ClientSize = new Size(width + SystemInformation.VerticalScrollBarWidth, room);
+            }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            var g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            g.TranslateTransform(AutoScrollPosition.X, AutoScrollPosition.Y);
+            foreach (var card in cards) Theme.FillRounded(g, card, 8, Theme.Card, Theme.Border);
+        }
+
+        protected override void OnScroll(ScrollEventArgs se)
+        {
+            base.OnScroll(se);
+            Invalidate();
         }
 
         // The window style and Light or Dark colors. A change reopens the app's windows in the new look.
@@ -232,7 +306,7 @@ namespace Krabbz.Blynclight
                 tray.RestartOverrideTimer();
             };
             Controls.Add(picker);
-            row.MaximumSize = new Size(picker.Left - row.Left - 8, 0);
+            Narrow(row, picker.Left - row.Left - 8);
             return picker;
         }
 
@@ -289,10 +363,18 @@ namespace Krabbz.Blynclight
 
         void SideButton(CheckBox row, string text, EventHandler click)
         {
-            var button = new Button { Text = text, Bounds = new Rectangle(350, row.Top - 4, 130, 30) };
+            var button = new ModernButton { Text = text, Bounds = new Rectangle(350, row.Top - 4, 130, 30) };
             button.Click += click;
             Controls.Add(button);
-            row.MaximumSize = new Size(button.Left - row.Left - 8, 0);
+            Narrow(row, button.Left - row.Left - 8);
+        }
+
+        // Makes room for a control beside the row just added; text that now wraps pushes the next row down.
+        void Narrow(CheckBox row, int maxWidth)
+        {
+            row.MaximumSize = new Size(maxWidth, 0);
+            row.Size = row.GetPreferredSize(Size.Empty);
+            y = Math.Max(y, row.Top + Math.Max(32, row.Height + 10));
         }
     }
 
