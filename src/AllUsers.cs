@@ -58,9 +58,16 @@ namespace Krabbz.Blynclight
         // away so the installer can replace the file.
         public static void ReopenAfterUpdate(bool showWindow)
         {
-            RunHidden("ping -n 6 127.0.0.1 >nul" +
-                " & for /l %i in (1,1,300) do @if exist \"" + UpdatingFlag + "\" ping -n 2 127.0.0.1 >nul" +
-                " & start \"\" \"" + ExePath + "\"" + (showWindow ? " --updated" : " --tray --updated"));
+            RunHidden(ReopenScript(UpdatingFlag, "\"" + ExePath + "\"" + (showWindow ? " --updated" : " --tray --updated")));
+        }
+
+        // The wait loop is in brackets: without them cmd treats the rest of the line as part of the loop, so the
+        // app would only be started while the flag was still there.
+        public static string ReopenScript(string flag, string command)
+        {
+            return "ping -n 6 127.0.0.1 >nul" +
+                " & (for /l %i in (1,1,300) do @if exist \"" + flag + "\" ping -n 2 127.0.0.1 >nul)" +
+                " & start \"\" " + command;
         }
 
         [DllImport("msi.dll", CharSet = CharSet.Unicode)]
