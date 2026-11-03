@@ -126,10 +126,11 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 
 ### Light Control
 
-Click **Light Control** at the bottom of Settings. Each change is saved at once and shows on your lights for a few seconds, whatever they were showing: the On a call slider flashes, a color shows that status, and brightness shows the lit color.
+Click the rainbow **Light Control** button at the bottom of Settings. Each change is saved at once and shows on your lights for a few seconds, whatever they were showing: the On a call slider flashes, a color shows that status, and brightness shows the lit color.
 
 | Setting | What it does |
 | --- | --- |
+| **Disable All Light Functions** | Turns your USB lights off and stops controlling them, while Teams status and call detection keep working. The same setting as **Disable USB Light Integration** in the tray menu. While it's on, the other light settings are greyed out. |
 | **Brightness** | A slider from 5% to 100% (the default), for every light and color. |
 | **On a call: switch colors every** | A slider for how long On a call shows each of its two flash colors: a tenth of a second to 2 seconds. The default is 1 second. |
 | **Colors** | The color for Busy, Available, Teams Away, Teams Do not disturb, and the two colors On a call flashes between. Pick from red, orange, yellow, green, cyan, blue, purple, pink or white. The tray icon and window use your colors too. **Reset colors** puts the defaults back. |

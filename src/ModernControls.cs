@@ -59,10 +59,22 @@ namespace Krabbz.Blynclight
     }
 
     // A button with rounded corners in the app's colors. Accent fills it with the Teams purple, for the main action.
+    // Rainbow fills it with the Test lights colors, which drift across it while the mouse is over it.
     class ModernButton : Button
     {
-        public bool Accent;
+        public bool Accent, Rainbow;
+        // A Segoe MDL2 Assets icon shown before the text, or null.
+        public string Glyph;
         bool hover, pressed;
+        // How far the rainbow has drifted, as a fraction of the button's width; moved on by drift while hovered.
+        float phase;
+        Timer drift;
+
+        static readonly Color[] RainbowColors =
+        {
+            Theme.Red, Color.FromArgb(247, 99, 12), Color.FromArgb(234, 179, 8), Theme.Green,
+            Theme.CallBlue, Theme.Teams, Color.FromArgb(194, 57, 179), Theme.Red,
+        };
 
         public ModernButton()
         {
@@ -71,8 +83,35 @@ namespace Krabbz.Blynclight
             Cursor = Cursors.Hand;
         }
 
-        protected override void OnMouseEnter(EventArgs e) { hover = true; Invalidate(); base.OnMouseEnter(e); }
-        protected override void OnMouseLeave(EventArgs e) { hover = pressed = false; Invalidate(); base.OnMouseLeave(e); }
+        protected override void OnMouseEnter(EventArgs e)
+        {
+            hover = true;
+            if (Rainbow)
+            {
+                if (drift == null)
+                {
+                    drift = new Timer { Interval = 30 };
+                    drift.Tick += delegate { phase = (phase + 0.012f) % 1f; Invalidate(); };
+                }
+                drift.Start();
+            }
+            Invalidate();
+            base.OnMouseEnter(e);
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            hover = pressed = false;
+            if (drift != null) drift.Stop();
+            Invalidate();
+            base.OnMouseLeave(e);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && drift != null) drift.Dispose();
+            base.Dispose(disposing);
+        }
         protected override void OnMouseDown(MouseEventArgs e) { pressed = true; Invalidate(); base.OnMouseDown(e); }
         protected override void OnMouseUp(MouseEventArgs e) { pressed = false; Invalidate(); base.OnMouseUp(e); }
 
@@ -82,6 +121,7 @@ namespace Krabbz.Blynclight
             // BackColor is the surface the button sits on, showing at the rounded corners.
             g.Clear(BackColor);
             g.SmoothingMode = SmoothingMode.AntiAlias;
+            if (Rainbow) { PaintRainbow(g); return; }
             Color fill, border, text;
             if (Accent)
             {
@@ -98,10 +138,55 @@ namespace Krabbz.Blynclight
             }
             if (!Enabled) { fill = Theme.Mix(fill, BackColor, 0.5); text = Theme.Muted; }
             Theme.FillRounded(g, new Rectangle(0, 0, Width - 1, Height - 1), 6, fill, border);
-            TextRenderer.DrawText(g, Text, Font, ClientRectangle, text,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+            DrawLabel(g, Font, text);
+            DrawFocus(g, Accent ? Color.White : Theme.Teams);
+        }
+
+        // The Test lights colors across the button, darkened a little so white text reads on every color.
+        void PaintRainbow(Graphics g)
+        {
+            var r = new Rectangle(0, 0, Width - 1, Height - 1);
+            // The whole rainbow fits across the button and repeats (it starts and ends on red), so drifting by
+            // phase never shows an edge.
+            int span = Width;
+            using (var path = Theme.Rounded(r, 6))
+            using (var brush = new LinearGradientBrush(new Rectangle(0, 0, span, Height), Color.Black, Color.Black, 0f))
+            {
+                var blend = new ColorBlend { Colors = RainbowColors, Positions = new float[RainbowColors.Length] };
+                for (int i = 0; i < RainbowColors.Length; i++) blend.Positions[i] = (float)i / (RainbowColors.Length - 1);
+                brush.InterpolationColors = blend;
+                brush.WrapMode = WrapMode.Tile;
+                brush.TranslateTransform(-phase * span, 0);
+                g.FillPath(brush, path);
+                using (var shade = new SolidBrush(Color.FromArgb(pressed ? 100 : hover ? 25 : 50, 0, 0, 0))) g.FillPath(shade, path);
+                using (var shine = new Pen(Color.FromArgb(90, 255, 255, 255))) g.DrawPath(shine, path);
+            }
+            using (var bold = new Font("Segoe UI Semibold", Font.Size)) DrawLabel(g, bold, Color.White);
+            DrawFocus(g, Color.White);
+        }
+
+        // The icon (if any) and text, centered together.
+        void DrawLabel(Graphics g, Font font, Color color)
+        {
+            const TextFormatFlags flags = TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.NoPadding;
+            int textWidth = TextRenderer.MeasureText(g, Text, font, Size.Empty, flags).Width;
+            if (Glyph == null || Theme.Icons == null)
+            {
+                TextRenderer.DrawText(g, Text, font, ClientRectangle, color,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+                return;
+            }
+            const int iconWidth = 16, gap = 7;
+            int x = (Width - iconWidth - gap - textWidth) / 2;
+            TextRenderer.DrawText(g, Glyph, Theme.Icons, new Rectangle(x, 0, iconWidth, Height), color,
+                TextFormatFlags.HorizontalCenter | flags);
+            TextRenderer.DrawText(g, Text, font, new Rectangle(x + iconWidth + gap, 0, textWidth + 2, Height), color, flags);
+        }
+
+        void DrawFocus(Graphics g, Color color)
+        {
             if (Focused && ShowFocusCues)
-                using (var pen = new Pen(Accent ? Color.White : Theme.Teams) { DashStyle = DashStyle.Dot })
+                using (var pen = new Pen(color) { DashStyle = DashStyle.Dot })
                     g.DrawRectangle(pen, 3, 3, Width - 7, Height - 7);
         }
     }

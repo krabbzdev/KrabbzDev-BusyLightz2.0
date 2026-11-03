@@ -935,7 +935,13 @@ namespace Krabbz.Blynclight
         // Turns USB light integration off (lights go dark and are left alone) or back on.
         void ToggleUsbLights()
         {
-            bool disable = !AppSettings.UsbLightsDisabled;
+            SetLightsDisabled(!AppSettings.UsbLightsDisabled);
+        }
+
+        // Disable USB Light Integration in the tray menu, also Disable All Light Functions in Light Control.
+        public void SetLightsDisabled(bool disable)
+        {
+            if (disable == AppSettings.UsbLightsDisabled) return;
             AppSettings.UsbLightsDisabled = disable;
             usbItem.Checked = disable;
             light.LightsEnabled = !disable;

@@ -140,7 +140,8 @@ namespace Krabbz.Blynclight
             help.Click += delegate { tray.OpenHelp(); };
             Controls.Add(help);
             // Brightness, call flash speed and colors, in their own window to keep this one short.
-            var lights = new ModernButton { Text = "Light Control", Bounds = new Rectangle(258, y, 116, 34) };
+            // In the Test lights colors, with a light bulb, so it stands out as the fun one.
+            var lights = new ModernButton { Text = "Light Control", Rainbow = true, Glyph = "", Bounds = new Rectangle(258, y, 124, 34) };
             lights.Click += delegate
             {
                 using (var dialog = new LightsDialog(tray)) dialog.ShowDialog(this);
@@ -408,6 +409,30 @@ namespace Krabbz.Blynclight
             });
             y += 34;
 
+            // The same setting as Disable USB Light Integration in the tray menu. While on, the rest of this window
+            // has nothing to show, so it's greyed out.
+            var disableAll = new ToggleBox
+            {
+                Text = "Disable All Light Functions",
+                Checked = AppSettings.UsbLightsDisabled,
+                AutoSize = true,
+                Font = new Font("Segoe UI Semibold", 10),
+                Location = new Point(20, y),
+            };
+            Controls.Add(disableAll);
+            y += 26;
+            Controls.Add(new Label
+            {
+                Text = "Turns your USB lights off and stops controlling them. Teams status and call detection keep working.",
+                AutoSize = true,
+                MaximumSize = new Size(width - 66, 0),
+                Font = new Font("Segoe UI", 9),
+                Location = new Point(66, y),
+                Tag = MutedText,
+            });
+            y += 48;
+            int firstLightControl = Controls.Count;
+
             // Brightness in steps of 5%; the preview shows whatever is lit now.
             Slider("Brightness", AppSettings.MinBrightness / 5, 20, AppSettings.Brightness / 5, v => v * 5 + "%", v =>
             {
@@ -447,19 +472,37 @@ namespace Krabbz.Blynclight
             }
 
             y += 12;
-            var reset = new Button { Text = "Reset colors", Bounds = new Rectangle(20, y, 130, 34) };
+            var reset = new ModernButton { Text = "Reset colors", Bounds = new Rectangle(20, y, 130, 34) };
             reset.Click += delegate { foreach (var picker in colorPickers) picker.SelectedItem = picker.Tag; };
-            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 120, y, 100, 34) };
             Controls.Add(reset);
+            var lightControls = new List<Control>();
+            for (int i = firstLightControl; i < Controls.Count; i++) lightControls.Add(Controls[i]);
+            Action showEnabled = () => { foreach (var control in lightControls) control.Enabled = !disableAll.Checked; };
+            disableAll.CheckedChanged += delegate
+            {
+                tray.SetLightsDisabled(disableAll.Checked);
+                showEnabled();
+            };
+            showEnabled();
+
+            var close = new ModernButton { Text = "Close", Accent = true, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 120, y, 100, 34) };
             Controls.Add(close);
             CancelButton = close;
             ClientSize = new Size(width, close.Bottom + 16);
             Load += delegate
             {
                 Theme.Apply(this);
-                foreach (Control control in Controls) if (control is TrackBar) control.BackColor = BackColor;
+                foreach (Control control in Controls)
+                {
+                    // Rounded buttons show the window behind their corners.
+                    if (control is TrackBar || control is ModernButton) control.BackColor = BackColor;
+                    if (MutedText.Equals(control.Tag)) control.ForeColor = Theme.Muted;
+                }
             };
         }
+
+        // Tags a label shown in the softer text color.
+        const string MutedText = "muted";
 
         // A labelled slider from min to max with the current value shown on the right. save runs as it moves.
         void Slider(string label, int min, int max, int current, Func<int, string> describe, Action<int> save)
