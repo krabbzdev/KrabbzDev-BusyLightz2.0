@@ -40,7 +40,13 @@ Your settings stay in `%LOCALAPPDATA%\Krabbz9999 Blynclight` and the registry ke
 
 From version 2.27.0 there's also an all-users installer, **BusyLightz-Setup.msi**, which installs to `C:\Program Files\BusyLightz\BusyLightz.exe` for every user on the PC. It needs admin rights. It's published in its own release next to each version, tagged e.g. `v2.27.0-allusers` on the [releases page](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases).
 
-- **IT / RMM:** run it as SYSTEM or an admin: `msiexec /i BusyLightz-Setup.msi /qn`. Add `TEAMSCLIENTID=... TEAMSTENANTID=...` to pre-set your organization's Teams app for everyone.
+- **IT / RMM:** run [`scripts/Install-BusyLightz.ps1`](../scripts/Install-BusyLightz.ps1) as SYSTEM. It always gets the newest version: it finds it on GitHub, downloads its `BusyLightz-Setup.msi`, checks the SHA-256 GitHub recorded, and installs it silently. It does nothing if the newest version is already installed, so it's safe to run on a schedule. Exit code 0 means installed or already up to date, and 3010 means installed but Windows wants a restart.
+
+  ```
+  powershell -NoProfile -ExecutionPolicy Bypass -File Install-BusyLightz.ps1
+  ```
+
+  Add `-TeamsClientId <client ID> -TeamsTenantId <tenant ID>` to pre-set your organization's Teams app for everyone. Or install a downloaded copy directly: `msiexec /i BusyLightz-Setup.msi /qn` (with `TEAMSCLIENTID=... TEAMSTENANTID=...`).
 - **From the app:** an admin can click **Install for everyone** in Settings (shown in copies installed just for one user). Windows asks for admin approval.
 
 What happens:
