@@ -51,11 +51,13 @@ namespace Krabbz.Blynclight
 
         // Makes the sign-in startup entry match the settings. Called at every launch too, because each install or
         // update rewrites the entry the installer owns.
+        // The all-users install starts the app for everyone from its own entry (with --autostart, which checks these
+        // settings), so it only removes a just-for-me copy's entry.
         public static void ApplyStartup()
         {
             using (var run = Registry.CurrentUser.CreateSubKey(RunKey))
             {
-                if (!StartWithWindows) run.DeleteValue(RunValue, false);
+                if (AllUsersInstall.IsThisCopy || !StartWithWindows) run.DeleteValue(RunValue, false);
                 else run.SetValue(RunValue, "\"" + Application.ExecutablePath + "\"" + (OpenWindowAtSignIn ? "" : " --tray"));
             }
         }

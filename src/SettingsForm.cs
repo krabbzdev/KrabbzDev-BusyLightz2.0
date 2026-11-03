@@ -55,6 +55,9 @@ namespace Krabbz.Blynclight
             Box("Hotkeys: Alt+R for Busy, Alt+G for Available", AppSettings.HotkeysEnabled, v => { AppSettings.HotkeysEnabled = v; tray.ApplySettings(); });
             var updates = Box("Install updates automatically", AppSettings.AutoUpdate, v => AppSettings.AutoUpdate = v);
             if (Program.UpdateRepo != null) SideButton(updates, "Check now", delegate { tray.CheckForUpdates(true); });
+            // Updates are automatic for the all-users copy (its background updater installs them).
+            if (AllUsersInstall.IsThisCopy) updates.Enabled = false;
+            else if (Program.UpdateRepo != null) InstallForEveryoneRow();
 
             Heading("Calls", CallsGlyph);
             var red = Box("Turn lights red when my mic is in use", AppSettings.CallsTurnRed,
@@ -177,6 +180,44 @@ namespace Krabbz.Blynclight
             refresh.Tick += delegate { RefreshTeams(); };
             Shown += delegate { RefreshTeams(); refresh.Start(); };
             FormClosed += delegate { refresh.Dispose(); };
+        }
+
+        // A just-for-me copy (in AppData) offers to install for everyone in Program Files, with a Windows admin
+        // prompt. Once installed, this copy hands over to it (see TrayContext.WatchInstall).
+        void InstallForEveryoneRow()
+        {
+            Controls.Add(new Label
+            {
+                Text = "Installed just for you. Install for everyone on this PC in Program Files (needs an admin).",
+                AutoSize = true,
+                MaximumSize = new Size(350 - 24 - 8, 0),
+                Location = new Point(24, y),
+            });
+            var install = new ModernButton { Text = "Install for everyone", Bounds = new Rectangle(350, y, 130, 30) };
+            install.Click += delegate
+            {
+                install.Enabled = false;
+                install.Text = "Installing...";
+                Program.Background("Installing for everyone", delegate
+                {
+                    string result;
+                    try
+                    {
+                        result = AllUsersInstall.InstallForEveryone()
+                            ? "Installed for everyone on this PC. BusyLightz reopens from Program Files in a few seconds."
+                            : null;
+                    }
+                    catch (Exception ex) { result = "Couldn't install for everyone: " + ex.Message; }
+                    BeginInvoke((Action)delegate
+                    {
+                        install.Enabled = true;
+                        install.Text = "Install for everyone";
+                        if (result != null) MessageBox.Show(this, result, Program.AppName);
+                    });
+                });
+            };
+            Controls.Add(install);
+            y += 46;
         }
 
         void ShowTeamsAppDialog()

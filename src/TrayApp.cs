@@ -38,8 +38,17 @@ namespace Krabbz.Blynclight
         [STAThread]
         static int Main(string[] args)
         {
+            // Run as SYSTEM by the all-users install's scheduled task, to install updates; no window or tray icon.
+            if (Array.IndexOf(args, "--system-update") >= 0) return SystemUpdater.Run();
             bool trayOnly = Array.IndexOf(args, "--tray") >= 0;
             bool justUpdated = Array.IndexOf(args, "--updated") >= 0;
+            // The all-users install starts the app at every user's sign-in; each user's own settings decide whether
+            // it stays, and whether the window opens.
+            if (Array.IndexOf(args, "--autostart") >= 0)
+            {
+                if (!AppSettings.StartWithWindows) return 0;
+                trayOnly = !AppSettings.OpenWindowAtSignIn;
+            }
             bool firstInstance;
             using (var mutex = new Mutex(true, @"Local\Krabbz9999BlynclightTray", out firstInstance))
             using (var showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Krabbz9999BlynclightShow"))
@@ -48,6 +57,13 @@ namespace Krabbz.Blynclight
                 if (!firstInstance)
                 {
                     if (!trayOnly) showSignal.Set();
+                    return 0;
+                }
+                // A copy installed just for this user, now that BusyLightz is installed for everyone on the PC.
+                if (AllUsersInstall.ShouldHandOff)
+                {
+                    LogEvent("Handing over to the copy installed for everyone on this PC");
+                    AllUsersInstall.HandOff(!trayOnly);
                     return 0;
                 }
                 // Errors nothing else caught go to app.log. On the UI thread the app logs them and keeps running,
@@ -359,6 +375,7 @@ namespace Krabbz.Blynclight
             });
             teamsPoll = new System.Threading.Timer(delegate { Program.Guard("Teams status check", PollTeams); }, null, 0, TeamsPollMs);
             Program.WatchForFreezes(messages);
+            WatchInstall();
             if (Program.UpdateRepo != null)
                 updateTimer = new System.Threading.Timer(delegate { Program.Guard("Update check", () => CheckForUpdates(false)); },
                     null, UpdateFirstCheckMs, UpdateCheckMs);
@@ -646,8 +663,45 @@ namespace Krabbz.Blynclight
             if (Program.UpdateRepo != null) System.Diagnostics.Process.Start("https://github.com/" + Program.UpdateRepo);
         }
 
+        readonly System.Windows.Forms.Timer installWatch = new System.Windows.Forms.Timer { Interval = 5000 };
+
+        // For the move to an all-users install (see AllUsersInstall): a just-for-me copy hands over as soon as the
+        // all-users copy appears (e.g. pushed by IT), and the all-users copy removes the old one, and closes and
+        // reopens around updates its background updater installs.
+        void WatchInstall()
+        {
+            if (AllUsersInstall.IsThisCopy) Program.Background("Removing the old copy", AllUsersInstall.RemoveJustForMeCopies);
+            installWatch.Tick += delegate
+            {
+                bool showWindow = form != null && form.Visible;
+                if (AllUsersInstall.ShouldHandOff)
+                {
+                    installWatch.Stop();
+                    Program.LogEvent("Handing over to the copy installed for everyone on this PC");
+                    Program.ClearLastSeen();
+                    AllUsersInstall.HandOff(showWindow);
+                    Application.Exit();
+                }
+                else if (AllUsersInstall.IsThisCopy && AllUsersInstall.UpdateInProgress)
+                {
+                    installWatch.Stop();
+                    Program.LogEvent("Closing while an update installs");
+                    Program.ClearLastSeen();
+                    AllUsersInstall.ReopenAfterUpdate(showWindow);
+                    Application.Exit();
+                }
+            };
+            installWatch.Start();
+        }
+
         public void CheckForUpdates(bool manual)
         {
+            // The all-users copy is updated by its background updater, which has the admin rights that needs.
+            if (AllUsersInstall.IsThisCopy)
+            {
+                if (manual) Program.Background("Update check", CheckAllUsersVersion);
+                return;
+            }
             if (!manual && !AppSettings.AutoUpdate) return;
             if (Interlocked.Exchange(ref updateCheckRunning, 1) == 1) return;
             Program.Background("Update check", delegate
@@ -682,6 +736,21 @@ namespace Krabbz.Blynclight
                 }
                 catch (InvalidOperationException) { } // Window already gone during exit.
             });
+        }
+
+        // Check for updates in the all-users copy: says whether a newer version is out, which installs on its own.
+        void CheckAllUsersVersion()
+        {
+            string message;
+            try
+            {
+                var latest = Updater.LatestVersion(Program.UpdateRepo);
+                message = latest != null && latest > new Version(Program.Version.Major, Program.Version.Minor, Program.Version.Build)
+                    ? "Version " + latest.ToString(3) + " is out. It installs on its own in the background within a few hours."
+                    : "You're on the latest version (" + Program.VersionText + ").";
+            }
+            catch (Exception ex) { message = "Couldn't check for updates: " + ex.Message; }
+            ShowBalloon(message, ToolTipIcon.Info);
         }
 
         public void SetState(string state)

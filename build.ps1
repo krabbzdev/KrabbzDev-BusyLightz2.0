@@ -100,7 +100,7 @@ Write-Host 'Compiling tray app...'
 Invoke-Tool $csc @('/nologo', '/optimize+', '/target:winexe', "/win32icon:$icon",
     "/out:$build\Krabbz9999 Blynclight App Control.exe",
     '/reference:System.Core.dll', '/reference:System.Drawing.dll', '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll', '/reference:System.Web.dll', '/reference:System.Security.dll',
-    "$src\BlyncCore.cs", "$src\LightController.cs", "$src\TrayApp.cs", "$src\ControlForm.cs", "$src\Updater.cs", "$src\CallDetector.cs", "$src\EmbravaConnect.cs", "$src\TeamsPresence.cs", "$src\SetupForm.cs", "$src\TeamsAppConfig.cs", "$src\AppSettings.cs", "$src\SettingsForm.cs", "$src\CrashReport.cs", "$src\MicTestForm.cs", "$src\AudioSessions.cs", "$src\TrayMenu.cs", "$src\ModernControls.cs", "$build\AssemblyInfo.cs")
+    "$src\BlyncCore.cs", "$src\LightController.cs", "$src\TrayApp.cs", "$src\ControlForm.cs", "$src\Updater.cs", "$src\CallDetector.cs", "$src\EmbravaConnect.cs", "$src\TeamsPresence.cs", "$src\SetupForm.cs", "$src\TeamsAppConfig.cs", "$src\AppSettings.cs", "$src\SettingsForm.cs", "$src\CrashReport.cs", "$src\MicTestForm.cs", "$src\AudioSessions.cs", "$src\TrayMenu.cs", "$src\ModernControls.cs", "$src\AllUsers.cs", "$build\AssemblyInfo.cs")
 
 Write-Host 'Building MSI...'
 Invoke-Tool "$wix\candle.exe" @('-nologo', '-arch', 'x64', '-ext', 'WixUtilExtension',
@@ -108,8 +108,45 @@ Invoke-Tool "$wix\candle.exe" @('-nologo', '-arch', 'x64', '-ext', 'WixUtilExten
     '-out', "$build\Product.wixobj", "$root\installer\Product.wxs")
 $msi = Join-Path $dist "KrabbzDev-BusyLightz2.0-$Version.msi"
 Invoke-Tool "$wix\light.exe" @('-nologo', '-ext', 'WixUtilExtension', '-spdb', '-out', $msi, "$build\Product.wixobj")
-
 Write-Host "Built $msi"
+
+# The all-users installer (C:\Program Files\BusyLightz) and its "BusyLightz Updater" scheduled task, which runs as SYSTEM
+# at startup and every 4 hours to install updates. schtasks wants the task definition as UTF-16.
+@"
+<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo><Description>Installs BusyLightz updates for everyone on this PC.</Description></RegistrationInfo>
+  <Triggers>
+    <BootTrigger><Delay>PT5M</Delay></BootTrigger>
+    <TimeTrigger>
+      <StartBoundary>2026-01-01T00:00:00</StartBoundary>
+      <Repetition><Interval>PT4H</Interval></Repetition>
+      <RandomDelay>PT30M</RandomDelay>
+    </TimeTrigger>
+  </Triggers>
+  <Principals><Principal id="System"><UserId>S-1-5-18</UserId><RunLevel>HighestAvailable</RunLevel></Principal></Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>true</RunOnlyIfNetworkAvailable>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+  </Settings>
+  <Actions Context="System">
+    <Exec><Command>"%ProgramFiles%\BusyLightz\BusyLightz.exe"</Command><Arguments>--system-update</Arguments></Exec>
+  </Actions>
+</Task>
+"@ | Set-Content "$build\BusyLightzUpdater.xml" -Encoding Unicode
+Invoke-Tool "$wix\candle.exe" @('-nologo', '-arch', 'x64', '-ext', 'WixUtilExtension',
+    "-dVersion=$Version", "-dBuildDir=$build",
+    '-out', "$build\ProductAllUsers.wixobj", "$root\installer\ProductAllUsers.wxs")
+$allUsersMsi = Join-Path $dist "BusyLightz-Setup-$Version.msi"
+# ICE43 and ICE57 assume the Start menu shortcut goes in one user's profile; in an all-users install it goes in
+# everyone's Start menu, so they don't apply.
+Invoke-Tool "$wix\light.exe" @('-nologo', '-ext', 'WixUtilExtension', '-spdb', '-sice:ICE43', '-sice:ICE57',
+    '-out', $allUsersMsi, "$build\ProductAllUsers.wixobj")
+Write-Host "Built $allUsersMsi"
 
 if ($Publish) {
     $gh = (Get-Command gh -ErrorAction SilentlyContinue).Source
@@ -127,4 +164,13 @@ if ($Publish) {
     Write-Host "Publishing release v$Version to $UpdateRepo..."
     Invoke-Tool $gh (@('release', 'create', "v$Version") + $releaseMsis + @('--repo', $UpdateRepo,
         '--title', "Version $Version", '--notes', $(if ($Notes) { $Notes } else { "KrabbzDev-BusyLightz2.0 $Version" })))
+
+    # The all-users installer goes in its own release, never marked latest: copies installed just for one user
+    # install the last .msi in the latest release, and must never get this one. The all-users updater finds it by tag.
+    $allUsersAsset = Join-Path $releaseDir 'BusyLightz-Setup.msi'
+    Copy-Item $allUsersMsi $allUsersAsset -Force
+    Write-Host "Publishing the all-users installer as v$Version-allusers..."
+    Invoke-Tool $gh @('release', 'create', "v$Version-allusers", $allUsersAsset, '--repo', $UpdateRepo, '--latest=false',
+        '--title', "Version $Version for everyone on the PC (C:\Program Files\BusyLightz)",
+        '--notes', "Installs BusyLightz for every user on the PC, in C:\Program Files\BusyLightz. Needs admin rights; for IT and RMM deployment: msiexec /i BusyLightz-Setup.msi /qn. Copies installed just for one user move to it on their own, keeping their settings.")
 }

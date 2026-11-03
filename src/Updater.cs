@@ -39,24 +39,73 @@ namespace Krabbz.Blynclight
                 if (((string)asset["name"]).EndsWith(".msi", StringComparison.OrdinalIgnoreCase)) msi = asset;
             if (msi == null) throw new InvalidOperationException("Release " + latest + " has no .msi file.");
 
-            // Only install files whose hash matches what GitHub recorded at upload time.
+            string path = Download(msi, updateDir, "KrabbzDev-BusyLightz2.0-" + latest + ".msi");
+            return new UpdateInfo { Version = latest, MsiPath = path };
+        }
+
+        // The latest release's version, or null if its tag isn't a version.
+        public static Version LatestVersion(string repo)
+        {
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            var release = (Dictionary<string, object>)new JavaScriptSerializer()
+                .DeserializeObject(Get("https://api.github.com/repos/" + repo + "/releases/latest"));
+            Version latest;
+            return Version.TryParse(((string)release["tag_name"]).TrimStart('v', 'V'), out latest) ? latest : null;
+        }
+
+        // The all-users installer (Program Files) is published in its own release, tagged e.g. v2.27.0-allusers and
+        // never marked latest: copies installed just for one user before it existed install the last .msi in the
+        // latest release, and must never be handed this one.
+        public const string AllUsersMsiName = "BusyLightz-Setup.msi";
+
+        public static string AllUsersTag(Version version) { return "v" + version.ToString(3) + "-allusers"; }
+
+        // The latest version's all-users installer, downloaded into dir and checked like DownloadIfNewer; null when
+        // the latest version isn't newer than current (pass null to always get it) or it has no all-users installer.
+        public static UpdateInfo DownloadAllUsersIfNewer(string repo, Version current, string dir)
+        {
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            var serializer = new JavaScriptSerializer();
+            var latestRelease = (Dictionary<string, object>)serializer.DeserializeObject(
+                Get("https://api.github.com/repos/" + repo + "/releases/latest"));
+            Version latest;
+            if (!Version.TryParse(((string)latestRelease["tag_name"]).TrimStart('v', 'V'), out latest)) return null;
+            if (current != null && latest <= new Version(current.Major, current.Minor, current.Build)) return null;
+
+            Dictionary<string, object> release;
+            try
+            {
+                release = (Dictionary<string, object>)serializer.DeserializeObject(
+                    Get("https://api.github.com/repos/" + repo + "/releases/tags/" + AllUsersTag(latest)));
+            }
+            catch (WebException) { return null; } // Not published for this version.
+            foreach (Dictionary<string, object> asset in (IEnumerable)release["assets"])
+                if (string.Equals((string)asset["name"], AllUsersMsiName, StringComparison.OrdinalIgnoreCase))
+                    return new UpdateInfo { Version = latest, MsiPath = Download(asset, dir, "BusyLightz-Setup-" + latest + ".msi") };
+            return null;
+        }
+
+        // Downloads a release asset into dir as fileName (clearing older installers there), and returns its path.
+        // Only keeps files whose hash matches what GitHub recorded at upload time.
+        static string Download(Dictionary<string, object> asset, string dir, string fileName)
+        {
             object digest;
-            string expected = msi.TryGetValue("digest", out digest) ? digest as string : null;
+            string expected = asset.TryGetValue("digest", out digest) ? digest as string : null;
             if (expected == null || !expected.StartsWith("sha256:"))
-                throw new InvalidOperationException("Release " + latest + " has no SHA-256 digest; not installing it.");
+                throw new InvalidOperationException(asset["name"] + " has no SHA-256 digest; not installing it.");
             expected = expected.Substring("sha256:".Length);
 
-            Directory.CreateDirectory(updateDir);
-            foreach (var old in Directory.GetFiles(updateDir, "*.msi")) File.Delete(old);
-            string path = Path.Combine(updateDir, "KrabbzDev-BusyLightz2.0-" + latest + ".msi");
-            using (var web = NewClient()) web.DownloadFile((string)msi["browser_download_url"], path);
+            Directory.CreateDirectory(dir);
+            foreach (var old in Directory.GetFiles(dir, "*.msi")) File.Delete(old);
+            string path = Path.Combine(dir, fileName);
+            using (var web = NewClient()) web.DownloadFile((string)asset["browser_download_url"], path);
 
             if (!string.Equals(Sha256(path), expected, StringComparison.OrdinalIgnoreCase))
             {
                 File.Delete(path);
                 throw new InvalidOperationException("Downloaded update failed its SHA-256 check; deleted it.");
             }
-            return new UpdateInfo { Version = latest, MsiPath = path };
+            return path;
         }
 
         // Installs the per-user MSI silently from a hidden helper, then reopens the app. The caller must exit right away:

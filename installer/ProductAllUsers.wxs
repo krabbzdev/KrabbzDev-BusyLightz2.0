@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- All-users install: C:\Program Files\BusyLightz\BusyLightz.exe, for everyone on the PC. Needs admin rights, so IT
+     deploys it (e.g. with an RMM: msiexec /i BusyLightz-Setup.msi /qn), or an admin installs it from the app's Settings.
+     A "BusyLightz Updater" scheduled task, run as SYSTEM, installs later versions silently. Copies installed just for
+     one user (Product.wxs) hand over to this one and remove themselves; settings carry over, as they're kept per user. -->
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <Product Id="*"
+           Name="BusyLightz"
+           Language="1033"
+           Version="$(var.Version)"
+           Manufacturer="KrabbzDev"
+           UpgradeCode="{4E8B2D17-6A35-4C91-B0F4-9D27E1C5A8B3}">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" InstallPrivileges="elevated"
+             Description="Controls Embrava Blynclight and Luxafor Flag busy lights together, for everyone on this PC." />
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon.exe" SourceFile="$(var.BuildDir)\Krabbz9999 Blynclight App Control.exe" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.exe" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="BusyLightz" />
+      </Directory>
+      <Directory Id="ProgramMenuFolder" />
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="AppExe" Guid="{8D3F6A21-2B97-4E58-A1C4-6F0E92B7D354}" Win64="yes">
+        <File Id="AppExe" Name="BusyLightz.exe" Source="$(var.BuildDir)\Krabbz9999 Blynclight App Control.exe" KeyPath="yes">
+          <!-- In the Start menu for everyone. -->
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="BusyLightz" WorkingDirectory="INSTALLFOLDER"
+                    Icon="AppIcon.exe" Advertise="no" />
+        </File>
+        <!-- Starts at every user's sign-in; the autostart switch checks each user's Start with Windows setting. -->
+        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="BusyLightz" Type="string"
+                       Value="&quot;[#AppExe]&quot; --autostart" />
+      </Component>
+      <Component Id="UpdaterTaskXml" Guid="{C27A5E93-0F14-4B6D-8E39-5A1D7C2F64B8}" Win64="yes">
+        <File Id="UpdaterTaskXml" Name="BusyLightzUpdater.xml" Source="$(var.BuildDir)\BusyLightzUpdater.xml" KeyPath="yes" />
+      </Component>
+
+      <!-- The organization's own Teams app registration, when IT passes TEAMSCLIENTID=... TEAMSTENANTID=..., for every
+           user on the PC. Permanent, so silent updates (which don't pass them) keep the IDs. -->
+      <Component Id="TeamsAppIds" Guid="{9B41D6E2-73C8-4A05-BE6F-1D82A4C93E57}" Permanent="yes" Win64="yes">
+        <Condition>TEAMSCLIENTID AND TEAMSTENANTID</Condition>
+        <RegistryValue Root="HKLM" Key="Software\Krabbz9999\Blynclight App Control"
+                       Name="TeamsClientId" Type="string" Value="[TEAMSCLIENTID]" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Krabbz9999\Blynclight App Control"
+                       Name="TeamsTenantId" Type="string" Value="[TEAMSTENANTID]" />
+      </Component>
+    </DirectoryRef>
+    <Property Id="TEAMSCLIENTID" Secure="yes" />
+    <Property Id="TEAMSTENANTID" Secure="yes" />
+
+    <Feature Id="Main" Title="BusyLightz" Level="1">
+      <ComponentRef Id="AppExe" />
+      <ComponentRef Id="UpdaterTaskXml" />
+      <ComponentRef Id="TeamsAppIds" />
+    </Feature>
+
+    <!-- Close every user's copy so the file can be replaced or removed (they close themselves first during
+         background updates, and reopen afterwards). -->
+    <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable" />
+    <util:CloseApplication Id="CloseApp" Target="BusyLightz.exe" CloseMessage="yes" TerminateProcess="1" RebootPrompt="no" />
+
+    <!-- The "BusyLightz Updater" scheduled task: created from BusyLightzUpdater.xml, removed on uninstall (not on
+         upgrade, when the new version replaces it). -->
+    <CustomAction Id="SetCreateUpdaterTask" Property="CreateUpdaterTask"
+                  Value="&quot;[System64Folder]schtasks.exe&quot; /Create /F /TN &quot;BusyLightz Updater&quot; /XML &quot;[#UpdaterTaskXml]&quot;" />
+    <CustomAction Id="CreateUpdaterTask" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Impersonate="no" Return="check" />
+    <CustomAction Id="SetDeleteUpdaterTask" Property="DeleteUpdaterTask"
+                  Value="&quot;[System64Folder]schtasks.exe&quot; /Delete /F /TN &quot;BusyLightz Updater&quot;" />
+    <CustomAction Id="DeleteUpdaterTask" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Impersonate="no" Return="ignore" />
+    <InstallExecuteSequence>
+      <Custom Action="SetCreateUpdaterTask" Before="CreateUpdaterTask">NOT REMOVE="ALL"</Custom>
+      <Custom Action="CreateUpdaterTask" After="InstallFiles">NOT REMOVE="ALL"</Custom>
+      <Custom Action="SetDeleteUpdaterTask" Before="DeleteUpdaterTask">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+      <Custom Action="DeleteUpdaterTask" Before="RemoveFiles">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
+    </InstallExecuteSequence>
+  </Product>
+</Wix>

@@ -91,13 +91,16 @@ namespace Krabbz.Blynclight
             }
         }
 
+        // The user's own value, else one the all-users installer saved for everyone on the PC (HKLM).
         static string Read(string name)
         {
-            using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
-            {
-                string value = key == null ? null : key.GetValue(name) as string;
-                return IsGuid(value) ? value.Trim() : null;
-            }
+            foreach (var root in new[] { Registry.CurrentUser, Registry.LocalMachine })
+                using (var key = root.OpenSubKey(SettingsKey))
+                {
+                    string value = key == null ? null : key.GetValue(name) as string;
+                    if (IsGuid(value)) return value.Trim();
+                }
+            return null;
         }
     }
 }

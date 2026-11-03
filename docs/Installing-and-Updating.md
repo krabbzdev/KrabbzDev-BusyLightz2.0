@@ -36,9 +36,23 @@ The version you're running is shown at the bottom of the window and in the tray 
 
 Your settings stay in `%LOCALAPPDATA%\Krabbz9999 Blynclight` and the registry key `HKEY_CURRENT_USER\Software\Krabbz9999\Blynclight App Control`. Delete them too if you want a clean slate.
 
+## Installing for everyone on a PC (Program Files)
+
+From version 2.27.0 there's also an all-users installer, **BusyLightz-Setup.msi**, which installs to `C:\Program Files\BusyLightz\BusyLightz.exe` for every user on the PC. It needs admin rights. It's published in its own release next to each version, tagged e.g. `v2.27.0-allusers` on the [releases page](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases).
+
+- **IT / RMM:** run it as SYSTEM or an admin: `msiexec /i BusyLightz-Setup.msi /qn`. Add `TEAMSCLIENTID=... TEAMSTENANTID=...` to pre-set your organization's Teams app for everyone.
+- **From the app:** an admin can click **Install for everyone** in Settings (shown in copies installed just for one user). Windows asks for admin approval.
+
+What happens:
+
+- **Copies installed just for one user move over on their own.** Within a few seconds (or at their next start) they open the Program Files copy and uninstall themselves. Settings, the Teams sign-in and the log carry over, since they're kept per user.
+- **It starts at every user's sign-in**, for users who have **Start with Windows** on in Settings.
+- **Updates install in the background.** A **BusyLightz Updater** scheduled task runs as SYSTEM at startup and every 4 hours, downloads the newest all-users installer from GitHub, checks its SHA-256 against what GitHub recorded, and installs it silently. Each user's copy closes while it installs and reopens afterwards. Its log is `C:\Program Files\BusyLightz Updates\updater.log`.
+- **Uninstall** from Settings > Apps > Installed apps > BusyLightz (needs admin). It removes the updater task too.
+
 ## Deploying to many PCs (IT)
 
-The installer is a standard per-user MSI, so you can push it with your RMM tool or Intune. **Run it in the user's context, not as SYSTEM**, because it installs into the user's profile.
+The installer below is a standard per-user MSI, so you can push it with your RMM tool or Intune. **Run it in the user's context, not as SYSTEM**, because it installs into the user's profile. To install for everyone on the PC instead, use the all-users installer above.
 
 ```
 msiexec /i KrabbzDev-BusyLightz2.0.msi /qn
@@ -56,7 +70,7 @@ The IDs are kept through later automatic updates.
 
 | What | Where |
 | --- | --- |
-| The app | `%LOCALAPPDATA%\Programs\Krabbz9999 Blynclight App Control` |
+| The app | `%LOCALAPPDATA%\Programs\Krabbz9999 Blynclight App Control`, or `C:\Program Files\BusyLightz` when installed for everyone |
 | Your chosen color | `%LOCALAPPDATA%\Krabbz9999 Blynclight\state.txt` |
 | Teams sign-in (encrypted to your Windows account) | `%LOCALAPPDATA%\Krabbz9999 Blynclight\teams-presence.dat` |
 | Error log, if anything went wrong | `%LOCALAPPDATA%\Krabbz9999 Blynclight\app.log` |
