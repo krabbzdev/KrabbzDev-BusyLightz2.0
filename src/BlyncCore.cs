@@ -97,8 +97,6 @@ namespace Krabbz.Blynclight
         static extern bool SetupDiDestroyDeviceInfoList(IntPtr devInfo);
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         static extern SafeFileHandle CreateFile(string name, uint access, uint share, IntPtr sec, uint disp, uint flags, IntPtr tmpl);
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool WriteFile(SafeFileHandle h, byte[] buf, int len, out int written, IntPtr ovl);
         [DllImport("hid.dll", SetLastError = true)]
         static extern bool HidD_GetPreparsedData(SafeFileHandle h, out IntPtr data);
         [DllImport("hid.dll")]
@@ -152,18 +150,33 @@ namespace Krabbz.Blynclight
             return lights;
         }
 
-        // Named colors used by light states and Teams status; anything else means off.
+        // Colors that can be picked for each status in Settings > Colors. The names are what's saved.
+        public static readonly string[] ColorNames = { "Red", "Orange", "Yellow", "Green", "Cyan", "Blue", "Purple", "Pink", "White" };
+
+        // A color by its name in ColorNames (any case); anything else means off.
         public static LightColor ColorFor(string name)
         {
-            switch (name)
+            switch ((name ?? "").ToLowerInvariant())
             {
                 case "red": return LightColor.Rgb(255, 0, 0);
-                case "green": return LightColor.Rgb(0, 255, 0);
-                case "blue": return LightColor.Rgb(0, 0, 255);
+                case "orange": return LightColor.Rgb(255, 90, 0);
                 case "yellow": return LightColor.Rgb(255, 255, 0);
+                case "green": return LightColor.Rgb(0, 255, 0);
+                case "cyan": return LightColor.Rgb(0, 255, 255);
+                case "blue": return LightColor.Rgb(0, 0, 255);
                 case "purple": return LightColor.Rgb(128, 0, 255);
+                case "pink": return LightColor.Rgb(255, 0, 128);
+                case "white": return LightColor.Rgb(255, 255, 255);
                 default: return LightColor.Off;
             }
+        }
+
+        // color at a percentage of full brightness; off stays off, and a lit color never drops to fully dark.
+        public static LightColor Dim(LightColor color, int percent)
+        {
+            if (percent >= 100 || color.IsOff) return color;
+            Func<byte, byte> scale = v => v == 0 ? (byte)0 : (byte)Math.Max(1, v * percent / 100);
+            return LightColor.Rgb(scale(color.R), scale(color.G), scale(color.B));
         }
 
         public static byte[] ReportFor(LightKind kind, LightColor color)
@@ -197,10 +210,23 @@ namespace Krabbz.Blynclight
             return new byte[] { 0x00, r, b, g, (byte)(off ? 0x01 : 0x00), 0x00, 0x00, 0xFF, 0x22 };
         }
 
-        // Writes one output report, padded to the device's declared report length.
+        // How long a write may take. A light that stops answering (a bad cable or hub, or USB power saving) can
+        // otherwise leave a write waiting forever.
+        const int WriteTimeoutMs = 1000;
+        const uint FILE_FLAG_OVERLAPPED = 0x40000000;
+        const int ERROR_IO_PENDING = 997;
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool WriteFile(SafeFileHandle h, IntPtr buf, int len, IntPtr written, IntPtr overlapped);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool GetOverlappedResult(SafeFileHandle h, IntPtr overlapped, out int transferred, bool wait);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        static extern bool CancelIoEx(SafeFileHandle h, IntPtr overlapped);
+
+        // Writes one output report, padded to the device's declared report length. Gives up after WriteTimeoutMs.
         public static void Write(string path, byte[] report)
         {
-            using (var h = CreateFile(path, 0x40000000 /*GENERIC_WRITE*/, 3 /*share r/w*/, IntPtr.Zero, 3 /*OPEN_EXISTING*/, 0, IntPtr.Zero))
+            using (var h = CreateFile(path, 0x40000000 /*GENERIC_WRITE*/, 3 /*share r/w*/, IntPtr.Zero, 3 /*OPEN_EXISTING*/, FILE_FLAG_OVERLAPPED, IntPtr.Zero))
             {
                 if (h.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not open the light");
                 int len = report.Length;
@@ -214,9 +240,34 @@ namespace Krabbz.Blynclight
                 }
                 var buf = new byte[len];
                 Array.Copy(report, buf, Math.Min(report.Length, len));
-                int written;
-                if (!WriteFile(h, buf, len, out written, IntPtr.Zero))
-                    throw new Win32Exception(Marshal.GetLastWin32Error(), "Write to the Blynclight failed");
+
+                // The buffer and OVERLAPPED must stay put until the write finishes or is cancelled.
+                var pinned = GCHandle.Alloc(buf, GCHandleType.Pinned);
+                IntPtr overlapped = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(System.Threading.NativeOverlapped)));
+                using (var done = new System.Threading.ManualResetEvent(false))
+                {
+                    try
+                    {
+                        Marshal.StructureToPtr(new System.Threading.NativeOverlapped { EventHandle = done.SafeWaitHandle.DangerousGetHandle() }, overlapped, false);
+                        if (WriteFile(h, pinned.AddrOfPinnedObject(), len, IntPtr.Zero, overlapped)) return;
+                        int error = Marshal.GetLastWin32Error();
+                        if (error != ERROR_IO_PENDING) throw new Win32Exception(error, "Write to the Blynclight failed");
+                        int written;
+                        if (!done.WaitOne(WriteTimeoutMs))
+                        {
+                            CancelIoEx(h, overlapped);
+                            GetOverlappedResult(h, overlapped, out written, true); // Waits for the cancel to land.
+                            throw new TimeoutException("The light didn't respond to a write within " + WriteTimeoutMs / 1000 + " second");
+                        }
+                        if (!GetOverlappedResult(h, overlapped, out written, false))
+                            throw new Win32Exception(Marshal.GetLastWin32Error(), "Write to the Blynclight failed");
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(overlapped);
+                        pinned.Free();
+                    }
+                }
             }
         }
     }

@@ -58,14 +58,19 @@ namespace Krabbz.Blynclight
                     LogError("Unexpected error, the app closed", e.ExceptionObject as Exception);
                 // Starts and stops go in app.log too, so a start with no stop before it shows the app was closed
                 // without a chance to log why (Windows ended it, or it crashed outside .NET).
+                LogLastSeen();
                 LogEvent("Started" + (justUpdated ? " after updating" : trayOnly ? " in the tray" : ""));
                 Microsoft.Win32.SystemEvents.SessionEnding += (sender, e) =>
+                {
                     LogEvent(e.Reason == Microsoft.Win32.SessionEndReasons.Logoff ? "Windows is signing out" : "Windows is shutting down");
+                    ClearLastSeen();
+                };
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
                 try { Application.Run(new TrayContext(showSignal, !trayOnly, justUpdated)); }
                 catch (Exception ex) { LogError("Unexpected error, the app closed", ex); throw; }
                 LogEvent("Closed");
+                ClearLastSeen();
             }
             return 0;
         }
@@ -90,6 +95,72 @@ namespace Krabbz.Blynclight
         public static void LogError(string what, Exception ex)
         {
             Log(what + " (version " + VersionText + ", " + WindowsVersion + "): " + (ex == null ? "unknown error" : ex.ToString()));
+        }
+
+        static string DataDir
+        {
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Krabbz9999 Blynclight"); }
+        }
+
+        // Written about once a minute while the app runs, and deleted when it closes normally. Still there at the
+        // next start means the app was ended without closing (a freeze it was forced out of, or a crash).
+        static string LastSeenPath { get { return Path.Combine(DataDir, "last-seen.txt"); } }
+
+        static void LogLastSeen()
+        {
+            try
+            {
+                long ticks;
+                if (File.Exists(LastSeenPath) && long.TryParse(File.ReadAllText(LastSeenPath).Trim(), out ticks))
+                    LogEvent("The last run ended without closing; it was last seen running at " + new DateTime(ticks).ToString("s"));
+            }
+            catch (Exception) { }
+        }
+
+        public static void ClearLastSeen()
+        {
+            try { File.Delete(LastSeenPath); } catch (Exception) { }
+        }
+
+        static long uiAnswered = DateTime.Now.Ticks;
+
+        // Checks every few seconds that the window thread still answers, and logs when it stops (and starts again),
+        // so a freeze shows in app.log even if the app is then forced closed. Also keeps last-seen.txt current.
+        public static void WatchForFreezes(Control ui)
+        {
+            const int CheckMs = 5000, FrozenMs = 30000, LastSeenMs = 60000;
+            var watcher = new Thread(delegate ()
+            {
+                bool frozen = false;
+                DateTime lastSeenSaved = DateTime.MinValue, lastCheck = DateTime.Now;
+                while (true)
+                {
+                    Thread.Sleep(CheckMs);
+                    // A much longer wait than asked for means the PC was asleep, which isn't a freeze: start counting again.
+                    if ((DateTime.Now - lastCheck).TotalMilliseconds > CheckMs * 3) Interlocked.Exchange(ref uiAnswered, DateTime.Now.Ticks);
+                    lastCheck = DateTime.Now;
+                    try { ui.BeginInvoke((Action)delegate { Interlocked.Exchange(ref uiAnswered, DateTime.Now.Ticks); }); }
+                    catch (Exception) { return; } // The window is gone: the app is closing.
+                    double quietMs = (DateTime.Now - new DateTime(Interlocked.Read(ref uiAnswered))).TotalMilliseconds;
+                    if (!frozen && quietMs > FrozenMs)
+                    {
+                        frozen = true;
+                        LogEvent("Stopped responding: the window hasn't answered for " + (int)(quietMs / 1000) + " seconds");
+                    }
+                    else if (frozen && quietMs < CheckMs * 2)
+                    {
+                        frozen = false;
+                        LogEvent("Responding again");
+                    }
+                    if ((DateTime.Now - lastSeenSaved).TotalMilliseconds >= LastSeenMs)
+                    {
+                        try { File.WriteAllText(LastSeenPath, DateTime.Now.Ticks.ToString()); } catch (Exception) { }
+                        lastSeenSaved = DateTime.Now;
+                    }
+                }
+            });
+            watcher.IsBackground = true;
+            watcher.Start();
         }
 
         // A one-line note in app.log, e.g. "Started" or "Closed".
@@ -255,7 +326,7 @@ namespace Krabbz.Blynclight
 
             // Cycle the tray icon round the color wheel at the light's speed, in half as many steps.
             flashTimer.Interval = LightController.PartyStepMs * 2;
-            flashTimer.Tick += delegate { partyHue = (partyHue + LightController.PartyHueStep * 2) % 360; UpdateDisplay(); };
+            flashTimer.Tick += delegate { partyHue = (partyHue + light.PartyHueStep * 2) % 360; UpdateDisplay(); };
 
             if (AppSettings.HotkeysEnabled) RegisterHotkeys();
             messages.HotkeyPressed += id => SetState(HotkeyStates[id]);
@@ -280,6 +351,7 @@ namespace Krabbz.Blynclight
                 catch (InvalidOperationException) { } // Window already gone during exit.
             });
             teamsPoll = new System.Threading.Timer(delegate { Program.Guard("Teams status check", PollTeams); }, null, 0, TeamsPollMs);
+            Program.WatchForFreezes(messages);
             if (Program.UpdateRepo != null)
                 updateTimer = new System.Threading.Timer(delegate { Program.Guard("Update check", () => CheckForUpdates(false)); },
                     null, UpdateFirstCheckMs, UpdateCheckMs);
@@ -422,6 +494,7 @@ namespace Krabbz.Blynclight
         // Re-applies call and hotkey settings after they change in the Settings window.
         public void ApplySettings()
         {
+            light.ApplySettings();
             calls.Recheck();
             if (AppSettings.OverrideTimesOut) StartOverrideTimerIfNeeded();
             else light.SetReturnToTeams(null);
@@ -561,6 +634,7 @@ namespace Krabbz.Blynclight
                         {
                             // Reopen the way the user had it: window showing, or tray only.
                             Program.LogEvent("Closing to install version " + update.Version);
+                            Program.ClearLastSeen();
                             Updater.Install(update, Application.ExecutablePath, form != null && form.Visible);
                             Application.Exit();
                         }
@@ -849,12 +923,24 @@ namespace Krabbz.Blynclight
             }
         }
 
+        // The tray and window color for a status: the usual softer screen color while the default is picked in
+        // Settings > Colors, otherwise the picked color.
+        static Color PickedColor(string setting, Color usual)
+        {
+            string name = AppSettings.LightColorName(setting);
+            foreach (var role in AppSettings.LightColorRoles)
+                if (role[0] == setting && role[2] == name) return usual;
+            var color = BlyncDevice.ColorFor(name);
+            return Color.FromArgb(color.R, color.G, color.B);
+        }
+
         void UpdateDisplay()
         {
             if (NoLight) DisplayColor = Color.Gray;
             // A flashing call shows as red in the tray and window; flashing an icon would be distracting.
-            else if (State == LightState.Red || State == LightState.CallFlash) DisplayColor = Color.Red;
-            else if (State == LightState.Green) DisplayColor = Color.Lime;
+            else if (State == LightState.Red) DisplayColor = PickedColor("BusyColor", Color.Red);
+            else if (State == LightState.CallFlash) DisplayColor = PickedColor("CallColor1", Color.Red);
+            else if (State == LightState.Green) DisplayColor = PickedColor("AvailableColor", Color.Lime);
             else if (State == LightState.Party)
             {
                 byte r, g, b;
@@ -862,8 +948,8 @@ namespace Krabbz.Blynclight
                 DisplayColor = Color.FromArgb(r, g, b);
             }
             // Teams status colors, when the app reads presence itself.
-            else if (State == "yellow") DisplayColor = Color.Gold;
-            else if (State == "purple") DisplayColor = Color.MediumPurple;
+            else if (State == "yellow") DisplayColor = PickedColor("AwayColor", Color.Gold);
+            else if (State == "purple") DisplayColor = PickedColor("DndColor", Color.MediumPurple);
             // The real color is up to Embrava Connect; show Teams purple to mean "Teams decides".
             else if (State == LightState.FollowTeams) DisplayColor = Color.FromArgb(98, 100, 167);
             else DisplayColor = Color.Black;

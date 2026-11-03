@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -129,6 +130,13 @@ namespace Krabbz.Blynclight
             var help = new Button { Text = "Help", Bounds = new Rectangle(180, y, 90, 34) };
             help.Click += delegate { tray.OpenHelp(); };
             Controls.Add(help);
+            // Brightness, Test lights speed and colors, in their own window to keep this one short.
+            var lights = new Button { Text = "Lights...", Bounds = new Rectangle(280, y, 90, 34) };
+            lights.Click += delegate
+            {
+                using (var dialog = new LightsDialog(tray)) dialog.ShowDialog(this);
+            };
+            Controls.Add(lights);
             var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 120, y, 100, 34) };
             close.Click += delegate { Close(); };
             Controls.Add(setup);
@@ -285,6 +293,80 @@ namespace Krabbz.Blynclight
             button.Click += click;
             Controls.Add(button);
             row.MaximumSize = new Size(button.Left - row.Left - 8, 0);
+        }
+    }
+
+    // Brightness, Test lights speed and the color for each status. Changes show on the lights right away.
+    class LightsDialog : Form
+    {
+        readonly TrayContext tray;
+        readonly List<ComboBox> colorPickers = new List<ComboBox>();
+        int y = 16;
+
+        public LightsDialog(TrayContext tray)
+        {
+            this.tray = tray;
+            Text = "Lights";
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = MinimizeBox = false;
+            ShowInTaskbar = false;
+            StartPosition = FormStartPosition.CenterParent;
+            Font = new Font("Segoe UI", 10);
+            const int width = 440;
+
+            NumberPicker("Brightness", AppSettings.BrightnessChoices, AppSettings.Brightness, v => v + "%",
+                v => AppSettings.Brightness = v);
+            NumberPicker("Test lights: full cycle every", AppSettings.TestLightsCycleChoicesMs, AppSettings.TestLightsCycleMs,
+                v => v == 1000 ? "1 second" : (v / 1000.0) + " seconds", v => AppSettings.TestLightsCycleMs = v);
+
+            y += 8;
+            Controls.Add(new Label { Text = "Colors", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), AutoSize = true, Location = new Point(16, y) });
+            y += 30;
+            foreach (var role in AppSettings.LightColorRoles)
+            {
+                string setting = role[0];
+                Controls.Add(new Label { Text = role[1], AutoSize = true, Location = new Point(24, y + 3) });
+                var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(width - 150, y, 130, 30) };
+                picker.Items.AddRange(BlyncDevice.ColorNames);
+                picker.SelectedItem = AppSettings.LightColorName(setting);
+                picker.SelectedIndexChanged += delegate
+                {
+                    AppSettings.SetLightColorName(setting, (string)picker.SelectedItem);
+                    tray.ApplySettings();
+                };
+                picker.Tag = role[2];
+                colorPickers.Add(picker);
+                Controls.Add(picker);
+                y += 36;
+            }
+
+            y += 12;
+            var reset = new Button { Text = "Reset colors", Bounds = new Rectangle(20, y, 130, 34) };
+            reset.Click += delegate { foreach (var picker in colorPickers) picker.SelectedItem = picker.Tag; };
+            var close = new Button { Text = "Close", DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 120, y, 100, 34) };
+            Controls.Add(reset);
+            Controls.Add(close);
+            CancelButton = close;
+            ClientSize = new Size(width, close.Bottom + 16);
+            Load += delegate { Theme.Apply(this); };
+        }
+
+        void NumberPicker(string label, int[] choices, int current, Func<int, string> describe, Action<int> save)
+        {
+            Controls.Add(new Label { Text = label, AutoSize = true, Location = new Point(24, y + 3) });
+            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(290, y, 130, 30) };
+            foreach (int choice in choices)
+            {
+                picker.Items.Add(describe(choice));
+                if (choice == current) picker.SelectedIndex = picker.Items.Count - 1;
+            }
+            picker.SelectedIndexChanged += delegate
+            {
+                save(choices[picker.SelectedIndex]);
+                tray.ApplySettings();
+            };
+            Controls.Add(picker);
+            y += 36;
         }
     }
 }

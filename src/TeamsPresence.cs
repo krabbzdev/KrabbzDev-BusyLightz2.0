@@ -410,7 +410,7 @@ namespace Krabbz.Blynclight
             string user;
             lock (sync) user = userId;
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-            using (var web = new WebClient())
+            using (var web = new GraphWebClient())
             {
                 web.Headers[HttpRequestHeader.Authorization] = "Bearer " + token;
                 web.Headers[HttpRequestHeader.ContentType] = "application/json; charset=utf-8";
@@ -477,7 +477,7 @@ namespace Krabbz.Blynclight
             string user;
             lock (sync) user = userId;
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-            using (var web = new WebClient())
+            using (var web = new GraphWebClient())
             {
                 web.Headers[HttpRequestHeader.Authorization] = "Bearer " + token;
                 web.Encoding = Encoding.UTF8;
@@ -492,7 +492,7 @@ namespace Krabbz.Blynclight
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             try
             {
-                using (var web = new WebClient())
+                using (var web = new GraphWebClient())
                     return (Dictionary<string, object>)Json.DeserializeObject(Encoding.UTF8.GetString(web.UploadValues(Authority + "token", form)));
             }
             catch (WebException ex)
@@ -655,6 +655,22 @@ namespace Krabbz.Blynclight
         {
             public readonly string Error;
             public TokenException(string error, string description) : base(description) { Error = error; }
+        }
+
+        // WebClient waits up to 100 seconds by default. Exiting and signing out run these calls on the window's
+        // thread, so a slow network would freeze the app for that long.
+        class GraphWebClient : WebClient
+        {
+            const int TimeoutMs = 20000;
+
+            protected override WebRequest GetWebRequest(Uri address)
+            {
+                var request = base.GetWebRequest(address);
+                request.Timeout = TimeoutMs;
+                var http = request as HttpWebRequest;
+                if (http != null) http.ReadWriteTimeout = TimeoutMs;
+                return request;
+            }
         }
     }
 }

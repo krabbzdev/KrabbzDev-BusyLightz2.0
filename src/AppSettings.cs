@@ -84,6 +84,66 @@ namespace Krabbz.Blynclight
         }
         // Light (the default) or Dark colors for the app's windows.
         public static bool DarkMode { get { return Get("DarkMode", false); } set { Set("DarkMode", value); } }
+        // How long Test lights takes to go once round every color.
+        public static readonly int[] TestLightsCycleChoicesMs = { 500, 1000, 2000, 4000 };
+        public const int DefaultTestLightsCycleMs = 1000;
+        public static int TestLightsCycleMs
+        {
+            get { return Choice("TestLightsCycleMs", TestLightsCycleChoicesMs, DefaultTestLightsCycleMs); }
+            set { SetInt("TestLightsCycleMs", value); }
+        }
+        // Light brightness, in percent.
+        public static readonly int[] BrightnessChoices = { 10, 25, 50, 75, 100 };
+        public static int Brightness
+        {
+            get { return Choice("Brightness", BrightnessChoices, 100); }
+            set { SetInt("Brightness", value); }
+        }
+
+        // The color for each status, by name from BlyncDevice.ColorNames: setting name, label, default.
+        public static readonly string[][] LightColorRoles =
+        {
+            new[] { "BusyColor", "Busy (and Teams: Busy)", "Red" },
+            new[] { "AvailableColor", "Available (and Teams: Available)", "Green" },
+            new[] { "AwayColor", "Teams: Away / Be right back", "Yellow" },
+            new[] { "DndColor", "Teams: Do not disturb", "Purple" },
+            new[] { "CallColor1", "On a call: first flash color", "Red" },
+            new[] { "CallColor2", "On a call: second flash color", "Blue" },
+        };
+
+        public static string LightColorName(string setting)
+        {
+            string fallback = null;
+            foreach (var role in LightColorRoles) if (role[0] == setting) fallback = role[2];
+            using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
+            {
+                string value = key == null ? null : key.GetValue(setting) as string;
+                return Array.IndexOf(BlyncDevice.ColorNames, value) >= 0 ? value : fallback;
+            }
+        }
+
+        public static void SetLightColorName(string setting, string name)
+        {
+            using (var key = Registry.CurrentUser.CreateSubKey(SettingsKey))
+                key.SetValue(setting, name, RegistryValueKind.String);
+        }
+
+        // A saved number if it's one of choices, otherwise the default.
+        static int Choice(string name, int[] choices, int defaultValue)
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
+            {
+                object value = key == null ? null : key.GetValue(name);
+                return value is int && Array.IndexOf(choices, (int)value) >= 0 ? (int)value : defaultValue;
+            }
+        }
+
+        static void SetInt(string name, int value)
+        {
+            using (var key = Registry.CurrentUser.CreateSubKey(SettingsKey))
+                key.SetValue(name, value, RegistryValueKind.DWord);
+        }
+
         // Leaves USB lights alone, for Teams status and call detection only. Off unless changed.
         public static bool UsbLightsDisabled { get { return Get("UsbLightsDisabled", false); } set { Set("UsbLightsDisabled", value); } }
         public static string TeamsStatusMessage

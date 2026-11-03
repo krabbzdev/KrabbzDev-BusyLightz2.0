@@ -6,18 +6,20 @@ using System.Threading;
 namespace Krabbz.Blynclight
 {
     // Owns the light: remembers its state, cycles colors in Party Mode, and re-applies the state when a light is plugged in.
+    // Every write to a light happens on its own background thread, so a light that stops answering can't freeze the app.
     public class LightController : IDisposable
     {
-        // Party Mode moves this far round the color wheel every PartyStepMs: a full cycle about every 2.4 seconds.
+        // How often the light thread runs: Party Mode and call flashing move on this often.
         public const int PartyStepMs = 100;
-        public const int PartyHueStep = 15;
-        // During a call flash, switch between red and blue this often.
+        // During a call flash, switch between the two flash colors this often.
         const int CallFlashMs = 300;
         // Look for newly plugged-in or removed lights, and re-send the current color, this often.
         const int DeviceCheckMs = 2000;
 
         readonly object sync = new object();
         readonly ManualResetEvent stopEvent = new ManualResetEvent(false);
+        // Set to have the light thread show a change right away instead of at its next tick.
+        readonly AutoResetEvent wake = new AutoResetEvent(false);
         readonly string dataDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Krabbz9999 Blynclight");
         readonly Thread lightThread;
@@ -32,6 +34,11 @@ namespace Krabbz.Blynclight
         DateTime? returnToTeamsAt;
         List<LightDevice> knownLights = new List<LightDevice>();
         string lastLogged;
+        // Set when something changed that the light thread should show; turnOffPending when lights were just disabled.
+        bool applyPending, turnOffPending;
+        // From Settings, read again by ApplySettings: brightness in percent, Test lights cycle length, color per state.
+        int brightness, cycleMs;
+        Dictionary<string, LightColor> colors;
 
         // Raised on a background thread when a light is plugged in or removed.
         public event Action LightsChanged;
@@ -45,6 +52,7 @@ namespace Krabbz.Blynclight
             Directory.CreateDirectory(dataDir);
             state = LoadState();
             returnToTeamsAt = LoadReturnToTeams();
+            LoadSettings();
             lightThread = new Thread(LightLoop);
             lightThread.IsBackground = true;
             lightThread.Start();
@@ -68,6 +76,8 @@ namespace Krabbz.Blynclight
         }
         public bool OverrideActive { get { lock (sync) return callOverride != null; } }
         public int LightCount { get { lock (sync) return knownLights.Count; } }
+        // How far round the color wheel Test lights moves every PartyStepMs.
+        public int PartyHueStep { get { lock (sync) return Math.Max(1, 360 * PartyStepMs / cycleMs); } }
 
         // Turning USB lights off switches connected lights off and then leaves them alone; turning them back on
         // finds them again on the next device check and shows the current state.
@@ -79,10 +89,10 @@ namespace Krabbz.Blynclight
                 lock (sync)
                 {
                     if (lightsEnabled == value) return;
-                    if (!value) WriteAll(LightColor.Off);
                     lightsEnabled = value;
-                    if (!value) knownLights = new List<LightDevice>();
+                    if (!value) turnOffPending = true;
                 }
+                wake.Set();
                 if (LightsChanged != null) LightsChanged();
             }
         }
@@ -127,7 +137,7 @@ namespace Krabbz.Blynclight
             }
             SaveState(newState);
             SetReturnToTeams(null);
-            Apply(newState);
+            RequestApply();
         }
 
         public void SetReturnToTeams(DateTime? utc)
@@ -149,7 +159,7 @@ namespace Krabbz.Blynclight
                 if (callOverride == overrideState) return;
                 callOverride = overrideState;
             }
-            Apply(ShownState);
+            RequestApply();
         }
 
         // Sets the color for the user's Teams status (e.g. "green", "yellow"); null hands the light back to
@@ -161,7 +171,46 @@ namespace Krabbz.Blynclight
                 if (teamsColor == color) return;
                 teamsColor = color;
             }
-            Apply(ShownState);
+            RequestApply();
+        }
+
+        // Reads brightness, Test lights speed and colors from Settings again and shows the change.
+        public void ApplySettings()
+        {
+            LoadSettings();
+            RequestApply();
+        }
+
+        void LoadSettings()
+        {
+            var loaded = new Dictionary<string, LightColor>();
+            // The names light states and Teams status use, mapped to the setting that picks their color.
+            loaded["red"] = BlyncDevice.ColorFor(AppSettings.LightColorName("BusyColor"));
+            loaded["green"] = BlyncDevice.ColorFor(AppSettings.LightColorName("AvailableColor"));
+            loaded["yellow"] = BlyncDevice.ColorFor(AppSettings.LightColorName("AwayColor"));
+            loaded["purple"] = BlyncDevice.ColorFor(AppSettings.LightColorName("DndColor"));
+            loaded["call1"] = BlyncDevice.ColorFor(AppSettings.LightColorName("CallColor1"));
+            loaded["call2"] = BlyncDevice.ColorFor(AppSettings.LightColorName("CallColor2"));
+            int percent = AppSettings.Brightness, cycle = AppSettings.TestLightsCycleMs;
+            lock (sync)
+            {
+                colors = loaded;
+                brightness = percent;
+                cycleMs = cycle;
+            }
+        }
+
+        // The color for a state or Teams status name, as picked in Settings; anything unknown is off.
+        LightColor ColorOf(string name)
+        {
+            LightColor color;
+            lock (sync) return colors.TryGetValue(name, out color) ? color : LightColor.Off;
+        }
+
+        void RequestApply()
+        {
+            lock (sync) applyPending = true;
+            wake.Set();
         }
 
         // Stops the background loop. Party Mode and call flashing can't continue without it, so the light is turned
@@ -170,7 +219,12 @@ namespace Krabbz.Blynclight
         {
             stopEvent.Set();
             lightThread.Join(2000);
-            if (Animated(ShownState)) WriteAll(LightColor.Off);
+            if (!Animated(ShownState)) return;
+            // On its own thread, so a light that doesn't answer can't hold up closing the app.
+            var off = new Thread(delegate () { Program.Guard("Turning the light off", () => WriteAll(LightColor.Off)); });
+            off.IsBackground = true;
+            off.Start();
+            off.Join(2000);
         }
 
         static bool Animated(string shown)
@@ -180,30 +234,49 @@ namespace Krabbz.Blynclight
 
         void LightLoop()
         {
-            int hue = 0;
+            double hue = 0;
             int flashMs = 0;
             int sinceDeviceCheck = DeviceCheckMs;
+            int lastTick = Environment.TickCount;
             string lastError = null;
+            var handles = new WaitHandle[] { stopEvent, wake };
             do
             {
+                int now = Environment.TickCount, elapsed = now - lastTick;
+                lastTick = now;
                 // An error here (e.g. a light or dock vanishing mid-scan) would close the app; log it once and keep going.
-                try { LightStep(ref hue, ref flashMs, ref sinceDeviceCheck); lastError = null; }
+                try { LightStep(elapsed, ref hue, ref flashMs, ref sinceDeviceCheck); lastError = null; }
                 catch (Exception ex)
                 {
                     if (ex.Message != lastError) Program.LogError("Light update", ex);
                     lastError = ex.Message;
                 }
-                sinceDeviceCheck += PartyStepMs;
-            } while (!stopEvent.WaitOne(PartyStepMs));
+            } while (WaitHandle.WaitAny(handles, PartyStepMs) != 0);
         }
 
-        // One tick of LightLoop: scan for lights every DeviceCheckMs, and animate Party Mode and call flashing.
-        void LightStep(ref int hue, ref int flashMs, ref int sinceDeviceCheck)
+        // One tick of LightLoop: show any change, scan for lights every DeviceCheckMs, and animate Party Mode and
+        // call flashing. elapsed is the time since the last tick, which is shorter when woken for a change.
+        void LightStep(int elapsed, ref double hue, ref int flashMs, ref int sinceDeviceCheck)
         {
+            bool enabled, turnOff, apply;
+            int cycle;
+            lock (sync)
+            {
+                enabled = lightsEnabled;
+                turnOff = turnOffPending;
+                apply = applyPending;
+                turnOffPending = applyPending = false;
+                cycle = cycleMs;
+            }
+            if (turnOff)
+            {
+                WriteAll(LightColor.Off);
+                lock (sync) if (!lightsEnabled) knownLights = new List<LightDevice>();
+            }
             // Scan right away when lights are turned back on.
-            if (!LightsEnabled) { sinceDeviceCheck = DeviceCheckMs; return; }
-            string current = ShownState;
+            if (!enabled) { sinceDeviceCheck = DeviceCheckMs; return; }
 
+            sinceDeviceCheck += elapsed;
             if (sinceDeviceCheck >= DeviceCheckMs)
             {
                 sinceDeviceCheck = 0;
@@ -218,41 +291,43 @@ namespace Krabbz.Blynclight
                 }
                 // Re-send the solid color every check, not just when a light is plugged in: another program
                 // (or a write that raced the first device scan) can leave a light showing the wrong color.
-                current = ShownState;
-                Apply(current);
+                apply = true;
                 if ((newLight || countChanged) && LightsChanged != null) LightsChanged();
             }
+
+            string current = ShownState;
+            // Party Mode and call flashing are written every tick below; solid states only when something changed.
+            // In FollowTeams without a Teams color the light belongs to Embrava Connect, so nothing is written.
+            if (apply && !Animated(current) && current != LightState.FollowTeams) WriteAll(ColorOf(current));
 
             if (current == LightState.Party)
             {
                 byte r, g, b;
-                BlyncDevice.HueToRgb(hue, out r, out g, out b);
+                BlyncDevice.HueToRgb((int)hue, out r, out g, out b);
                 WriteAll(LightColor.Rgb(r, g, b));
-                hue = (hue + PartyHueStep) % 360;
+                hue = (hue + 360.0 * elapsed / cycle) % 360;
             }
             if (current == LightState.CallFlash)
             {
                 // Write every tick so a light plugged in mid-call joins in; the color flips every CallFlashMs.
-                bool red = (flashMs / CallFlashMs) % 2 == 0;
-                WriteAll(BlyncDevice.ColorFor(red ? LightState.Red : "blue"));
-                flashMs += PartyStepMs;
+                bool first = (flashMs / CallFlashMs) % 2 == 0;
+                WriteAll(ColorOf(first ? "call1" : "call2"));
+                flashMs += elapsed;
             }
             else flashMs = 0;
         }
 
-        void Apply(string newState)
-        {
-            // Party Mode and call flashing are driven by LightLoop; solid states are written once. In FollowTeams
-            // without a Teams color the light belongs to Embrava Connect, so nothing is written.
-            if (!Animated(newState) && newState != LightState.FollowTeams)
-                WriteAll(BlyncDevice.ColorFor(newState));
-        }
-
-        // Sends the color to every connected light, each in its own report format.
+        // Sends the color, at the brightness from Settings, to every connected light, each in its own report format.
         void WriteAll(LightColor color)
         {
             List<LightDevice> lights;
-            lock (sync) lights = knownLights;
+            int percent;
+            lock (sync)
+            {
+                lights = knownLights;
+                percent = brightness;
+            }
+            color = BlyncDevice.Dim(color, percent);
             foreach (var light in lights)
             {
                 try { BlyncDevice.Write(light.Path, BlyncDevice.ReportFor(light.Kind, color)); }
