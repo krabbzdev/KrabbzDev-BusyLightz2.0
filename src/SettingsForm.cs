@@ -127,11 +127,11 @@ namespace Krabbz.Blynclight
 
             var setup = new Button { Text = "Setup checklist...", Bounds = new Rectangle(20, y, 150, 34) };
             setup.Click += delegate { tray.ShowSetup(); };
-            var help = new Button { Text = "Help", Bounds = new Rectangle(180, y, 90, 34) };
+            var help = new Button { Text = "Help", Bounds = new Rectangle(178, y, 80, 34) };
             help.Click += delegate { tray.OpenHelp(); };
             Controls.Add(help);
             // Brightness, Test lights speed and colors, in their own window to keep this one short.
-            var lights = new Button { Text = "Lights...", Bounds = new Rectangle(280, y, 90, 34) };
+            var lights = new Button { Text = "Light Control", Bounds = new Rectangle(266, y, 106, 34) };
             lights.Click += delegate
             {
                 using (var dialog = new LightsDialog(tray)) dialog.ShowDialog(this);
@@ -296,9 +296,13 @@ namespace Krabbz.Blynclight
         }
     }
 
-    // Brightness, Test lights speed and the color for each status. Changes show on the lights right away.
+    // Light Control: brightness, Test lights speed and the color for each status. Each change is saved at once and
+    // shown on the lights for a few seconds, whatever they were showing.
     class LightsDialog : Form
     {
+        const int PreviewMs = 4000;
+        const int width = 460;
+        // A TrackBar can't be see-through, so Load gives each the window's color (Dark mode included).
         readonly TrayContext tray;
         readonly List<ComboBox> colorPickers = new List<ComboBox>();
         int y = 16;
@@ -306,25 +310,44 @@ namespace Krabbz.Blynclight
         public LightsDialog(TrayContext tray)
         {
             this.tray = tray;
-            Text = "Lights";
+            Text = "Light Control";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = MinimizeBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
             Font = new Font("Segoe UI", 10);
-            const int width = 440;
 
-            NumberPicker("Brightness", AppSettings.BrightnessChoices, AppSettings.Brightness, v => v + "%",
-                v => AppSettings.Brightness = v);
-            NumberPicker("Test lights: full cycle every", AppSettings.TestLightsCycleChoicesMs, AppSettings.TestLightsCycleMs,
-                v => v == 1000 ? "1 second" : (v / 1000.0) + " seconds", v => AppSettings.TestLightsCycleMs = v);
+            Controls.Add(new Label
+            {
+                Text = "Changes show on your lights for a few seconds as you make them.",
+                AutoSize = true,
+                MaximumSize = new Size(width - 40, 0),
+                Location = new Point(20, y),
+            });
+            y += 34;
+
+            // Brightness in steps of 5%; the preview shows whatever is lit now.
+            Slider("Brightness", AppSettings.MinBrightness / 5, 20, AppSettings.Brightness / 5, v => v * 5 + "%", v =>
+            {
+                AppSettings.Brightness = v * 5;
+                tray.ApplySettings();
+                tray.Light.Preview(null, PreviewMs);
+            });
+            // Test lights cycle in steps of a quarter second; the preview runs Test lights at the new speed.
+            Slider("Test lights: full cycle every", AppSettings.MinTestLightsCycleMs / 250, AppSettings.MaxTestLightsCycleMs / 250,
+                AppSettings.TestLightsCycleMs / 250, v => (v * 0.25).ToString("0.##") + (v == 4 ? " second" : " seconds"), v =>
+            {
+                AppSettings.TestLightsCycleMs = v * 250;
+                tray.ApplySettings();
+                tray.Light.Preview(LightState.Party, PreviewMs);
+            });
 
             y += 8;
             Controls.Add(new Label { Text = "Colors", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), AutoSize = true, Location = new Point(16, y) });
             y += 30;
             foreach (var role in AppSettings.LightColorRoles)
             {
-                string setting = role[0];
+                string setting = role[0], previewState = role[3];
                 Controls.Add(new Label { Text = role[1], AutoSize = true, Location = new Point(24, y + 3) });
                 var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(width - 150, y, 130, 30) };
                 picker.Items.AddRange(BlyncDevice.ColorNames);
@@ -333,6 +356,7 @@ namespace Krabbz.Blynclight
                 {
                     AppSettings.SetLightColorName(setting, (string)picker.SelectedItem);
                     tray.ApplySettings();
+                    tray.Light.Preview(previewState, PreviewMs);
                 };
                 picker.Tag = role[2];
                 colorPickers.Add(picker);
@@ -348,25 +372,35 @@ namespace Krabbz.Blynclight
             Controls.Add(close);
             CancelButton = close;
             ClientSize = new Size(width, close.Bottom + 16);
-            Load += delegate { Theme.Apply(this); };
+            Load += delegate
+            {
+                Theme.Apply(this);
+                foreach (Control control in Controls) if (control is TrackBar) control.BackColor = BackColor;
+            };
         }
 
-        void NumberPicker(string label, int[] choices, int current, Func<int, string> describe, Action<int> save)
+        // A labelled slider from min to max with the current value shown on the right. save runs as it moves.
+        void Slider(string label, int min, int max, int current, Func<int, string> describe, Action<int> save)
         {
-            Controls.Add(new Label { Text = label, AutoSize = true, Location = new Point(24, y + 3) });
-            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(290, y, 130, 30) };
-            foreach (int choice in choices)
+            Controls.Add(new Label { Text = label, AutoSize = true, Location = new Point(24, y) });
+            var value = new Label { Text = describe(current), AutoSize = false, TextAlign = ContentAlignment.TopRight, Bounds = new Rectangle(width - 120, y, 100, 22) };
+            Controls.Add(value);
+            var slider = new TrackBar
             {
-                picker.Items.Add(describe(choice));
-                if (choice == current) picker.SelectedIndex = picker.Items.Count - 1;
-            }
-            picker.SelectedIndexChanged += delegate
-            {
-                save(choices[picker.SelectedIndex]);
-                tray.ApplySettings();
+                Minimum = min,
+                Maximum = max,
+                Value = Math.Max(min, Math.Min(max, current)),
+                TickStyle = TickStyle.None,
+                AutoSize = false,
+                Bounds = new Rectangle(18, y + 24, width - 36, 30),
             };
-            Controls.Add(picker);
-            y += 36;
+            slider.ValueChanged += delegate
+            {
+                value.Text = describe(slider.Value);
+                save(slider.Value);
+            };
+            Controls.Add(slider);
+            y += 66;
         }
     }
 }

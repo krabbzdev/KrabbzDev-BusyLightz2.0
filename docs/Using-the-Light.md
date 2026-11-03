@@ -37,7 +37,7 @@ Every style has the same parts:
 | **Available (Alt+G)** (check mark) | Sets the light green, then back to Follow Teams Status after the override time. |
 | **On a call** (phone) | Flashes red and blue quickly, then back to Follow Teams Status after the override time. Handy for a call the app can't detect, such as a desk phone. |
 | **Follow Teams Status** (people) | The light shows your Microsoft Teams status. See [Teams Status](Teams-Status.md). |
-| **Test lights** (bottom left) | Cycles through every color, once a second (change the speed in [Settings > Lights...](#lights)), then back to Follow Teams Status after the override time. Handy for checking every light is working and matched. |
+| **Test lights** (bottom left) | Cycles through every color, once a second (change the speed in [Settings > Light Control](#light-control)), then back to Follow Teams Status after the override time. Handy for checking every light is working and matched. |
 | **Lights off** (bottom left) | Turns the lights off, then back to Follow Teams Status after the override time. A detected call still makes them flash. |
 | **⚙ Settings** (top right) | Opens [Settings](#settings). |
 | **Version line** | Shows the version and build date, plus **Check for updates**, **Project page** and **Help** (this guide) links. |
@@ -118,23 +118,23 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 | **Match my Teams status when I pick Busy, Available or On a call** | See [Teams Status](Teams-Status.md#teams-matches-what-you-pick). |
 | **Set my Teams status message while my lights are red** | On by default, showing *On a video call*. Pick another message, or **Custom message...** to type your own. See [Teams Status](Teams-Status.md#status-message-while-your-lights-are-red). |
 | **Setup checklist...** | Opens the [Setup Checklist](Setup-Checklist.md). |
-| **Lights...** | Brightness, Test lights speed and the color for each status. See [Lights](#lights). |
+| **Light Control** | Brightness, Test lights speed and the color for each status. See [Light Control](#light-control). |
 | **Email crash log...** (bottom left) | Starts an email with the app's log attached. See [If the app crashes](Troubleshooting-and-FAQ.md#if-the-app-crashes). |
 | **☕ Buy me a coffee** (bottom right) | Opens [KrabbzDev's Buy Me a Coffee page](https://buymeacoffee.com/krabbzdev), if you'd like to say thanks. Also in the tray menu. |
 
-### Lights
+### Light Control
 
-Click **Lights...** at the bottom of Settings. Changes show on the lights right away.
+Click **Light Control** at the bottom of Settings. Each change is saved at once and shows on your lights for a few seconds, whatever they were showing: the speed slider runs Test lights, a color shows that status, and brightness shows the lit color.
 
 | Setting | What it does |
 | --- | --- |
-| **Brightness** | 10%, 25%, 50%, 75% or 100% (the default), for every light and color. |
-| **Test lights: full cycle every** | How long Test lights takes to go once through every color: half a second, 1 second (the default), 2 or 4 seconds. |
+| **Brightness** | A slider from 5% to 100% (the default), for every light and color. |
+| **Test lights: full cycle every** | A slider for how long Test lights takes to go once through every color: a quarter second to 5 seconds. The default is 1 second. |
 | **Colors** | The color for Busy, Available, Teams Away, Teams Do not disturb, and the two colors On a call flashes between. Pick from red, orange, yellow, green, cyan, blue, purple, pink or white. The tray icon and window use your colors too. **Reset colors** puts the defaults back. |
 
 ## Colors at a glance
 
-These are the default colors. Change them in [Settings > Lights...](#lights).
+These are the default colors. Change them in [Settings > Light Control](#light-control).
 
 | Light | Meaning |
 | --- | --- |

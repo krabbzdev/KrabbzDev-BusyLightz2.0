@@ -84,31 +84,31 @@ namespace Krabbz.Blynclight
         }
         // Light (the default) or Dark colors for the app's windows.
         public static bool DarkMode { get { return Get("DarkMode", false); } set { Set("DarkMode", value); } }
-        // How long Test lights takes to go once round every color.
-        public static readonly int[] TestLightsCycleChoicesMs = { 500, 1000, 2000, 4000 };
-        public const int DefaultTestLightsCycleMs = 1000;
+        // How long Test lights takes to go once round every color: 0.25 to 5 seconds.
+        public const int MinTestLightsCycleMs = 250, MaxTestLightsCycleMs = 5000, DefaultTestLightsCycleMs = 1000;
         public static int TestLightsCycleMs
         {
-            get { return Choice("TestLightsCycleMs", TestLightsCycleChoicesMs, DefaultTestLightsCycleMs); }
+            get { return Ranged("TestLightsCycleMs", MinTestLightsCycleMs, MaxTestLightsCycleMs, DefaultTestLightsCycleMs); }
             set { SetInt("TestLightsCycleMs", value); }
         }
-        // Light brightness, in percent.
-        public static readonly int[] BrightnessChoices = { 10, 25, 50, 75, 100 };
+        // Light brightness, in percent: 5 to 100.
+        public const int MinBrightness = 5;
         public static int Brightness
         {
-            get { return Choice("Brightness", BrightnessChoices, 100); }
+            get { return Ranged("Brightness", MinBrightness, 100, 100); }
             set { SetInt("Brightness", value); }
         }
 
-        // The color for each status, by name from BlyncDevice.ColorNames: setting name, label, default.
+        // The color for each status, by name from BlyncDevice.ColorNames: setting name, label, default, and the
+        // state Light Control shows on the lights while it's being picked.
         public static readonly string[][] LightColorRoles =
         {
-            new[] { "BusyColor", "Busy (and Teams: Busy)", "Red" },
-            new[] { "AvailableColor", "Available (and Teams: Available)", "Green" },
-            new[] { "AwayColor", "Teams: Away / Be right back", "Yellow" },
-            new[] { "DndColor", "Teams: Do not disturb", "Purple" },
-            new[] { "CallColor1", "On a call: first flash color", "Red" },
-            new[] { "CallColor2", "On a call: second flash color", "Blue" },
+            new[] { "BusyColor", "Busy (and Teams: Busy)", "Red", "red" },
+            new[] { "AvailableColor", "Available (and Teams: Available)", "Green", "green" },
+            new[] { "AwayColor", "Teams: Away / Be right back", "Yellow", "yellow" },
+            new[] { "DndColor", "Teams: Do not disturb", "Purple", "purple" },
+            new[] { "CallColor1", "On a call: first flash color", "Red", "call-flash" },
+            new[] { "CallColor2", "On a call: second flash color", "Blue", "call-flash" },
         };
 
         public static string LightColorName(string setting)
@@ -128,13 +128,13 @@ namespace Krabbz.Blynclight
                 key.SetValue(setting, name, RegistryValueKind.String);
         }
 
-        // A saved number if it's one of choices, otherwise the default.
-        static int Choice(string name, int[] choices, int defaultValue)
+        // A saved number if it's from min to max, otherwise the default.
+        static int Ranged(string name, int min, int max, int defaultValue)
         {
             using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
             {
                 object value = key == null ? null : key.GetValue(name);
-                return value is int && Array.IndexOf(choices, (int)value) >= 0 ? (int)value : defaultValue;
+                return value is int && (int)value >= min && (int)value <= max ? (int)value : defaultValue;
             }
         }
 

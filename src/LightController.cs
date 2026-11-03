@@ -34,6 +34,10 @@ namespace Krabbz.Blynclight
         DateTime? returnToTeamsAt;
         List<LightDevice> knownLights = new List<LightDevice>();
         string lastLogged;
+        // Shown for a few seconds while a setting is changed in Light Control, ahead of everything else; until
+        // previewEnds (Environment.TickCount).
+        string preview;
+        int previewEnds;
         // Set when something changed that the light thread should show; turnOffPending when lights were just disabled.
         bool applyPending, turnOffPending;
         // From Settings, read again by ApplySettings: brightness in percent, Test lights cycle length, color per state.
@@ -68,6 +72,7 @@ namespace Krabbz.Blynclight
             {
                 lock (sync)
                 {
+                    if (preview != null) return preview;
                     if (callOverride != null) return callOverride;
                     if (state == LightState.FollowTeams && teamsColor != null) return teamsColor;
                     return state;
@@ -181,6 +186,23 @@ namespace Krabbz.Blynclight
             RequestApply();
         }
 
+        // Shows shown (a state or Teams status name) for ms, then goes back to what was showing. Lets a setting
+        // be seen as it's changed, whatever the lights are doing; null shows whatever is lit now (red if nothing).
+        public void Preview(string shown, int ms)
+        {
+            if (shown == null)
+            {
+                string now = ShownState;
+                shown = now == LightState.Off || now == LightState.FollowTeams || now == "off" ? LightState.Red : now;
+            }
+            lock (sync)
+            {
+                preview = shown;
+                previewEnds = Environment.TickCount + ms;
+            }
+            RequestApply();
+        }
+
         void LoadSettings()
         {
             var loaded = new Dictionary<string, LightColor>();
@@ -267,6 +289,11 @@ namespace Krabbz.Blynclight
                 apply = applyPending;
                 turnOffPending = applyPending = false;
                 cycle = cycleMs;
+                if (preview != null && Environment.TickCount - previewEnds >= 0)
+                {
+                    preview = null;
+                    apply = true;
+                }
             }
             if (turnOff)
             {
