@@ -11,8 +11,6 @@ namespace Krabbz.Blynclight
     {
         // How often the light thread runs: Party Mode and call flashing move on this often.
         public const int PartyStepMs = 100;
-        // During a call flash, switch between the two flash colors this often.
-        const int CallFlashMs = 300;
         // Look for newly plugged-in or removed lights, and re-send the current color, this often.
         const int DeviceCheckMs = 2000;
 
@@ -40,8 +38,9 @@ namespace Krabbz.Blynclight
         int previewEnds;
         // Set when something changed that the light thread should show; turnOffPending when lights were just disabled.
         bool applyPending, turnOffPending;
-        // From Settings, read again by ApplySettings: brightness in percent, Test lights cycle length, color per state.
-        int brightness, cycleMs;
+        // From Settings, read again by ApplySettings: brightness in percent, Test lights cycle length, how long a call
+        // flash shows each color, and the color per state.
+        int brightness, cycleMs, callFlashMs;
         Dictionary<string, LightColor> colors;
 
         // Raised on a background thread when a light is plugged in or removed.
@@ -213,12 +212,13 @@ namespace Krabbz.Blynclight
             loaded["purple"] = BlyncDevice.ColorFor(AppSettings.LightColorName("DndColor"));
             loaded["call1"] = BlyncDevice.ColorFor(AppSettings.LightColorName("CallColor1"));
             loaded["call2"] = BlyncDevice.ColorFor(AppSettings.LightColorName("CallColor2"));
-            int percent = AppSettings.Brightness, cycle = AppSettings.TestLightsCycleMs;
+            int percent = AppSettings.Brightness, cycle = AppSettings.TestLightsCycleMs, flash = AppSettings.CallFlashMs;
             lock (sync)
             {
                 colors = loaded;
                 brightness = percent;
                 cycleMs = cycle;
+                callFlashMs = flash;
             }
         }
 
@@ -281,7 +281,7 @@ namespace Krabbz.Blynclight
         void LightStep(int elapsed, ref double hue, ref int flashMs, ref int sinceDeviceCheck)
         {
             bool enabled, turnOff, apply;
-            int cycle;
+            int cycle, flashEvery;
             lock (sync)
             {
                 enabled = lightsEnabled;
@@ -289,6 +289,7 @@ namespace Krabbz.Blynclight
                 apply = applyPending;
                 turnOffPending = applyPending = false;
                 cycle = cycleMs;
+                flashEvery = callFlashMs;
                 if (preview != null && Environment.TickCount - previewEnds >= 0)
                 {
                     preview = null;
@@ -336,8 +337,8 @@ namespace Krabbz.Blynclight
             }
             if (current == LightState.CallFlash)
             {
-                // Write every tick so a light plugged in mid-call joins in; the color flips every CallFlashMs.
-                bool first = (flashMs / CallFlashMs) % 2 == 0;
+                // Write every tick so a light plugged in mid-call joins in; the color flips every flashEvery ms.
+                bool first = (flashMs / flashEvery) % 2 == 0;
                 WriteAll(ColorOf(first ? "call1" : "call2"));
                 flashMs += elapsed;
             }

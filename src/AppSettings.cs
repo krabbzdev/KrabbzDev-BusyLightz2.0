@@ -91,6 +91,13 @@ namespace Krabbz.Blynclight
             get { return Ranged("TestLightsCycleMs", MinTestLightsCycleMs, MaxTestLightsCycleMs, DefaultTestLightsCycleMs); }
             set { SetInt("TestLightsCycleMs", value); }
         }
+        // How long On a call shows each of its two flash colors: 0.1 to 2 seconds.
+        public const int MinCallFlashMs = 100, MaxCallFlashMs = 2000, DefaultCallFlashMs = 300;
+        public static int CallFlashMs
+        {
+            get { return Ranged("CallFlashMs", MinCallFlashMs, MaxCallFlashMs, DefaultCallFlashMs); }
+            set { SetInt("CallFlashMs", value); }
+        }
         // Light brightness, in percent: 5 to 100.
         public const int MinBrightness = 5;
         public static int Brightness

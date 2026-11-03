@@ -124,12 +124,13 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 
 ### Light Control
 
-Click **Light Control** at the bottom of Settings. Each change is saved at once and shows on your lights for a few seconds, whatever they were showing: the speed slider runs Test lights, a color shows that status, and brightness shows the lit color.
+Click **Light Control** at the bottom of Settings. Each change is saved at once and shows on your lights for a few seconds, whatever they were showing: the Test lights slider runs Test lights, the On a call slider flashes, a color shows that status, and brightness shows the lit color.
 
 | Setting | What it does |
 | --- | --- |
 | **Brightness** | A slider from 5% to 100% (the default), for every light and color. |
 | **Test lights: full cycle every** | A slider for how long Test lights takes to go once through every color: a quarter second to 5 seconds. The default is 1 second. |
+| **On a call: switch colors every** | A slider for how long On a call shows each of its two flash colors: a tenth of a second to 2 seconds. The default is 0.3 seconds. |
 | **Colors** | The color for Busy, Available, Teams Away, Teams Do not disturb, and the two colors On a call flashes between. Pick from red, orange, yellow, green, cyan, blue, purple, pink or white. The tray icon and window use your colors too. **Reset colors** puts the defaults back. |
 
 ## Colors at a glance

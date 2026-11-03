@@ -341,6 +341,14 @@ namespace Krabbz.Blynclight
                 tray.ApplySettings();
                 tray.Light.Preview(LightState.Party, PreviewMs);
             });
+            // On a call's flash, in steps of a tenth of a second per color; the preview flashes at the new speed.
+            Slider("On a call: switch colors every", AppSettings.MinCallFlashMs / 100, AppSettings.MaxCallFlashMs / 100,
+                AppSettings.CallFlashMs / 100, v => (v * 0.1).ToString("0.0") + (v == 10 ? " second" : " seconds"), v =>
+            {
+                AppSettings.CallFlashMs = v * 100;
+                tray.ApplySettings();
+                tray.Light.Preview(LightState.CallFlash, PreviewMs);
+            });
 
             y += 8;
             Controls.Add(new Label { Text = "Colors", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), AutoSize = true, Location = new Point(16, y) });
