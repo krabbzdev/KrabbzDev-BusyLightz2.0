@@ -122,6 +122,7 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 | **Setup checklist...** | Opens the [Setup Checklist](Setup-Checklist.md). |
 | **Light Control** | Brightness, On a call flash speed and the color for each status. See [Light Control](#light-control). |
 | **Email crash log...** (bottom left) | Starts an email with the app's log attached. See [If the app crashes](Troubleshooting-and-FAQ.md#if-the-app-crashes). |
+| **Version** (bottom middle) | The version you're running and when it was last updated, e.g. *Version 2.25.0 · Last updated Nov 3, 2026*. |
 | **☕ Buy me a coffee** (bottom right) | Opens [KrabbzDev's Buy Me a Coffee page](https://buymeacoffee.com/krabbzdev), if you'd like to say thanks. Also in the tray menu. |
 
 ### Light Control

@@ -11,6 +11,8 @@ namespace Krabbz.Blynclight
     {
         const int RefreshMs = 2000;
         const int width = 500;
+        // Tags the version line, shown in the softer text color.
+        const string VersionLabel = "version";
         // Section icons: Segoe MDL2 Assets settings gear, phone and people.
         const string GeneralGlyph = "", CallsGlyph = "", TeamsGlyph = "";
 
@@ -132,6 +134,19 @@ namespace Krabbz.Blynclight
             };
             crashLog.LinkClicked += delegate { CrashReport.Email(); };
             Controls.Add(crashLog);
+            // Between the two, which version this is and when it was built, e.g. "Version 2.24.0 · Last updated Nov 3, 2026".
+            DateTime built;
+            string date = DateTime.TryParse(Program.BuildDate, out built) ? built.ToString("MMM d, yyyy") : Program.BuildDate;
+            var version = new Label
+            {
+                Text = "Version " + Program.VersionText + "  ·  Last updated " + date,
+                Font = new Font("Segoe UI", 8.5f),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Bounds = new Rectangle(crashLog.Right + 4, y, coffee.Left - crashLog.Right - 8, 20),
+                Tag = VersionLabel,
+            };
+            Controls.Add(version);
             y += 32;
 
             var setup = new ModernButton { Text = "Setup checklist...", Bounds = new Rectangle(12, y, 150, 34) };
@@ -235,7 +250,8 @@ namespace Krabbz.Blynclight
                 if (Theme.KeepColors.Equals(control.Tag) || control is ComboBox || control is TextBox) continue;
                 bool onCard = cards.Exists(c => c.Contains(control.Location));
                 control.BackColor = onCard ? Theme.Card : Theme.Page;
-                if (control is Label && !(control is LinkLabel)) control.ForeColor = Theme.Text;
+                if (control is Label && !(control is LinkLabel))
+                    control.ForeColor = VersionLabel.Equals(control.Tag) ? Theme.Muted : Theme.Text;
             }
             Invalidate();
         }
