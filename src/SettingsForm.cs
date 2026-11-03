@@ -155,7 +155,7 @@ namespace Krabbz.Blynclight
             help.Click += delegate { tray.OpenHelp(); };
             Controls.Add(help);
             // Brightness, call flash speed and colors, in their own window to keep this one short.
-            // In the Test lights colors, with a light bulb, so it stands out as the fun one.
+            // In the Party Mode colors, with a light bulb, so it stands out as the fun one.
             var lights = new ModernButton { Text = "Light Control", Rainbow = true, Glyph = "", Bounds = new Rectangle(258, y, 124, 34) };
             lights.Click += delegate
             {

@@ -59,7 +59,7 @@ namespace Krabbz.Blynclight
     }
 
     // A button with rounded corners in the app's colors. Accent fills it with the Teams purple, for the main action.
-    // Rainbow fills it with the Test lights colors, which drift across it while the mouse is over it.
+    // Rainbow fills it with the Party Mode colors, which drift across it while the mouse is over it.
     class ModernButton : Button
     {
         public bool Accent, Rainbow;
@@ -142,7 +142,7 @@ namespace Krabbz.Blynclight
             DrawFocus(g, Accent ? Color.White : Theme.Teams);
         }
 
-        // The Test lights colors across the button, darkened a little so white text reads on every color.
+        // The Party Mode colors across the button, darkened a little so white text reads on every color.
         void PaintRainbow(Graphics g)
         {
             var r = new Rectangle(0, 0, Width - 1, Height - 1);

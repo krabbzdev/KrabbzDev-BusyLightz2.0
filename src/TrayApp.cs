@@ -1023,7 +1023,7 @@ namespace Krabbz.Blynclight
 
             string message;
             if (NoLight) message = "No light found. Plug your Blynclight or Luxafor back in.";
-            else if (State == LightState.Party) message = "Testing the lights: cycling through every color.";
+            else if (State == LightState.Party) message = "Party Mode: cycling through every color.";
             else if (State == LightState.FollowTeams) message = "Light handed to Embrava Connect to show your Teams status.";
             else if (State == LightState.Off) message = "Light turned off.";
             else if (State == LightState.CallFlash) message = "Light flashing red and blue: " + StatusText + ".";

@@ -31,14 +31,13 @@ Every style has the same parts:
 
 | Part | What it does |
 | --- | --- |
-| **Status** | What the lights are doing right now, e.g. *Busy*, *Teams: Available*, *On a call (Zoom)*, *Test lights*, *Light not found*, and which lights are connected. |
+| **Status** | What the lights are doing right now, e.g. *Busy*, *Teams: Available*, *On a call (Zoom)*, *Party Mode*, *Light not found*, and which lights are connected. |
 | **Info line** (under the status) | While an override is on: how long until it goes back to Teams status, e.g. *Back to Teams status in 12:10*. Click **Back to Teams now** to go back early. While following Teams, a short note on what the app does, with a link to this guide. |
 | **Busy (Alt+R)** (stop sign) | Sets the light red, then back to Follow Teams Status after the [override time](#override-timer). |
 | **Available (Alt+G)** (check mark) | Sets the light green, then back to Follow Teams Status after the override time. |
 | **On a call** (phone) | Flashes red and blue quickly, then back to Follow Teams Status after the override time. Handy for a call the app can't detect, such as a desk phone. |
 | **Follow Teams Status** (people) | The light shows your Microsoft Teams status. See [Teams Status](Teams-Status.md). |
-| **Test lights** (bottom left) | Cycles quickly through every color, four times a second, then back to Follow Teams Status after the override time. Handy for checking every light is working and matched. |
-| **Lights off** (bottom left) | Turns the lights off, then back to Follow Teams Status after the override time. A detected call still makes them flash. |
+| **Party Mode** (bottom left) | Cycles quickly through every color, four times a second, then back to Follow Teams Status after the override time. Handy for checking every light is working and matched. |
 | **⚙ Settings** (top right) | Opens [Settings](#settings). |
 | **Version line** | Shows the version and build date, plus **Check for updates**, **Project page** and **Help** (this guide) links. |
 
@@ -46,7 +45,7 @@ The mode you picked is filled in with its color. The mode you pick is remembered
 
 ### Override timer
 
-Busy, Available, On a call, Test lights and Lights off *override* your Teams status, so it's easy to forget one is still on. While one is on, the window shows the countdown and the tray icon gets a small white badge. After **15 minutes** the lights go back to **Follow Teams Status** on their own, and a notification says so. The countdown shows in the window and when you hover over the tray icon, and it keeps counting through restarts. Picking any mode again starts the timer over.
+Busy, Available, On a call, Party Mode and Disable Lights (in the tray menu) *override* your Teams status, so it's easy to forget one is still on. While one is on, the window shows the countdown and the tray icon gets a small white badge. After **15 minutes** the lights go back to **Follow Teams Status** on their own, and a notification says so. The countdown shows in the window and when you hover over the tray icon, and it keeps counting through restarts. Picking any mode again starts the timer over.
 
 Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). To keep overrides on until you change them, switch off **Go back to Follow Teams Status after**.
 
@@ -61,8 +60,8 @@ Each mode has a dot in its color, with a ring around the one that's on. The menu
 | **Open KrabbzDev-BusyLightz2.0** | Opens the window. |
 | **[:15 Min Override] Red/Busy** / **Green/Available** | Same as the window's Busy and Available buttons. The time in brackets is your [override time](#override-timer) from Settings, e.g. *[1 Hr Override]*, or *[Override]* when overrides stay on until you change them. |
 | **[:15 Min Override] On A Call** | Same as the window's On a call button. |
-| **[:15 Min Override] Test Lights aka Party Mode!** | Same as the window's Test lights button. |
-| **[:15 Min Override] Disable Lights** | Same as the window's Lights off button. |
+| **[:15 Min Override] Test Lights aka Party Mode!** | Same as the window's Party Mode button. |
+| **[:15 Min Override] Disable Lights** | Turns the lights off, then back to Follow Teams Status after the override time. A detected call still makes them flash. |
 | **Follow Teams Status** | Light follows Teams. |
 | **Connect to Microsoft Teams** | Sign in so the app can read your Teams status (ticked when connected; click again to disconnect). |
 | **Disable USB Light Integration** | When ticked, the app turns your USB lights off and stops controlling them. Teams status, call detection and the Teams status message keep working. Handy on a PC without a busy light, or when another app runs the light. Click again to turn the lights back on. Remembered after a restart. |

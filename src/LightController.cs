@@ -82,7 +82,7 @@ namespace Krabbz.Blynclight
         }
         public bool OverrideActive { get { lock (sync) return callOverride != null; } }
         public int LightCount { get { lock (sync) return knownLights.Count; } }
-        // How far round the color wheel Test lights moves every PartyStepMs.
+        // How far round the color wheel Party Mode moves every PartyStepMs.
         public int PartyHueStep { get { return 360 * PartyStepMs / PartyCycleMs % 360; } }
 
         // Turning USB lights off switches connected lights off and then leaves them alone; turning them back on

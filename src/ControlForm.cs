@@ -659,7 +659,7 @@ namespace Krabbz.Blynclight
 
         readonly TrayContext tray;
         readonly OverrideStrip strip = new OverrideStrip();
-        readonly LinkLabel testLink = new LinkLabel(), offLink = new LinkLabel();
+        readonly LinkLabel testLink = new LinkLabel();
         // Only the parts the chosen style uses are created; the rest stay null.
         StatusCard status;
         ModeTile[] tiles;
@@ -786,7 +786,7 @@ namespace Krabbz.Blynclight
             return tiles[tiles.Length - 1].Bottom;
         }
 
-        // Test lights and Off, then version, links and the beta note. Flat drops the card and the line above it.
+        // Party Mode, then version, links and the beta note. Flat drops the card and the line above it.
         Panel AddFooter(int top, bool flat)
         {
             var footer = new Panel { Bounds = new Rectangle(0, top, WindowWidth, 92), BackColor = flat ? Theme.Page : Theme.Card };
@@ -796,10 +796,11 @@ namespace Krabbz.Blynclight
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
                 Theme.Pill(e.Graphics, "Beta", footer.Width - Pad, 12, Theme.OverrideTint, Theme.OverrideText);
             };
-            FooterLink(footer, testLink, "Test lights", Pad, LightState.Party);
-            FooterLink(footer, offLink, "Lights off", Pad + 120, LightState.Off);
+            FooterLink(footer, testLink, "Party Mode", Pad, LightState.Party);
 
-            string versionText = "Version " + Program.VersionText + "  ·  Built " + Program.BuildDate;
+            DateTime built;
+            string date = DateTime.TryParse(Program.BuildDate, out built) ? built.ToString("MMM d, yyyy") : Program.BuildDate;
+            string versionText = "Version " + Program.VersionText + "  ·  Last updated " + date;
             const string UpdatesLink = "Check for updates", ProjectLink = "Project page", HelpLink = "Help";
             if (Program.UpdateRepo != null) versionText += "\n" + UpdatesLink + "  ·  " + ProjectLink + "  ·  " + HelpLink;
             var version = new LinkLabel
@@ -915,7 +916,6 @@ namespace Krabbz.Blynclight
             if (pills != null) { pills.Active = picked; pills.Invalidate(); }
             if (list != null) { list.Active = picked; list.Invalidate(); }
             testLink.LinkColor = picked == LightState.Party ? Theme.Teams : Theme.Text;
-            offLink.LinkColor = picked == LightState.Off ? Theme.Teams : Theme.Text;
         }
 
         static string HotkeyTip()
