@@ -15,8 +15,8 @@ namespace Krabbz.Blynclight
         const int width = 500, navWidth = 170;
         // Tags the version line, shown in the softer text color.
         const string VersionLabel = "version";
-        // Page icons: Segoe MDL2 Assets settings gear, phone, people and devices.
-        const string GeneralGlyph = "\uE713", CallsGlyph = "\uE717", TeamsGlyph = "\uE716", DevicesGlyph = "\uE772";
+        // Page icons: Segoe MDL2 Assets settings gear, phone, people, microphone and keyboard.
+        const string GeneralGlyph = "\uE713", CallsGlyph = "\uE717", TeamsGlyph = "\uE716", MuteSyncGlyph = "\uE720", K2Glyph = "\uE765";
 
         readonly TrayContext tray;
         readonly CheckBox startWithWindows, openWindow;
@@ -116,9 +116,9 @@ namespace Krabbz.Blynclight
             message.Enabled = messageOn.Checked;
             EndPage();
 
-            StartPage("Devices", DevicesGlyph);
+            StartPage("mutesync", MuteSyncGlyph);
             // Pressing a mutesync button mutes or unmutes the mic; its ring shows red when muted, green when live.
-            Heading("mutesync button", DevicesGlyph);
+            Heading("mutesync button", MuteSyncGlyph);
             var muteSync = Box("Mute and unmute my mic with a mutesync button", AppSettings.MuteSyncEnabled,
                 v => { AppSettings.MuteSyncEnabled = v; tray.ApplySettings(); RefreshDevices(); });
             SideButton(muteSync, "Ring colors...", delegate
@@ -129,6 +129,9 @@ namespace Krabbz.Blynclight
             muteButtonStatus.Location = new Point(24 + 46, y);
             Add(muteButtonStatus);
             y += 30;
+            EndPage();
+
+            StartPage("K2 Key", K2Glyph);
             K2Section();
             EndPage();
             RefreshDevices();
@@ -157,7 +160,7 @@ namespace Krabbz.Blynclight
         // The K2 macro key: an action for each button and for both together, and the email address it can type.
         void K2Section()
         {
-            Heading("K2 Key", DevicesGlyph);
+            Heading("K2 Key", K2Glyph);
             k2Status.Location = new Point(24, y);
             Add(k2Status);
             y += 28;
@@ -180,7 +183,17 @@ namespace Krabbz.Blynclight
                 Location = new Point(24, y),
                 Tag = VersionLabel,
             });
-            y += 52;
+            y += 56;
+            Add(new Label
+            {
+                Text = "Tested with the Motospeed K2 2 Button RGB Keyboard.",
+                AutoSize = true,
+                MaximumSize = new Size(width - 48, 0),
+                Font = new Font("Segoe UI", 9f, FontStyle.Italic),
+                Location = new Point(24, y),
+                Tag = VersionLabel,
+            });
+            y += 26;
         }
 
         // A K2 button's action, and a box for the text it needs (greyed out for actions that need none).
