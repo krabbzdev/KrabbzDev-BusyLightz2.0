@@ -4,7 +4,7 @@
 
 A small Windows tray app that controls USB busy lights directly over USB, so the people around you can see at a glance whether you're free, busy or on a call. Plug in any mix of Blynclights and Luxafor Flags, as many of each as you like, and they all show the same color at the same time. It replaces both Embrava Connect and Luxafor's own app. No vendor accounts or admin rights needed.
 
-<img src="docs/images/main-window.png" alt="The main window in the Orbit style: a green top with a ring reading Available, From Teams Status, and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
+<img src="docs/images/main-window.png" alt="The main window in the Orbit style: a green top with a ring reading Available, From Teams Status, tiles for the connected Blynclight and Luxafor, and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
 
 📖 **[User guide](docs/README.md)**: every feature and how to use it.
 
@@ -26,17 +26,20 @@ If BusyLightz saves you a few interruptions, you can [buy me a coffee](https://b
 
 ### Your lights
 
-- **Blynclight and Luxafor Flag together:** every connected light shows the same color, and lights plugged in later are matched within seconds. The window shows what's connected, e.g. *Lights: Blynclight + 2 Luxafor*.
+- **Blynclight and Luxafor Flag together:** every connected light shows the same color, and lights plugged in later are matched within seconds. The window shows a tile for each kind of light that's connected, glowing in its current color.
 - **Four modes, one click each:** **Busy** (red), **Available** (green), **On a call** (flashing red and blue, for calls the app can't detect, like a desk phone) and **Follow Teams Status**. Pick them from the window, the tray menu, or anywhere with the hotkeys `Alt+R` (Busy) and `Alt+G` (Available).
-- **Override timer:** Busy, Available and On a call go back to Follow Teams Status on their own after 15 minutes, so you never forget one is on. Choose 5 minutes to 4 hours, or turn it off, in Settings. While an override is on, the window shows a countdown and the tray icon gets a small badge.
+- **Override timer:** your pick goes back to Follow Teams Status on its own after 15 minutes, so you never forget one is on. Choose 5 minutes to 4 hours, or turn it off, in Settings. While an override is on, the window shows a countdown and the tray icon gets a small badge.
 - **Three window styles:** **Orbit** (the default, shown above), **Color block** and **Fluent list**, each in Light or Dark mode.
-- **Test lights:** cycles smoothly through every color on every light, to check they all work and match.
-- **Off:** turns the lights off.
+- **Light Control:** brightness, how fast On a call flashes, and the color for each status, each shown on your lights as you change it.
+- **Party Mode:** cycles quickly through every color on every light, to check they all work and match.
+
+<img src="docs/images/window-styles.png" alt="The three window styles side by side: Orbit on a call in Dark mode, Color block following Teams as Available, and Fluent list set to Busy" width="900">
 
 ### Calls
 
-- **Flashes whenever you're on a call:** any app using your microphone (Teams, Zoom, Cytracom, Loom, a browser call and so on) sets the lights flashing red and blue, or steady red if you prefer, then back afterwards.
+- **Flashes whenever you're on a call:** any app using your microphone (Teams, Zoom, Cytracom, Loom, a browser call and so on) sets the lights flashing red and blue, or steady red if you prefer, then back afterwards. The window and tray icon flash with them.
 - **Ignore list:** recorders, noise-cancelling tools and other apps that use the mic without a call can be ignored.
+- **Test microphone:** shows live which apps Windows reports using the microphone, for when a call isn't detected.
 
 ### Microsoft Teams
 
@@ -54,7 +57,15 @@ Connect once with a browser sign-in to your work account. No client secret is st
 - **Settings window** (⚙ in the app or tray menu): window style, appearance, startup, notifications, hotkeys, override timer, automatic updates, call detection and the Teams options.
 - **Notifications** when the lights change.
 - **Automatic, silent updates** from this repo's Releases, checked against GitHub's SHA-256 digest before installing, with a card afterwards listing what changed.
+- **Install just for you, or for everyone on the PC** in `C:\Program Files\BusyLightz`, with a background updater; IT can deploy it with an RMM script. See [Installing and Updating](docs/Installing-and-Updating.md).
 - Starts at sign-in and lives in the system tray, with an icon that matches the lights.
+- **Email crash log:** sends the app's log, Windows' crash records and microphone details in one click.
+
+<p>
+<img src="docs/images/settings.png" alt="The Settings window: General, Calls and Microsoft Teams cards with on/off switches, and Setup checklist, Help, Light Control and Close buttons" width="330">
+<img src="docs/images/light-control.png" alt="The Light Control window: a Disable All Light Functions switch, Brightness and On a call speed sliders, and a color for each status" width="300">
+<img src="docs/images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Follow Teams Status, Connect to Microsoft Teams, Settings, Check for updates and Exit" width="230">
+</p>
 
 ## Install
 

@@ -21,6 +21,8 @@ You can plug in **any number of each**. They all show the same color at the same
 
 Pick how the window looks under **Window style** in [Settings](#settings). Each style works in Light and Dark mode.
 
+<img src="images/window-styles.png" alt="The three window styles side by side: Orbit on a call in Dark mode, Color block following Teams as Available, and Fluent list set to Busy" width="900">
+
 | Style | Looks like |
 | --- | --- |
 | **Orbit** (the default) | The top of the window fills with your status color, with a big ring showing the status, e.g. *Available* over *From Teams Status*. The modes are one pill-shaped switcher below. |
@@ -52,6 +54,8 @@ Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). 
 **During a call** the light flashes red and blue automatically (or shows steady red, if you turn flashing off in Settings) and goes back to your choice afterwards. See [Call Detection](Call-Detection.md). If you pick a color *during* a call, your choice wins until that call ends.
 
 ## The tray menu (right-click the tray icon)
+
+<img src="images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Follow Teams Status, Connect to Microsoft Teams, Settings, Check for updates and Exit" width="260">
 
 Each mode has a dot in its color, with a ring around the one that's on. The menu follows your Light or Dark **Appearance** setting.
 
@@ -101,6 +105,8 @@ Test Lights's color changes don't notify. Turn notifications off in [Settings](#
 
 Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Settings are grouped into General, Calls and Microsoft Teams, with an on/off switch for each. Changes take effect immediately. Every switch is on by default.
 
+<img src="images/settings.png" alt="The Settings window: General, Calls and Microsoft Teams cards with on/off switches, and Setup checklist, Help, Light Control and Close buttons" width="380">
+
 | Setting | What it does |
 | --- | --- |
 | **Window style** | **Orbit** (the default), **Color block** or **Fluent list**. See [The window](#the-window). |
@@ -127,6 +133,8 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 ### Light Control
 
 Click the rainbow **Light Control** button at the bottom of Settings. Each change is saved at once and shows on your lights for a few seconds, whatever they were showing: the On a call slider flashes, a color shows that status, and brightness shows the lit color.
+
+<img src="images/light-control.png" alt="The Light Control window: a Disable All Light Functions switch, Brightness and On a call speed sliders, and a color for each status" width="360">
 
 | Setting | What it does |
 | --- | --- |
