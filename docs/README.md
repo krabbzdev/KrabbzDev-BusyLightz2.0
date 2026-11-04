@@ -12,7 +12,7 @@ A small Windows app that controls USB busy lights, so the people around you can 
 >
 > — KrabbzDev
 
-<img src="images/main-window.png" alt="The main window in the Orbit style: a green top with a ring reading Available, From Teams Status, tiles for the connected Blynclight and Luxafor, and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
+<img src="images/busylightz-window.png" alt="The main window in the Orbit style: a green top with a ring reading Available, From Teams Status, tiles for the connected Blynclight and Luxafor, and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
 
 ## What it does
 

@@ -4,7 +4,7 @@
 
 A small Windows tray app that controls USB busy lights directly over USB, so the people around you can see at a glance whether you're free, busy or on a call. Plug in any mix of Blynclights and Luxafor Flags, as many of each as you like, and they all show the same color at the same time. It replaces both Embrava Connect and Luxafor's own app. No vendor accounts or admin rights needed.
 
-<img src="docs/images/main-window.png" alt="The main window in the Orbit style: a green top with a ring reading Available, From Teams Status, tiles for the connected Blynclight and Luxafor, and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
+<img src="docs/images/busylightz-window.png" alt="The main window in the Orbit style: a green top with a ring reading Available, From Teams Status, tiles for the connected Blynclight and Luxafor, and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
 
 📖 **[User guide](docs/README.md)**: every feature and how to use it.
 
