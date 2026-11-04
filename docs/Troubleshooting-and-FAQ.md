@@ -92,9 +92,26 @@ Turn them off in **Settings** (⚙ in the window, or tray menu > **Settings...**
 - Call detection only asks Windows *which apps* are using the microphone, never any audio.
 - The only internet connections are to Microsoft (Teams status) and GitHub (updates).
 
+## The Mutesync Button doesn't mute, or its ring stays dark
+
+- Check **Settings > Mutesync Button**. *In use by another app* means the MuteMe app has the button: quit it, and remove it from startup or uninstall it. *Not found* means Windows doesn't see the button: unplug it and plug it back in.
+- Make sure **Mute and unmute my mic with a Mutesync Button** is on.
+- If **Only light the ring while an app is using my mic** is on, the ring is dark between calls. That's expected.
+- The button mutes your mic in Windows. Teams' own mute icon doesn't change, but Teams shows that your mic is muted by the system.
+
+## The K2 USBC Key doesn't do anything, or it clicks
+
+- Check **Settings > K2 USBC Key** says *Connected*, and that each button has an action other than **Do nothing**.
+- While BusyLightz isn't running, the K2's buttons are ordinary left and right mouse clicks. Once BusyLightz is running, its clicks are cancelled.
+- *Type my email address* and *Type text* type into whatever has the keyboard focus. Click into the box you want first.
+
+## How do I send an idea or report a problem?
+
+Use **Send feedback...** in the tray menu or at the bottom of Settings. It opens a filled-in issue on the project's GitHub page, for you to submit. See [Send feedback](Using-the-Light.md#send-feedback).
+
 ## Can I pin it to the Start menu or taskbar?
 
 Yes, but you have to do it yourself (Windows doesn't let installers do it): right-click the Start menu entry > **Pin to Start** or **Pin to taskbar**.
 
 ---
-[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
+[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

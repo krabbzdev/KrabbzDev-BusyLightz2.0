@@ -168,8 +168,8 @@ namespace Krabbz.Blynclight
             bool emailSet = AppSettings.MacroEmailSet;
             bool edited = emailBox.Text.Trim() != (emailSet ? AppSettings.MacroEmail : "");
             Show(emailStep, emailSet ? Mark.Done : Mark.Todo,
-                emailSet ? "Saved. The K2 key types it when you press both buttons."
-                         : "The K2 key types this when you press both buttons. Until you save yours it types " + AppSettings.ExampleEmail + ".",
+                emailSet ? "Saved. The K2 USBC Key types it when you press both buttons."
+                         : "The K2 USBC Key types this when you press both buttons. Until you save yours it types " + AppSettings.ExampleEmail + ".",
                 edited || !emailSet);
         }
     }

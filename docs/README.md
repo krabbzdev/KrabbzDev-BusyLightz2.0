@@ -23,6 +23,10 @@ A small Windows app that controls USB busy lights, so the people around you can 
 - **Sets a Teams status message:** coworkers see a message like *On a video call* (the default) or *In a meeting*, or your own, next to your name while your lights are red. See [Status message](Teams-Status.md#status-message-while-your-lights-are-red).
 - **Party Mode:** cycles quickly through every color, to check every light is working.
 - **Light Control:** set the brightness, how fast calls flash, and the color for each status. See [Light Control](Using-the-Light.md#light-control).
+- **Mutesync Button:** press it to mute or unmute your mic in every app; its ring shows red when muted and green when live. No MuteMe app needed. See [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md).
+- **K2 USBC Key macros:** each of its two buttons, and both together, runs an action you pick, like typing your email address, pressing a shortcut, muting your mic or switching Busy and Available. No K2 software needed.
+- **Active Devices:** the window shows every light and button, lit when plugged in and greyed out when not.
+- **Send feedback:** send an idea or report a problem from the tray menu or Settings, as an issue on GitHub.
 - **Works with several lights at once:** every Blynclight and Luxafor Flag on the PC shows the same color, including ones plugged in later. Tested with the Blynclight Plus and Luxafor Flag 2.
 - **Keeps itself up to date:** new versions install silently in the background, then a card lists what changed.
 
@@ -41,7 +45,8 @@ A small Windows app that controls USB busy lights, so the people around you can 
 | Page | What's in it |
 | --- | --- |
 | [Installing and Updating](Installing-and-Updating.md) | Download, install, automatic updates, uninstall, deploying to many PCs |
-| [Using the Light](Using-the-Light.md) | The window, every button and menu item, override timer, hotkeys, notifications, Settings |
+| [Using the Light](Using-the-Light.md) | The window, every button and menu item, override timer, hotkeys, notifications, Settings, Send feedback |
+| [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) | Muting with a Mutesync Button, its ring colors, and K2 USBC Key macros |
 | [Teams Status](Teams-Status.md) | Connecting to Teams, what each color means, Busy in Teams, status messages |
 | [Call Detection](Call-Detection.md) | How the light knows you're on a call, ignoring apps, Test microphone |
 | [Setup Checklist](Setup-Checklist.md) | Every step of the checklist explained |
@@ -50,4 +55,4 @@ A small Windows app that controls USB busy lights, so the people around you can 
 | [For Developers](For-Developers.md) | Building, publishing releases, project layout |
 
 ---
-[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
+[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

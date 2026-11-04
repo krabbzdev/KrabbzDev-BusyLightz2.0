@@ -189,7 +189,7 @@ namespace Krabbz.Blynclight
                             buttonDown = true;
                             // Mute or unmute as soon as it's pressed, like a key.
                             bool? muted = MicMute.IsMuted();
-                            if (muted.HasValue && MicMute.SetMuted(!muted.Value, "the mutesync button")) ShowMuted(!muted.Value);
+                            if (muted.HasValue && MicMute.SetMuted(!muted.Value, "the Mutesync Button")) ShowMuted(!muted.Value);
                         }
                         else if (b == Released) buttonDown = false;
                     }

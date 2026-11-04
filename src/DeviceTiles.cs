@@ -27,8 +27,8 @@ namespace Krabbz.Blynclight
             {
                 new GridDevice(blynclights > 1 ? blynclights + " Blynclights" : "Blynclight", blynclights > 0, r => DrawBlynclight(g, r, blynclights > 0 ? glow : Color.Gray)),
                 new GridDevice(luxafors > 1 ? luxafors + " Luxafors" : "Luxafor", luxafors > 0, r => DrawLuxafor(g, r, luxafors > 0 ? glow : Color.Gray)),
-                new GridDevice("mutesync", ring.HasValue, r => DrawMuteSync(g, r, ring ?? Color.Gray)),
-                new GridDevice("K2 Key", k2, r => DrawK2(g, r)),
+                new GridDevice("Mutesync Button", ring.HasValue, r => DrawMuteSync(g, r, ring ?? Color.Gray)),
+                new GridDevice("K2 USBC Key", k2, r => DrawK2(g, r)),
             };
             int slot = area.Width / devices.Length;
             for (int i = 0; i < devices.Length; i++)

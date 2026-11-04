@@ -4,7 +4,7 @@
 
 A small Windows tray app that controls USB busy lights directly over USB, so the people around you can see at a glance whether you're free, busy or on a call. Plug in any mix of Blynclights and Luxafor Flags, as many of each as you like, and they all show the same color at the same time. It replaces both Embrava Connect and Luxafor's own app. No vendor accounts needed, and no admin rights to install it just for yourself.
 
-<img src="docs/images/busylightz-window.png" alt="The main window in the Orbit style: a green top with a ring reading Available, From Teams Status, tiles for the connected Blynclight and Luxafor, and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
+<img src="docs/images/busylightz-window.png" alt="The main window in the Orbit style: a glowing green top with a ring reading Available, From Teams Status, inside two orbits; an Active Devices panel with Blynclight, Luxafor, Mutesync Button and K2 USBC Key tiles; and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
 
 📖 **[User guide](docs/README.md)**: every feature and how to use it.
 
@@ -21,7 +21,12 @@ BusyLightz works with, and has been tested on, these two lights:
 - **[Embrava Blynclight Plus](https://store.embrava.com/products/blynclight-plus)**
 - **[Luxafor Flag 2](https://luxafor.com/product/flag2/)**
 
-> I've built and tested it with these two because they're the ones I have: I use both of them every day, side by side. Other Blynclight and Luxafor models may work too, but I haven't been able to test them.
+And these buttons:
+
+- **Mutesync Button** (mute button)
+- **Motospeed K2 2 Button RGB Keyboard** (the K2 USBC Key)
+
+> I've built and tested it with these because they're the ones I have: I use both lights every day, side by side. Other Blynclight and Luxafor models may work too, but I haven't been able to test them.
 >
 > — KrabbzDev
 
@@ -37,12 +42,12 @@ If BusyLightz saves you a few interruptions, you can [buy me a coffee](https://b
 
 ### Your lights
 
-- **Blynclight and Luxafor Flag together:** every connected light shows the same color, and lights plugged in later are matched within seconds. The window shows a tile for each kind of light that's connected, glowing in its current color.
+- **Blynclight and Luxafor Flag together:** every connected light shows the same color, and lights plugged in later are matched within seconds.
 - **Four modes, one click each:** **Busy** (red), **Available** (green), **On a call** (flashing red and blue, for calls the app can't detect, like a desk phone) and **Follow Teams Status**. Pick them from the window, the tray menu, or anywhere with the hotkeys `Alt+R` (Busy) and `Alt+G` (Available).
 - **Override timer:** your pick goes back to Follow Teams Status on its own after 15 minutes, so you never forget one is on. Choose 5 minutes to 4 hours, or turn it off, in Settings. While an override is on, the window shows a countdown and the tray icon gets a small badge.
-- **Three window styles:** **Orbit** (the default, shown above), **Color block** and **Fluent list**, each in Light or Dark mode.
-- **Light Control:** brightness, how fast On a call flashes, and the color for each status, each shown on your lights as you change it.
-- **Party Mode:** cycles quickly through every color on every light, to check they all work and match.
+- **Three window styles:** **Orbit** (the default, shown above, with orbiting dots and a countdown ring during overrides), **Color block** and **Fluent list**, each in Light or Dark mode.
+- **Light Control** (a page in Settings): brightness, how fast On a call flashes, and the color for each status, each shown on your lights as you change it.
+- **Party Mode:** a rainbow button that cycles quickly through every color on every light, to check they all work and match.
 
 <img src="docs/images/window-styles.png" alt="The three window styles side by side: Orbit on a call in Dark mode, Color block following Teams as Available, and Fluent list set to Busy" width="900">
 
@@ -65,7 +70,7 @@ Connect once with a browser sign-in to your work account. No client secret is st
 
 - **Setup checklist** on first run, including setting up the Teams app for your organization.
 - **Light or Dark mode**, picked in Settings (Light is the default).
-- **Settings window** (⚙ in the app or tray menu): window style, appearance, startup, notifications, hotkeys, override timer, automatic updates, call detection and the Teams options.
+- **Settings** (⚙ in the app or tray menu), in pages: General, Calls, Microsoft Teams, Mutesync Button, K2 USBC Key and Light Control. Every setting has an ⓘ explaining it.
 - **Notifications** when the lights change.
 - **Automatic, silent updates** from this repo's Releases, checked against GitHub's SHA-256 digest before installing, with a card afterwards listing what changed.
 - **Install just for you, or for everyone on the PC** in `C:\Program Files\BusyLightz`, with a background updater; IT can deploy it with an RMM script. See [Installing and Updating](docs/Installing-and-Updating.md).
@@ -73,8 +78,8 @@ Connect once with a browser sign-in to your work account. No client secret is st
 - **Email crash log:** sends the app's log, Windows' crash records and microphone details in one click.
 
 <p>
-<img src="docs/images/settings.png" alt="The Settings window: General, Calls and Microsoft Teams cards with on/off switches, and Setup checklist, Help, Light Control and Close buttons" width="330">
-<img src="docs/images/light-control.png" alt="The Light Control window: a Disable All Light Functions switch, Brightness and On a call speed sliders, and a color for each status" width="300">
+<img src="docs/images/settings.png" alt="Settings on its General page: a page list on the left, switches with an i for help, and a Learn more about this project here button" width="330">
+<img src="docs/images/light-control.png" alt="Settings on its Light Control page: a Disable All Light Functions switch, Brightness and On a call speed sliders, and a color for each status" width="330">
 <img src="docs/images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Follow Teams Status, Connect to Microsoft Teams, Settings, Check for updates and Exit" width="230">
 </p>
 
@@ -91,7 +96,7 @@ Windows doesn't let installers pin apps to the Start menu. Pin it yourself (righ
 | Page | What's in it |
 | --- | --- |
 | [Installing and Updating](docs/Installing-and-Updating.md) | Download, install, automatic updates, uninstall, deploying to many PCs |
-| [Using the Light](docs/Using-the-Light.md) | Supported lights, the window, override timer, tray menu, hotkeys, notifications, Settings |
+| [Using the Light](docs/Using-the-Light.md) | Supported lights, the window, override timer, tray menu, hotkeys, notifications, Settings, Send feedback |
 | [Teams Status](docs/Teams-Status.md) | Connecting to Teams, what each color means, Busy in Teams, status messages |
 | [Call Detection](docs/Call-Detection.md) | How the lights know you're on a call, ignoring apps |
 | [Setup Checklist](docs/Setup-Checklist.md) | Every step of the checklist explained |

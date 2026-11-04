@@ -126,8 +126,8 @@ namespace Krabbz.Blynclight
                 body.AppendLine("- BusyLightz " + Program.VersionText + (AllUsersInstall.IsThisCopy ? " (installed for everyone)" : " (installed just for me)"));
                 body.AppendLine("- " + WindowsVersion());
                 body.AppendLine("- Lights: " + tray.Light.LightSummary);
-                body.AppendLine("- mutesync button: " + tray.MuteButton.Status);
-                body.AppendLine("- K2 key: " + (tray.K2Connected ? "plugged in" : "not plugged in"));
+                body.AppendLine("- Mutesync Button: " + tray.MuteButton.Status);
+                body.AppendLine("- K2 USBC Key: " + (tray.K2Connected ? "plugged in" : "not plugged in"));
                 body.AppendLine("- Window style: " + AppSettings.WindowStyle + (AppSettings.DarkMode ? ", Dark" : ", Light"));
             }
             body.AppendLine();

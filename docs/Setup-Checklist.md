@@ -37,9 +37,12 @@ This is on by default for new installs. If it shows **Turn on**, click it to swi
 ### 6. Red while your microphone is in use
 On unless you switch off *Turn lights red when my mic is in use* in Settings. **Test microphone...** shows live which apps Windows reports using the microphone, and has **Ignore apps...** for apps whose microphone use shouldn't turn the light red. The step shows **!** if Windows is blocking apps from the microphone. See [Call Detection](Call-Detection.md).
 
+### 7. Your email address
+The address the [K2 USBC Key](Mute-Button-and-K2-Key.md#your-email-address) types when you press both its buttons. Type it in the box and click **Save**. Until you save one, the step shows **!** and the key types the example address `YourEmailHere@spacex.com`. You can change it later in **Settings > K2 USBC Key**.
+
 ### Bottom buttons
 - **Test the light**: shows the call colors (flashing red and blue, or steady red) for 3 seconds so you can see the light respond.
 - **Done**: closes the checklist. Reopen it anytime from the tray menu.
 
 ---
-[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
+[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

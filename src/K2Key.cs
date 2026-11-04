@@ -333,7 +333,7 @@ namespace Krabbz.Blynclight
                 case "Keys": PressKeys(value); break;
                 case "Mute":
                     bool? muted = MicMute.IsMuted();
-                    if (muted.HasValue) MicMute.SetMuted(!muted.Value, "the K2 key");
+                    if (muted.HasValue) MicMute.SetMuted(!muted.Value, "the K2 USBC Key");
                     break;
                 case "BusyAvailable":
                     tray.SetState(tray.Light.State == LightState.Red ? LightState.Green : LightState.Red);

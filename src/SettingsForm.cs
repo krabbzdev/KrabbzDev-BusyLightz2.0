@@ -12,7 +12,7 @@ namespace Krabbz.Blynclight
     {
         const int RefreshMs = 2000;
         // The page area's width, and the page list's to its left.
-        const int width = 500, navWidth = 170;
+        const int width = 500, navWidth = 190;
         // Tags the version line, shown in the softer text color.
         const string VersionLabel = "version";
         // Page icons: Segoe MDL2 Assets settings gear, phone, people, microphone and keyboard.
@@ -146,12 +146,12 @@ namespace Krabbz.Blynclight
             message.Enabled = messageOn.Checked;
             EndPage();
 
-            StartPage("mutesync", MuteSyncGlyph);
+            StartPage("Mutesync Button", MuteSyncGlyph);
             // Pressing a mutesync button mutes or unmutes the mic; its ring shows red when muted, green when live.
-            Heading("mutesync button", MuteSyncGlyph);
-            var muteSync = Box("Mute and unmute my mic with a mutesync button", AppSettings.MuteSyncEnabled,
+            Heading("Mutesync Button", MuteSyncGlyph);
+            var muteSync = Box("Mute and unmute my mic with a Mutesync Button", AppSettings.MuteSyncEnabled,
                 v => { AppSettings.MuteSyncEnabled = v; tray.ApplySettings(); RefreshDevices(); },
-                help: "Pressing your mutesync button mutes or unmutes your mic in Windows, for every app. Its ring shows red when muted and green when live. Close the MuteMe app so BusyLightz can use the button.");
+                help: "Pressing your Mutesync Button mutes or unmutes your mic in Windows, for every app. Its ring shows red when muted and green when live. Close the MuteMe app so BusyLightz can use the button.");
             // Just under the switch's text.
             y -= RowGap - 2;
             muteButtonStatus.Location = new Point(24 + 46, y);
@@ -160,7 +160,7 @@ namespace Krabbz.Blynclight
             RingSection();
             EndPage();
 
-            StartPage("K2 Key", K2Glyph);
+            StartPage("K2 USBC Key", K2Glyph);
             K2Section();
             EndPage();
 
@@ -262,12 +262,12 @@ namespace Krabbz.Blynclight
         // The K2 macro key: an action for each button and for both together, and the email address it can type.
         void K2Section()
         {
-            Heading("K2 Key", K2Glyph);
+            Heading("K2 USBC Key", K2Glyph);
             k2Status.Location = new Point(24, y);
             Add(k2Status);
             y += 22 + RowGap;
-            K2Row("Left button", K2Key.Button.Left, "What happens when you press the K2's left button on its own.");
-            K2Row("Right button", K2Key.Button.Right, "What happens when you press the K2's right button on its own.");
+            K2Row("Left button", K2Key.Button.Left, "What happens when you press the K2 USBC Key's left button on its own.");
+            K2Row("Right button", K2Key.Button.Right, "What happens when you press the K2 USBC Key's right button on its own.");
             K2Row("Both together", K2Key.Button.Both, "What happens when you press both buttons at the same time. It counts once, so it doesn't also run Left or Right.");
             y += 4;
             var emailName = new Label { Text = "My email address", AutoSize = true, Location = new Point(24, y + 4) };
@@ -279,7 +279,7 @@ namespace Krabbz.Blynclight
             y += 28 + RowGap + 4;
             Add(new Label
             {
-                Text = "No K2 software needed. Out of the box its buttons are mouse clicks; BusyLightz cancels those clicks " +
+                Text = "No K2 software needed. Out of the box the K2 USBC Key's buttons are mouse clicks; BusyLightz cancels those clicks " +
                        "so a press only runs your action. Your real mouse isn't affected.",
                 AutoSize = true,
                 MaximumSize = new Size(width - 48, 0),

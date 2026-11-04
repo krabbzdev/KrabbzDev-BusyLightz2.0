@@ -47,10 +47,10 @@ GitHub records a SHA-256 digest for each upload. The app, the background updater
 | `src/TrayApp.cs` | Program entry, logging and freeze watchdog, tray icon, hotkeys, notifications, wiring |
 | `src/TrayMenu.cs` | Tray menu drawing (Windows 11 style) |
 | `src/ControlForm.cs` | Main window, its three styles, and the shared colors and fonts (`Theme`) |
-| `src/DeviceTiles.cs` | Connected-light tiles and the beta sticker |
+| `src/DeviceTiles.cs` | The Active Devices tiles (lights, Mutesync Button, K2 USBC Key) and the beta sticker |
 | `src/ModernControls.cs` | On/off switch and rounded buttons |
-| `src/SetupForm.cs` | Setup checklist, Teams app dialog, ignore-apps dialog |
-| `src/SettingsForm.cs`, `src/AppSettings.cs` | Settings and Light Control windows, and the stored settings (HKCU), including the sign-in startup entry |
+| `src/SetupForm.cs` | Setup checklist (including the email step), Teams app dialog, ignore-apps dialog |
+| `src/SettingsForm.cs`, `src/AppSettings.cs` | Settings (its pages, including Light Control) and the stored settings (HKCU), including the sign-in startup entry |
 | `src/CallDetector.cs`, `src/AudioSessions.cs` | Call detection from Windows' microphone usage record and from Windows audio; ignore list |
 | `src/MicTestForm.cs` | Test microphone window |
 | `src/TeamsPresence.cs` | Browser sign-in (auth code + PKCE), encrypted token, Graph presence read/set |
@@ -59,6 +59,10 @@ GitHub records a SHA-256 digest for each upload. The app, the background updater
 | `src/Updater.cs` | Checks GitHub Releases, verifies and silently installs updates |
 | `src/AllUsers.cs` | The all-users install: hand-over from per-user copies, the SYSTEM background updater, Install for everyone |
 | `src/CrashReport.cs` | Email crash log |
+| `src/MuteSyncButton.cs` | Mutesync Button: finds it, mutes and unmutes the Windows mic (`MicMute`), drives its ring |
+| `src/K2Key.cs` | K2 USBC Key: reads its presses through raw input, cancels its own mouse clicks with a low-level mouse hook (on its own thread), and runs the macros (`K2Actions`) |
+| `src/FeedbackForm.cs` | Send feedback: opens a filled-in GitHub issue |
+| `LICENSE` | The BusyLightz Beer-Ware License |
 | `installer/Product.wxs` | Per-user MSI (WiX 3) |
 | `installer/ProductAllUsers.wxs` | All-users MSI (Program Files), with the BusyLightz Updater scheduled task |
 | `scripts/Install-BusyLightz.ps1` | RMM install script: gets, verifies and installs the newest all-users MSI |
@@ -86,5 +90,15 @@ Light flags: bit 0 = off, bit 1 = dim, bit 2 = flash, bits 3-5 = flash speed.
 
 Off is color 0,0,0. `BlyncDevice.FindLights()` finds both kinds, and `LightController` sends each light the same color in its own format.
 
+## Button protocols
+
+**Mutesync Button** (`10C4:EA60`, a Silicon Labs CP210x serial bridge that reports itself as *MuteSync Button*): a serial port at 9600 baud, 8N1. Only a device whose USB description says *MuteSync Button* is opened; lots of other gadgets use the same chip.
+
+- The button sends `0x33` when pressed and `0x34` when let go.
+- The ring takes 13 bytes: `0x41`, then a red, green, blue triple (0-255) for each of its 4 LEDs. All zeros is off.
+- The ring goes dark unless its color is sent again every few seconds, so `MuteSyncButton` resends it every 2 seconds.
+
+**K2 USBC Key** (`04D9:A2D0`, a Holtek chip that reports itself as a gaming mouse): out of the box its buttons are a left and a right mouse click. `K2Key` registers for raw mouse and keyboard input to see which device sent each click, and a `WH_MOUSE_LL` hook cancels clicks whose raw input came from the K2, matched within 250 ms. Keys F13 and F14 from the K2 are taken as its left and right buttons.
+
 ---
-[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
+[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
