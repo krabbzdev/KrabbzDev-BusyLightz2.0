@@ -510,6 +510,9 @@ namespace Krabbz.Blynclight
                 else presence.CallEnded();
             }
             var shown = AppSettings.CallsTurnRed ? app : null;
+            // In app.log, so what the lights did during a call can be traced afterwards.
+            if (app != null) Program.LogEvent("Call started (" + app.Name + ")" + (shown == null ? ", lights not changed (Turn lights red is off)" : ""));
+            else if (callApp != null) Program.LogEvent("Call ended (" + callApp.Name + ")");
             callApp = shown;
             light.SetOverride(shown != null ? CallState : null);
             if (shown == null && wasOverriding && light.State == LightState.FollowTeams) HandBackToTeams();
@@ -757,6 +760,10 @@ namespace Krabbz.Blynclight
         public void SetState(string state)
         {
             light.Set(state);
+            // Picking a color during a call wins until the call ends, but going back to Teams status (by hand, or when
+            // an override runs out) shouldn't hide a call still in progress: call detection only reports calls as
+            // they start, so put the call colors back here.
+            if (state == LightState.FollowTeams && callApp != null) light.SetOverride(CallState);
             StartOverrideTimerIfNeeded();
             // Before reading Teams status back, so a Busy this app set isn't mistaken for the user's own.
             UpdateTeamsMessage();
