@@ -348,8 +348,11 @@ namespace Krabbz.Blynclight
             tray.Visible = true;
 
             // Cycle the tray icon round the color wheel at the light's speed, in half as many steps.
-            flashTimer.Interval = LightController.PartyStepMs * 2;
-            flashTimer.Tick += delegate { partyHue = (partyHue + light.PartyHueStep * 2) % 360; UpdateDisplay(); };
+            // In Party Mode the tray icon and window cycle smoothly, once every 3 seconds, rather than with the lights:
+            // the lights jump to a new color 10 times a second, and a large area doing that flashes fast enough to
+            // trigger seizures.
+            flashTimer.Interval = 100;
+            flashTimer.Tick += delegate { partyHue = (partyHue + 12) % 360; UpdateDisplay(); };
             callFlashTimer.Tick += delegate { callFlashSecond = !callFlashSecond; UpdateDisplay(); };
 
             if (AppSettings.HotkeysEnabled) RegisterHotkeys();

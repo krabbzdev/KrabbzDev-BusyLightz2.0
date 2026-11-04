@@ -15,7 +15,7 @@ You can plug in **any number of each**. They all show the same color at the same
 
 - **Open the window:** double-click the tray icon, or use the Start menu entry.
 - **Closing the window** only hides it. The app keeps running in the tray, and the light keeps working.
-- **The tray icon** is a colored dot that matches the light, including during Test Lights. A small white badge means an override is on.
+- **The tray icon** is a colored dot that matches the light, and flashes with it during calls. In Party Mode it cycles through the colors smoothly, once every 3 seconds, rather than as fast as the light (fast flashing over a large area can trigger seizures). A small white badge means an override is on.
 
 ## The window
 
