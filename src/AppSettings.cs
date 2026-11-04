@@ -171,6 +171,43 @@ namespace Krabbz.Blynclight
         }
         public static bool MuteSyncOnlyOnCalls { get { return Get("MuteSyncOnlyOnCalls", false); } set { Set("MuteSyncOnlyOnCalls", value); } }
 
+        // K2 macro key: what each button (and both together) does, from K2Actions.All, and the text it needs.
+        internal static string K2Action(K2Key.Button button)
+        {
+            string saved = GetString("K2" + button + "Action");
+            foreach (var action in K2Actions.All) if (action[0] == saved) return saved;
+            return button == K2Key.Button.Left ? "Mute" : button == K2Key.Button.Right ? "BusyAvailable" : "TypeEmail";
+        }
+        internal static void SetK2Action(K2Key.Button button, string action) { SetString("K2" + button + "Action", action); }
+        internal static string K2Value(K2Key.Button button) { return GetString("K2" + button + "Value") ?? ""; }
+        internal static void SetK2Value(K2Key.Button button, string value) { SetString("K2" + button + "Value", value); }
+
+        // The email address "Type my email address" types; asked for in the setup checklist. Until it's set, an
+        // example address.
+        public const string ExampleEmail = "YourEmailHere@spacex.com";
+        public static string MacroEmail
+        {
+            get
+            {
+                string saved = GetString("MacroEmail");
+                return string.IsNullOrWhiteSpace(saved) ? ExampleEmail : saved.Trim();
+            }
+            set { SetString("MacroEmail", value == null ? "" : value.Trim()); }
+        }
+        public static bool MacroEmailSet { get { return MacroEmail != ExampleEmail; } }
+
+        static string GetString(string name)
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
+                return key == null ? null : key.GetValue(name) as string;
+        }
+
+        static void SetString(string name, string value)
+        {
+            using (var key = Registry.CurrentUser.CreateSubKey(SettingsKey))
+                key.SetValue(name, value ?? "", RegistryValueKind.String);
+        }
+
         // A saved color name if it's one of BlyncDevice.ColorNames, otherwise fallback.
         static string ColorName(string setting, string fallback)
         {

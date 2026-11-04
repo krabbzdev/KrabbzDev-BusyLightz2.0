@@ -373,6 +373,9 @@ namespace Krabbz.Blynclight
                 catch (InvalidOperationException) { } // Window already gone during exit.
             };
             K2Connected = K2Key.Present();
+            // The K2 key's buttons run the macros picked in Settings.
+            k2Key = new K2Key();
+            k2Key.Pressed += button => K2Actions.Run(button, this);
             deviceCheck.Tick += delegate { Program.Guard("Device check", CheckDevices); };
             deviceCheck.Start();
             // The window's mutesync tile follows the button's ring.
@@ -455,6 +458,7 @@ namespace Krabbz.Blynclight
 
         // Whether a K2 macro key is plugged in, for the window's Active Devices; checked every few seconds.
         public bool K2Connected { get; private set; }
+        readonly K2Key k2Key;
         readonly System.Windows.Forms.Timer deviceCheck = new System.Windows.Forms.Timer { Interval = 3000 };
 
         void CheckDevices()
@@ -1200,6 +1204,7 @@ namespace Krabbz.Blynclight
             calls.Dispose();
             muteButton.Dispose(); // Turns its ring off.
             deviceCheck.Dispose();
+            k2Key.Dispose();
             if (teamsPoll != null) teamsPoll.Dispose();
             if (presence != null) presence.Dispose(); // Clears Busy if a phone call is in progress.
             if (updateTimer != null) updateTimer.Dispose();

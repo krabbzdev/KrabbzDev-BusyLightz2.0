@@ -189,7 +189,7 @@ namespace Krabbz.Blynclight
                             buttonDown = true;
                             // Mute or unmute as soon as it's pressed, like a key.
                             bool? muted = MicMute.IsMuted();
-                            if (muted.HasValue && MicMute.SetMuted(!muted.Value)) ShowMuted(!muted.Value);
+                            if (muted.HasValue && MicMute.SetMuted(!muted.Value, "the mutesync button")) ShowMuted(!muted.Value);
                         }
                         else if (b == Released) buttonDown = false;
                     }
@@ -380,8 +380,8 @@ namespace Krabbz.Blynclight
             finally { Marshal.ReleaseComObject(volume); }
         }
 
-        // Mutes or unmutes both default mics. Returns false with no microphone.
-        public static bool SetMuted(bool muted)
+        // Mutes or unmutes both default mics; by says what did it, for the log. Returns false with no microphone.
+        public static bool SetMuted(bool muted, string by)
         {
             bool any = false;
             foreach (int role in new[] { CommunicationsRole, ConsoleRole })
@@ -395,7 +395,7 @@ namespace Krabbz.Blynclight
                 }
                 finally { Marshal.ReleaseComObject(volume); }
             }
-            if (any) Program.LogEvent(muted ? "Mic muted with the mutesync button" : "Mic unmuted with the mutesync button");
+            if (any) Program.LogEvent((muted ? "Mic muted with " : "Mic unmuted with ") + by);
             return any;
         }
 

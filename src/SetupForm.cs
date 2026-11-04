@@ -21,7 +21,8 @@ namespace Krabbz.Blynclight
         }
 
         readonly TrayContext tray;
-        readonly Step lightStep, orgStep, teamsStep, embravaStep, followStep, callsStep;
+        readonly Step lightStep, orgStep, teamsStep, embravaStep, followStep, callsStep, emailStep;
+        readonly TextBox emailBox = new TextBox();
         readonly Timer recheck = new Timer { Interval = RecheckMs };
 
         public SetupForm(TrayContext tray)
@@ -57,6 +58,19 @@ namespace Krabbz.Blynclight
                 using (var dialog = new MicTestForm()) dialog.ShowDialog(this);
                 Recheck();
             });
+
+            // The address the K2 key types (Both buttons, unless changed in Settings > Devices).
+            emailStep = AddStep(ref y, "Your email address", "Save", delegate
+            {
+                AppSettings.MacroEmail = emailBox.Text;
+                Recheck();
+            });
+            // Under the step's two-line description.
+            emailBox.Bounds = new Rectangle(56, y - 80 + 64, 350, 28);
+            emailBox.Text = AppSettings.MacroEmailSet ? AppSettings.MacroEmail : "";
+            emailBox.TextChanged += delegate { emailStep.Action.Visible = true; };
+            Controls.Add(emailBox);
+            y += 22;
 
             var test = new Button { Text = "Test the light", Bounds = new Rectangle(20, y + 6, 130, 34) };
             test.Click += delegate { tray.TestLight(); };
@@ -149,6 +163,14 @@ namespace Krabbz.Blynclight
             else Show(callsStep, Mark.Done,
                 "Any app using your microphone (Teams, Zoom, softphones and so on) turns the light red. " +
                 (ignored == 0 ? "No apps ignored." : ignored + (ignored == 1 ? " app ignored." : " apps ignored.")), true);
+
+            // Saved: done, with Save showing only once the box is changed. Not saved: the example address is used.
+            bool emailSet = AppSettings.MacroEmailSet;
+            bool edited = emailBox.Text.Trim() != (emailSet ? AppSettings.MacroEmail : "");
+            Show(emailStep, emailSet ? Mark.Done : Mark.Todo,
+                emailSet ? "Saved. The K2 key types it when you press both buttons."
+                         : "The K2 key types this when you press both buttons. Until you save yours it types " + AppSettings.ExampleEmail + ".",
+                edited || !emailSet);
         }
     }
 
