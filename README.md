@@ -14,6 +14,17 @@ A small Windows tray app that controls USB busy lights directly over USB, so the
 >
 > — KrabbzDev
 
+## Tested lights
+
+BusyLightz works with, and has been tested on, these two lights:
+
+- **[Embrava Blynclight Plus](https://store.embrava.com/products/blynclight-plus)**
+- **[Luxafor Flag 2](https://luxafor.com/product/flag2/)**
+
+> I've built and tested it with these two because they're the ones I have: I use both of them every day, side by side. Other Blynclight and Luxafor models may work too, but I haven't been able to test them.
+>
+> — KrabbzDev
+
 ## ⬇️ [Download the installer (latest version)](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases/latest/download/KrabbzDev-BusyLightz2.0.msi)
 
 Release notes and older versions: [Releases](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases)

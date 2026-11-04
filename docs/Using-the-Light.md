@@ -6,8 +6,10 @@ You control the light from the **app window** or the **tray icon**.
 
 | Light | Notes |
 | --- | --- |
-| **Embrava Blynclight** (USB) | Any Blynclight model that plugs in by USB. |
-| **Luxafor Flag** (USB) | Controlled directly over USB; Luxafor's own app isn't needed. |
+| **Embrava Blynclight** (USB) | Tested with the [Blynclight Plus](https://store.embrava.com/products/blynclight-plus). Other Blynclight models that plug in by USB may work. |
+| **Luxafor Flag** (USB) | Tested with the [Luxafor Flag 2](https://luxafor.com/product/flag2/). Controlled directly over USB; Luxafor's own app isn't needed. |
+
+**Tested lights:** BusyLightz has been built and tested with the Blynclight Plus and the Luxafor Flag 2, the two lights KrabbzDev has and uses every day, side by side. Other models haven't been tested.
 
 You can plug in **any number of each**. They all show the same color at the same time, including Party Mode, calls and Teams status. Lights plugged in later are found within a couple of seconds and set to match. The window shows what's connected, e.g. *Lights: Blynclight + 2 Luxafor*, with a tile for each kind of light plugged in: a drawing of the light glowing in its current color, a green dot meaning it's seen and connected, and its name (e.g. *2 Luxafor*).
 
