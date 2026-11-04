@@ -2,13 +2,13 @@
 
 **Whenever any app is using your microphone, the light flashes red and blue quickly**, so people can tell at a glance that you're on a call rather than just busy. When the app releases the microphone (you hang up or leave the meeting), the light goes back to what it was showing before.
 
-Prefer a steady red during calls? Open **Settings** (⚙ in the window, or the tray menu) and untick **Flash red and blue instead of steady red**.
+Prefer a steady red during calls? Open **Settings** (⚙ in the window, or the tray menu) and switch off **Flash red and blue instead of steady red**.
 
 This covers Teams, Zoom, Webex, Google Meet or any call in a browser, and softphones like Cytracom. No sign-ins or API keys are involved.
 
 ## How it works
 
-Windows keeps a record of which apps use the microphone (it's what shows the microphone icon in the taskbar). The app checks that record about once a second. On some PCs that record misses an app even while Windows Settings shows it using the microphone, so the app also asks Windows audio which apps are recording right now. Either one counts. When an app has the microphone open, the light starts flashing and the window says which app, e.g. **On a call (Zoom)**. The tray icon and the window's color swatch show plain red during a call.
+Windows keeps a record of which apps use the microphone (it's what shows the microphone icon in the taskbar). The app checks that record about once a second. On some PCs that record misses an app even while Windows Settings shows it using the microphone, so the app also asks Windows audio which apps are recording right now. Either one counts. When an app has the microphone open, the light starts flashing and the window says which app, e.g. **On a call (Zoom)**. The tray icon and the window flash the same two colors as the lights during a call, at your On a call speed but never faster than twice a second (fast flashing over a large area can trigger seizures).
 
 - **Mute doesn't count as hanging up.** Most calling apps keep the microphone open while you're muted, so the light keeps flashing.
 - **If you pick a color during a call,** your choice wins until that call ends.

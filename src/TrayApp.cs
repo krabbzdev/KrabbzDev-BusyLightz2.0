@@ -350,6 +350,7 @@ namespace Krabbz.Blynclight
             // Cycle the tray icon round the color wheel at the light's speed, in half as many steps.
             flashTimer.Interval = LightController.PartyStepMs * 2;
             flashTimer.Tick += delegate { partyHue = (partyHue + light.PartyHueStep * 2) % 360; UpdateDisplay(); };
+            callFlashTimer.Tick += delegate { callFlashSecond = !callFlashSecond; UpdateDisplay(); };
 
             if (AppSettings.HotkeysEnabled) RegisterHotkeys();
             messages.HotkeyPressed += id => SetState(HotkeyStates[id]);
@@ -975,11 +976,22 @@ namespace Krabbz.Blynclight
             });
         }
 
+        // While On a call flashes, the tray icon and window flash the same two colors as the lights, at the On a call
+        // speed but never faster than twice a second: a large area flashing red and blue faster than that can trigger
+        // seizures.
+        const int SlowestSafeFlashMs = 500;
+        readonly System.Windows.Forms.Timer callFlashTimer = new System.Windows.Forms.Timer();
+        bool callFlashSecond;
+
         void Refresh()
         {
             bool partying = State == LightState.Party && !NoLight;
             if (partying && !flashTimer.Enabled) partyHue = 0;
             flashTimer.Enabled = partying;
+            bool calling = State == LightState.CallFlash && !NoLight;
+            if (calling) callFlashTimer.Interval = Math.Max(SlowestSafeFlashMs, AppSettings.CallFlashMs);
+            if (!calling) callFlashSecond = false;
+            callFlashTimer.Enabled = calling;
             UpdateDisplay();
             UpdateTeamsMessage();
         }
@@ -1047,10 +1059,12 @@ namespace Krabbz.Blynclight
 
         void UpdateDisplay()
         {
+            if (exiting) return;
             if (NoLight) DisplayColor = Color.Gray;
-            // A flashing call shows as red in the tray and window; flashing an icon would be distracting.
             else if (State == LightState.Red) DisplayColor = PickedColor("BusyColor", Color.Red);
-            else if (State == LightState.CallFlash) DisplayColor = PickedColor("CallColor1", Color.Red);
+            // Alternates with the call flash timer, like the lights.
+            else if (State == LightState.CallFlash)
+                DisplayColor = callFlashSecond ? PickedColor("CallColor2", Color.Blue) : PickedColor("CallColor1", Color.Red);
             else if (State == LightState.Green) DisplayColor = PickedColor("AvailableColor", Color.Lime);
             else if (State == LightState.Party)
             {
@@ -1137,8 +1151,13 @@ namespace Krabbz.Blynclight
             return icon;
         }
 
+        // Set while closing, so a display update still queued from a background thread doesn't touch the tray icon
+        // after it's gone.
+        bool exiting;
+
         protected override void ExitThreadCore()
         {
+            exiting = true;
             for (int id = 0; id < HotkeyStates.Length; id++) UnregisterHotKey(messages.Handle, id);
             calls.Dispose();
             if (teamsPoll != null) teamsPoll.Dispose();

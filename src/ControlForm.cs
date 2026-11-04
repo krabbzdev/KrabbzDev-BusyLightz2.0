@@ -756,6 +756,7 @@ namespace Krabbz.Blynclight
             var footer = AddFooter(y + 16, style == WindowStyles.Orbit);
             ClientSize = new Size(WindowWidth, footer.Bottom);
 
+            // The window follows the tray's color, including On a call's flashing (see TrayContext.UpdateDisplay).
             tray.DisplayChanged += RefreshDisplay;
             RefreshDisplay();
             HandleCreated += delegate { Theme.TitleBar(this); };
@@ -889,11 +890,12 @@ namespace Krabbz.Blynclight
             bool enabled = tray.Light.LightsEnabled;
             int blynclights = enabled ? tray.Light.CountOf(LightKind.Blynclight) : 0;
             int luxafors = enabled ? tray.Light.CountOf(LightKind.Luxafor) : 0;
+            var shown = tray.DisplayColor;
             if (status != null)
             {
                 status.Blynclights = blynclights;
                 status.Luxafors = luxafors;
-                status.DotColor = tray.DisplayColor;
+                status.DotColor = shown;
                 status.Status = statusText;
                 status.Lights = lights;
                 status.OverrideOn = tray.OverrideOn;
@@ -911,7 +913,7 @@ namespace Krabbz.Blynclight
                     big = statusText.Substring(0, paren);
                     small = statusText.Substring(paren + 2, statusText.Length - paren - 3);
                 }
-                ring.DotColor = tray.DisplayColor;
+                ring.DotColor = shown;
                 ring.Blynclights = blynclights;
                 ring.Luxafors = luxafors;
                 ring.Big = big;
@@ -922,7 +924,7 @@ namespace Krabbz.Blynclight
             }
             if (block != null)
             {
-                block.DotColor = tray.DisplayColor;
+                block.DotColor = shown;
                 block.Blynclights = blynclights;
                 block.Luxafors = luxafors;
                 block.Status = statusText;
