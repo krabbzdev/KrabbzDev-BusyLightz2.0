@@ -193,11 +193,7 @@ namespace Krabbz.Blynclight
             var g = e.Graphics;
             Theme.FillRounded(g, new Rectangle(0, 0, Width - 1, Height - 1), 10, Theme.Card, Theme.Border);
 
-            // Bottom right: a tile for each kind of light plugged in.
-            int tiles = DeviceTiles.Width(Blynclights, Luxafors);
-            DeviceTiles.Draw(g, Width - 14 - tiles, Height - 8 - DeviceTiles.Height, Blynclights, Luxafors, DotColor,
-                Theme.Page, Theme.Border, Theme.Muted);
-
+            const int tiles = 0; // Device tiles are in the Active Devices panel.
             var dot = Theme.Soften(DotColor);
             using (var halo = new SolidBrush(Theme.Wash(dot, 0.82)))
                 g.FillEllipse(halo, 16, 14, 68, 68);
@@ -210,6 +206,26 @@ namespace Krabbz.Blynclight
             TextRenderer.DrawText(g, Lights, Theme.Small, new Point(98, 66), Theme.Muted);
 
             if (OverrideOn) Theme.Pill(g, "Manual override on", Width - 12, 12, Theme.OverrideTint, Theme.OverrideText);
+        }
+    }
+
+    // Active Devices: a card with a tile for every device BusyLightz works with, lit when plugged in and greyed out
+    // ("Disconnected") when not.
+    class DevicePanel : PaintedControl
+    {
+        public const int PanelHeight = 40 + DeviceTiles.GridHeight + 10;
+        public Color DotColor = Color.Gray;
+        public int Blynclights, Luxafors;
+        public bool K2;
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            var g = e.Graphics;
+            Theme.FillRounded(g, new Rectangle(0, 0, Width - 1, Height - 1), 10, Theme.Card, Theme.Border);
+            TextRenderer.DrawText(g, "Active Devices", Theme.Strong, new Point(14, 11), Theme.Text);
+            DeviceTiles.DrawGrid(g, new Rectangle(4, 40, Width - 8, DeviceTiles.GridHeight), Blynclights, Luxafors, K2, DotColor,
+                Theme.Page, Theme.Border, Theme.Text, Theme.Muted);
         }
     }
 
@@ -461,9 +477,7 @@ namespace Krabbz.Blynclight
                 TextRenderer.DrawText(g, Small, Theme.Small, new Rectangle(inner.X, top + bigHeight, inner.Width, 18), soft, center);
             TextRenderer.DrawText(g, Lights, Theme.Small, new Rectangle(0, ring.Bottom + 8, Width, 18), soft, center);
 
-            // Bottom corners: a tile for each kind of light plugged in, and the beta sticker.
-            DeviceTiles.Draw(g, Pad, Height - 12 - DeviceTiles.Height, Blynclights, Luxafors, DotColor,
-                Color.FromArgb(235, 255, 255, 255), Color.FromArgb(235, 255, 255, 255), soft);
+            // Bottom right: the beta sticker. Device tiles are in the Active Devices panel.
             DeviceTiles.BetaSticker(g, Width - Pad - 62, Height - 40);
         }
 
@@ -583,10 +597,8 @@ namespace Krabbz.Blynclight
             settingsBounds = new Rectangle(Width - Pad - size.Width, 8, size.Width, size.Height + 8);
             TextRenderer.DrawText(g, SettingsText, Theme.Small, settingsBounds, text, TextFormatFlags.VerticalCenter);
 
-            // On the right: a tile for each kind of light plugged in, and the beta sticker under them.
-            int tiles = DeviceTiles.Width(Blynclights, Luxafors);
-            DeviceTiles.Draw(g, Width - Pad - tiles, 38, Blynclights, Luxafors, DotColor,
-                Color.FromArgb(235, 255, 255, 255), Color.FromArgb(235, 255, 255, 255), soft);
+            // The beta sticker on the right; device tiles are in the Active Devices panel.
+            const int tiles = 0;
             DeviceTiles.BetaSticker(g, Width - Pad - 62, Height - 20);
 
             TextRenderer.DrawText(g, Status, Theme.Hero, new Rectangle(Pad - 2, 36, Width - 2 * Pad - tiles - 8, 40), text,
@@ -687,6 +699,7 @@ namespace Krabbz.Blynclight
         PillSwitcher pills;
         ColorBlock block;
         ModeList list;
+        readonly DevicePanel devices;
 
         public ControlForm(TrayContext tray)
         {
@@ -726,6 +739,11 @@ namespace Krabbz.Blynclight
                 Controls.Add(status);
                 y = status.Bottom + 8;
             }
+
+            // Every device BusyLightz works with, greyed out when it isn't plugged in.
+            devices = new DevicePanel { Bounds = new Rectangle(Pad, y, width, DevicePanel.PanelHeight) };
+            Controls.Add(devices);
+            y = devices.Bottom + 8;
 
             strip.Bounds = new Rectangle(Pad, y, width, 70);
             strip.LinkClicked += delegate
@@ -891,6 +909,11 @@ namespace Krabbz.Blynclight
             int blynclights = enabled ? tray.Light.CountOf(LightKind.Blynclight) : 0;
             int luxafors = enabled ? tray.Light.CountOf(LightKind.Luxafor) : 0;
             var shown = tray.DisplayColor;
+            devices.Blynclights = blynclights;
+            devices.Luxafors = luxafors;
+            devices.K2 = tray.K2Connected;
+            devices.DotColor = shown;
+            devices.Invalidate();
             if (status != null)
             {
                 status.Blynclights = blynclights;

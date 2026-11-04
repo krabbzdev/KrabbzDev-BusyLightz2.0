@@ -148,6 +148,38 @@ namespace Krabbz.Blynclight
 
         // Leaves USB lights alone, for Teams status and call detection only. Off unless changed.
         public static bool UsbLightsDisabled { get { return Get("UsbLightsDisabled", false); } set { Set("UsbLightsDisabled", value); } }
+        // Use a plugged-in mutesync button to mute and unmute the mic (see MuteSyncButton).
+        public static bool MuteSyncEnabled { get { return Get("MuteSyncEnabled"); } set { Set("MuteSyncEnabled", value); } }
+        // Its ring: the color while muted and while live (names from BlyncDevice.ColorNames), brightness in percent
+        // (25 matches the MuteMe app), and whether it's lit only while an app is using the mic.
+        public const string DefaultMuteSyncMutedColor = "Red", DefaultMuteSyncLiveColor = "Green";
+        public const int DefaultMuteSyncBrightness = 25;
+        public static string MuteSyncMutedColor
+        {
+            get { return ColorName("MuteSyncMutedColor", DefaultMuteSyncMutedColor); }
+            set { SetLightColorName("MuteSyncMutedColor", value); }
+        }
+        public static string MuteSyncLiveColor
+        {
+            get { return ColorName("MuteSyncLiveColor", DefaultMuteSyncLiveColor); }
+            set { SetLightColorName("MuteSyncLiveColor", value); }
+        }
+        public static int MuteSyncBrightness
+        {
+            get { return Ranged("MuteSyncBrightness", MinBrightness, 100, DefaultMuteSyncBrightness); }
+            set { SetInt("MuteSyncBrightness", value); }
+        }
+        public static bool MuteSyncOnlyOnCalls { get { return Get("MuteSyncOnlyOnCalls", false); } set { Set("MuteSyncOnlyOnCalls", value); } }
+
+        // A saved color name if it's one of BlyncDevice.ColorNames, otherwise fallback.
+        static string ColorName(string setting, string fallback)
+        {
+            using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
+            {
+                string value = key == null ? null : key.GetValue(setting) as string;
+                return Array.IndexOf(BlyncDevice.ColorNames, value) >= 0 ? value : fallback;
+            }
+        }
         public static string TeamsStatusMessage
         {
             get

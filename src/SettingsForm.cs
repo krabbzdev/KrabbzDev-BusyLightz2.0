@@ -19,6 +19,7 @@ namespace Krabbz.Blynclight
         readonly TrayContext tray;
         readonly CheckBox startWithWindows, openWindow;
         readonly Label teamsStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
+        readonly Label muteButtonStatus = new Label { AutoSize = true, Font = new Font("Segoe UI", 8.5f) };
         readonly Button connectButton = new ModernButton();
         readonly Timer refresh = new Timer { Interval = RefreshMs };
         // The cards drawn behind each section, and where the open one started (-1 when none is open).
@@ -78,6 +79,14 @@ namespace Krabbz.Blynclight
             flash.Enabled = red.Checked;
             Box("Show me as Busy in Teams during calls in other apps", AppSettings.TeamsBusyOnCalls,
                 v => { AppSettings.TeamsBusyOnCalls = v; tray.ApplySettings(); });
+            // Pressing a mutesync button mutes or unmutes the mic; its ring shows red when muted, green when live.
+            Box("Mute and unmute my mic with a mutesync button", AppSettings.MuteSyncEnabled,
+                v => { AppSettings.MuteSyncEnabled = v; tray.ApplySettings(); RefreshMuteButton(); });
+            y -= 6;
+            muteButtonStatus.Location = new Point(24 + 46, y);
+            Controls.Add(muteButtonStatus);
+            y += 26;
+            RefreshMuteButton();
 
             Heading("Microsoft Teams", TeamsGlyph);
             teamsStatus.Location = new Point(24, y + 6);
@@ -177,7 +186,7 @@ namespace Krabbz.Blynclight
                 Theme.Apply(this);
                 ColorSurfaces();
             };
-            refresh.Tick += delegate { RefreshTeams(); };
+            refresh.Tick += delegate { RefreshTeams(); RefreshMuteButton(); };
             Shown += delegate { RefreshTeams(); refresh.Start(); };
             FormClosed += delegate { refresh.Dispose(); };
         }
@@ -224,6 +233,12 @@ namespace Krabbz.Blynclight
         {
             using (var dialog = new TeamsAppDialog(tray)) dialog.ShowDialog(this);
             RefreshTeams();
+        }
+
+        // e.g. "mutesync button: Connected on COM3".
+        void RefreshMuteButton()
+        {
+            muteButtonStatus.Text = "mutesync button: " + tray.MuteButton.Status;
         }
 
         void RefreshTeams()
@@ -541,11 +556,57 @@ namespace Krabbz.Blynclight
                 showEnabled();
             };
             showEnabled();
+            // Close sits on the same line as Reset colors.
+            int buttonsY = y;
+            y += 50;
 
-            var close = new ModernButton { Text = "Close", Accent = true, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 120, y, 100, 34) };
+            // The mutesync button's ring, which isn't a USB light, so it's left on by Disable All Light Functions.
+            // Reset colors puts these back too.
+            Controls.Add(new Label { Text = "mutesync button ring", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), AutoSize = true, Location = new Point(16, y) });
+            y += 30;
+            Slider("Ring brightness", AppSettings.MinBrightness / 5, 20, AppSettings.MuteSyncBrightness / 5, v => v * 5 + "%", v =>
+            {
+                AppSettings.MuteSyncBrightness = v * 5;
+                PreviewRing();
+            });
+            RingColorPicker("Muted", AppSettings.MuteSyncMutedColor, AppSettings.DefaultMuteSyncMutedColor, name => AppSettings.MuteSyncMutedColor = name);
+            RingColorPicker("Live (not muted)", AppSettings.MuteSyncLiveColor, AppSettings.DefaultMuteSyncLiveColor, name => AppSettings.MuteSyncLiveColor = name);
+            var onlyOnCalls = new ToggleBox
+            {
+                Text = "Only light the ring while an app is using my mic",
+                Checked = AppSettings.MuteSyncOnlyOnCalls,
+                AutoSize = true,
+                Location = new Point(24, y + 4),
+            };
+            onlyOnCalls.CheckedChanged += delegate
+            {
+                AppSettings.MuteSyncOnlyOnCalls = onlyOnCalls.Checked;
+                PreviewRing();
+            };
+            Controls.Add(onlyOnCalls);
+            y += 44;
+            Controls.Add(new Label
+            {
+                Text = "Pressing the button mutes and unmutes your mic in Windows. Close the MuteMe app so BusyLightz can use it.",
+                AutoSize = true,
+                MaximumSize = new Size(width - 48, 0),
+                Font = new Font("Segoe UI", 9),
+                Location = new Point(24, y),
+                Tag = MutedText,
+            });
+            y += 48;
+
+            var close = new ModernButton { Text = "Close", Accent = true, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 120, buttonsY, 100, 34) };
             Controls.Add(close);
             CancelButton = close;
-            ClientSize = new Size(width, close.Bottom + 16);
+            ClientSize = new Size(width, y);
+            // Scrolls on short screens rather than running off the bottom.
+            int room = Screen.FromPoint(Cursor.Position).WorkingArea.Height - 40 - (Height - ClientSize.Height);
+            if (y > room)
+            {
+                AutoScroll = true;
+                ClientSize = new Size(width + SystemInformation.VerticalScrollBarWidth, room);
+            }
             Load += delegate
             {
                 Theme.Apply(this);
@@ -560,6 +621,31 @@ namespace Krabbz.Blynclight
 
         // Tags a label shown in the softer text color.
         const string MutedText = "muted";
+
+        // Shows ring changes on the button for a few seconds, even if it's set to light only during calls.
+        void PreviewRing()
+        {
+            tray.MuteButton.ApplySettings();
+            tray.MuteButton.Preview(PreviewMs);
+        }
+
+        // A labelled color list for the mutesync ring; Reset colors puts it back to fallback.
+        void RingColorPicker(string label, string current, string fallback, Action<string> save)
+        {
+            Controls.Add(new Label { Text = label, AutoSize = true, Location = new Point(24, y + 3) });
+            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(width - 150, y, 130, 30) };
+            picker.Items.AddRange(BlyncDevice.ColorNames);
+            picker.SelectedItem = current;
+            picker.SelectedIndexChanged += delegate
+            {
+                save((string)picker.SelectedItem);
+                PreviewRing();
+            };
+            picker.Tag = fallback;
+            colorPickers.Add(picker);
+            Controls.Add(picker);
+            y += 36;
+        }
 
         // A labelled slider from min to max with the current value shown on the right. save runs as it moves.
         void Slider(string label, int min, int max, int current, Func<int, string> describe, Action<int> save)

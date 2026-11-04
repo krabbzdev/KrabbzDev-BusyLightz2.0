@@ -262,6 +262,8 @@ namespace Krabbz.Blynclight
 
         readonly LightController light = new LightController(!AppSettings.UsbLightsDisabled);
         readonly CallDetector calls;
+        // A mutesync mute button, if one is plugged in: mutes the mic and shows red/green on its ring.
+        readonly MuteSyncButton muteButton = new MuteSyncButton(AppSettings.MuteSyncEnabled);
         // App that has the microphone open, or null when not on a call.
         MicApp callApp;
         // Reads Teams status and sets Teams to Busy during non-Teams calls; null when no Teams app is configured.
@@ -370,6 +372,15 @@ namespace Krabbz.Blynclight
                 try { messages.BeginInvoke((Action)Refresh); }
                 catch (InvalidOperationException) { } // Window already gone during exit.
             };
+            K2Connected = K2Key.Present();
+            deviceCheck.Tick += delegate { Program.Guard("Device check", CheckDevices); };
+            deviceCheck.Start();
+            // The window's mutesync tile follows the button's ring.
+            muteButton.StatusChanged += delegate
+            {
+                try { messages.BeginInvoke((Action)delegate { if (!exiting) UpdateDisplay(); }); }
+                catch (InvalidOperationException) { } // Window already gone during exit.
+            };
             // Red while any (non-ignored) app has the microphone open, then back to the user's color
             // (or back to Teams status when following Teams). Both parts can be turned off in Settings.
             calls = new CallDetector(app =>
@@ -440,6 +451,20 @@ namespace Krabbz.Blynclight
         // For the setup checklist.
         public LightController Light { get { return light; } }
         public TeamsPresence Presence { get { return presence; } }
+        public MuteSyncButton MuteButton { get { return muteButton; } }
+
+        // Whether a K2 macro key is plugged in, for the window's Active Devices; checked every few seconds.
+        public bool K2Connected { get; private set; }
+        readonly System.Windows.Forms.Timer deviceCheck = new System.Windows.Forms.Timer { Interval = 3000 };
+
+        void CheckDevices()
+        {
+            bool k2 = K2Key.Present();
+            if (k2 == K2Connected) return;
+            K2Connected = k2;
+            Program.LogEvent(k2 ? "K2 key plugged in" : "K2 key unplugged");
+            UpdateDisplay();
+        }
 
         public void ConnectTeams()
         {
@@ -506,6 +531,7 @@ namespace Krabbz.Blynclight
         void OnMicApp(MicApp app)
         {
             bool wasOverriding = light.OverrideActive;
+            muteButton.OnCall = app != null;
             // Teams already shows its own calls as Busy; other apps need presence set.
             if (presence != null)
             {
@@ -527,6 +553,8 @@ namespace Krabbz.Blynclight
         {
             light.ApplySettings();
             calls.Recheck();
+            muteButton.Enabled = AppSettings.MuteSyncEnabled;
+            muteButton.ApplySettings();
             if (AppSettings.OverrideTimesOut) StartOverrideTimerIfNeeded();
             else light.SetReturnToTeams(null);
             Refresh();
@@ -1170,6 +1198,8 @@ namespace Krabbz.Blynclight
             exiting = true;
             for (int id = 0; id < HotkeyStates.Length; id++) UnregisterHotKey(messages.Handle, id);
             calls.Dispose();
+            muteButton.Dispose(); // Turns its ring off.
+            deviceCheck.Dispose();
             if (teamsPoll != null) teamsPoll.Dispose();
             if (presence != null) presence.Dispose(); // Clears Busy if a phone call is in progress.
             if (updateTimer != null) updateTimer.Dispose();

@@ -6,49 +6,102 @@ using System.Windows.Forms;
 
 namespace Krabbz.Blynclight
 {
-    // A tile for each kind of light that's plugged in, the way an iPhone shows a connected device: an app-icon style
-    // rounded square with a drawing of the light glowing in its current color, a green "connected" dot, and its name
-    // underneath. The drawings are the app's own, simplified from the real lights.
+    // Device tiles for the window's Active Devices panel, the way an iPhone shows a connected device: an app-icon style
+    // rounded square with a drawing of the device (lights glowing in their current color), a green "connected" dot,
+    // and its name underneath. The drawings are the app's own, simplified from the real lights.
     static class DeviceTiles
     {
-        public const int TileSize = 44, Gap = 16, LabelHeight = 16;
-        public const int Height = TileSize + 3 + LabelHeight;
+        public const int TileSize = 44, LabelHeight = 16;
         static readonly Color ConnectedGreen = Color.FromArgb(52, 199, 89);
 
-        // How wide the tiles for these lights are; 0 when none are plugged in.
-        public static int Width(int blynclights, int luxafors)
-        {
-            int count = (blynclights > 0 ? 1 : 0) + (luxafors > 0 ? 1 : 0);
-            return count == 0 ? 0 : count * TileSize + (count - 1) * Gap;
-        }
+        // The Active Devices grid: every device BusyLightz works with, in a row across area. Plugged-in ones are lit
+        // with a green dot and "Connected"; the rest are greyed out with "Disconnected". Height is what it needs.
+        public const int GridHeight = TileSize + 6 + 2 * LabelHeight;
 
-        // Draws the tiles left to right from (x, y). glow is the lights' color (black or gray draws them unlit); tile is
-        // the tile's fill, and label the color of the names.
-        public static void Draw(Graphics g, int x, int y, int blynclights, int luxafors, Color glow, Color tile, Color border, Color label)
+        public static void DrawGrid(Graphics g, Rectangle area, int blynclights, int luxafors, bool k2, Color glow,
+            Color tile, Color border, Color text, Color muted)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            if (blynclights > 0)
+            var ring = MuteSyncButton.Ring;
+            var devices = new[]
             {
-                Tile(g, x, y, tile, border, label, blynclights, "Blynclight", r => DrawBlynclight(g, r, glow));
-                x += TileSize + Gap;
+                new GridDevice(blynclights > 1 ? blynclights + " Blynclights" : "Blynclight", blynclights > 0, r => DrawBlynclight(g, r, blynclights > 0 ? glow : Color.Gray)),
+                new GridDevice(luxafors > 1 ? luxafors + " Luxafors" : "Luxafor", luxafors > 0, r => DrawLuxafor(g, r, luxafors > 0 ? glow : Color.Gray)),
+                new GridDevice("mutesync", ring.HasValue, r => DrawMuteSync(g, r, ring ?? Color.Gray)),
+                new GridDevice("K2 Key", k2, r => DrawK2(g, r)),
+            };
+            int slot = area.Width / devices.Length;
+            for (int i = 0; i < devices.Length; i++)
+            {
+                var d = devices[i];
+                int x = area.X + i * slot + (slot - TileSize) / 2;
+                var r = new Rectangle(x, area.Y, TileSize, TileSize);
+                Theme.FillRounded(g, r, 11, tile, border);
+                d.Draw(Rectangle.Inflate(r, -7, -7));
+                if (d.Connected)
+                {
+                    var dot = new Rectangle(r.Right - 11, r.Y - 3, 14, 14);
+                    using (var edge = new SolidBrush(tile)) g.FillEllipse(edge, dot);
+                    using (var green = new SolidBrush(ConnectedGreen)) g.FillEllipse(green, Rectangle.Inflate(dot, -2, -2));
+                }
+                else
+                    // Greyed out: the tile's own color laid over most of the drawing.
+                    using (var veil = Theme.Rounded(r, 11))
+                    using (var brush = new SolidBrush(Color.FromArgb(150, tile)))
+                        g.FillPath(brush, veil);
+                var label = new Rectangle(area.X + i * slot, r.Bottom + 6, slot, LabelHeight);
+                TextRenderer.DrawText(g, d.Name, Theme.Tiny, label, d.Connected ? text : muted,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.SingleLine);
+                label.Offset(0, LabelHeight);
+                TextRenderer.DrawText(g, d.Connected ? "Connected" : "Disconnected", Theme.Tiny, label,
+                    d.Connected ? Theme.Mix(ConnectedGreen, text, 0.25) : muted,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.SingleLine);
             }
-            if (luxafors > 0) Tile(g, x, y, tile, border, label, luxafors, "Luxafor", r => DrawLuxafor(g, r, glow));
         }
 
-        static void Tile(Graphics g, int x, int y, Color fill, Color border, Color label, int count, string name, Action<Rectangle> drawLight)
+        sealed class GridDevice
         {
-            var r = new Rectangle(x, y, TileSize, TileSize);
-            Theme.FillRounded(g, r, 11, fill, border);
-            drawLight(Rectangle.Inflate(r, -7, -7));
+            public readonly string Name;
+            public readonly bool Connected;
+            public readonly Action<Rectangle> Draw;
+            public GridDevice(string name, bool connected, Action<Rectangle> draw) { Name = name; Connected = connected; Draw = draw; }
+        }
 
-            // The green dot that says it's seen and connected, ringed in the tile color so it stands off the corner.
-            var dot = new Rectangle(r.Right - 11, r.Y - 3, 14, 14);
-            using (var ring = new SolidBrush(fill)) g.FillEllipse(ring, dot);
-            using (var green = new SolidBrush(ConnectedGreen)) g.FillEllipse(green, Rectangle.Inflate(dot, -2, -2));
+        // K2 macro key: a clear base with two black keys side by side.
+        static void DrawK2(Graphics g, Rectangle r)
+        {
+            var body = new Rectangle(r.X + 1, r.Y + 6, r.Width - 2, r.Height - 10);
+            Theme.FillRounded(g, body, 5, Color.FromArgb(225, 228, 234), Color.FromArgb(170, 174, 184));
+            // The see-through base's lower edge.
+            using (var edge = new SolidBrush(Color.FromArgb(190, 194, 204)))
+                g.FillRectangle(edge, body.X + 3, body.Bottom - 6, body.Width - 6, 3);
+            int key = (body.Width - 9) / 2;
+            for (int i = 0; i < 2; i++)
+            {
+                var cap = new Rectangle(body.X + 3 + i * (key + 3), body.Y - 4, key, key);
+                Theme.FillRounded(g, cap, 3, Color.FromArgb(38, 38, 44), Color.FromArgb(16, 16, 20));
+                using (var shine = new SolidBrush(Color.FromArgb(50, 255, 255, 255)))
+                    g.FillRectangle(shine, cap.X + 3, cap.Y + 2, cap.Width - 6, 2);
+            }
+        }
 
-            string text = count > 1 ? count + " " + name : name;
-            TextRenderer.DrawText(g, text, Theme.Tiny, new Rectangle(x - Gap / 2, r.Bottom + 3, TileSize + Gap, LabelHeight), label,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.SingleLine);
+        // mutesync: a rounded square pad with a glowing ring around its edge and a dark button in the middle.
+        static void DrawMuteSync(Graphics g, Rectangle r, Color ringColor)
+        {
+            bool on;
+            var lit = Lit(ringColor, out on);
+            var pad = new Rectangle(r.X + 2, r.Y + 3, r.Width - 4, r.Height - 6);
+            if (on)
+                using (var halo = new SolidBrush(Color.FromArgb(70, lit))) g.FillEllipse(halo, Rectangle.Inflate(pad, 4, 4));
+            // A dark base under the pad, like the real one's edge.
+            Theme.FillRounded(g, new Rectangle(pad.X, pad.Y + 3, pad.Width, pad.Height - 2), 7, Color.FromArgb(40, 40, 46), Color.FromArgb(40, 40, 46));
+            Theme.FillRounded(g, new Rectangle(pad.X, pad.Y, pad.Width, pad.Height - 3), 7, lit, Theme.Mix(lit, Color.Black, 0.2));
+            // A soft shine across the top.
+            using (var shine = new SolidBrush(Color.FromArgb(on ? 90 : 140, 255, 255, 255)))
+                g.FillEllipse(shine, pad.X + pad.Width / 5, pad.Y + 2, pad.Width * 3 / 5, pad.Height / 5);
+            int size = pad.Width * 2 / 5;
+            var button = new Rectangle(pad.X + (pad.Width - size) / 2, pad.Y + (pad.Height - 3 - size) / 2, size, size);
+            Theme.FillRounded(g, button, 3, Color.FromArgb(34, 34, 40), Color.FromArgb(20, 20, 24));
         }
 
         // Lit color for the drawings, or a soft gray when the lights are off.
