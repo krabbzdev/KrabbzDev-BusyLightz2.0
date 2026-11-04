@@ -26,6 +26,18 @@ namespace Krabbz.Blynclight
         public static string GraphClientId { get { return Metadata("GraphClientId"); } }
         public static string GraphTenantId { get { return Metadata("GraphTenantId"); } }
 
+        static void WaitForPreviousCopy(string[] args)
+        {
+            int at = Array.IndexOf(args, "--after-pid"), pid;
+            if (at < 0 || at + 1 >= args.Length || !int.TryParse(args[at + 1], out pid)) return;
+            try
+            {
+                using (var previous = System.Diagnostics.Process.GetProcessById(pid)) previous.WaitForExit(30000);
+            }
+            catch (ArgumentException) { } // Already gone.
+            catch (InvalidOperationException) { }
+        }
+
         static string Metadata(string key)
         {
             foreach (AssemblyMetadataAttribute meta in Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyMetadataAttribute), false))
@@ -40,6 +52,9 @@ namespace Krabbz.Blynclight
         {
             // Run as SYSTEM by the all-users install's scheduled task, to install updates; no window or tray icon.
             if (Array.IndexOf(args, "--system-update") >= 0) return SystemUpdater.Run();
+            // --after-pid N: started by a copy that's closing (handing over, or restarting after a freeze); wait for
+            // it to finish closing first, so this one isn't turned away as a second copy.
+            WaitForPreviousCopy(args);
             bool trayOnly = Array.IndexOf(args, "--tray") >= 0;
             bool justUpdated = Array.IndexOf(args, "--updated") >= 0;
             // The all-users install starts the app at every user's sign-in; each user's own settings decide whether
@@ -182,8 +197,8 @@ namespace Krabbz.Blynclight
             watcher.Start();
         }
 
-        // Ends this frozen copy and starts a fresh one a few seconds later, in the tray. While an update installs,
-        // just ends it: the updater opens the new version.
+        // Ends this frozen copy and starts a fresh one, in the tray, which waits for this one to be gone. While an
+        // update installs, just ends it: the updater opens the new version.
         static void RestartFrozen(int seconds)
         {
             bool updating = AllUsersInstall.UpdateInProgress;
@@ -192,9 +207,8 @@ namespace Krabbz.Blynclight
             {
                 try
                 {
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe",
-                        "/c ping -n 4 127.0.0.1 >nul & start \"\" \"" + Application.ExecutablePath + "\" --autostart")
-                    { CreateNoWindow = true, WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden, UseShellExecute = false });
+                    System.Diagnostics.Process.Start(Application.ExecutablePath,
+                        "--autostart --after-pid " + System.Diagnostics.Process.GetCurrentProcess().Id);
                 }
                 catch (Exception ex) { LogError("Couldn't start a fresh copy", ex); }
             }
@@ -417,12 +431,7 @@ namespace Krabbz.Blynclight
             K2Connected = K2Key.Present();
             // The K2 key's buttons run the macros picked in Settings.
             K2Key.Disabled = AppSettings.K2Disabled;
-            k2Key = new K2Key();
-            k2Key.Pressed += button =>
-            {
-                if (K2Pressed != null) K2Pressed(button);
-                K2Actions.Run(button, this);
-            };
+            UpdateK2Listener();
             deviceCheck.Tick += delegate { Program.Guard("Device check", CheckDevices); };
             deviceCheck.Start();
             // The window's mutesync tile follows the button's ring.
@@ -505,7 +514,9 @@ namespace Krabbz.Blynclight
 
         // Whether a K2 macro key is plugged in, for the window's Active Devices; checked every few seconds.
         public bool K2Connected { get; private set; }
-        readonly K2Key k2Key;
+        // Listens to the K2 (and cancels its own clicks with a mouse hook) only while one is plugged in and Disable K2
+        // Functions is off; null otherwise, so a PC without a K2 never has the hook or the input watching.
+        K2Key k2Key;
         // Raised on the UI thread for each K2 press, so Settings can light that key in its picture.
         public event Action<K2Key.Button> K2Pressed;
         readonly System.Windows.Forms.Timer deviceCheck = new System.Windows.Forms.Timer { Interval = 3000 };
@@ -516,7 +527,28 @@ namespace Krabbz.Blynclight
             if (k2 == K2Connected) return;
             K2Connected = k2;
             Program.LogEvent(k2 ? "K2 key plugged in" : "K2 key unplugged");
+            UpdateK2Listener();
             UpdateDisplay();
+        }
+
+        // Starts or stops listening to the K2 to match whether one is plugged in and its functions are on.
+        void UpdateK2Listener()
+        {
+            bool want = K2Connected && !AppSettings.K2Disabled;
+            if (want && k2Key == null)
+            {
+                k2Key = new K2Key();
+                k2Key.Pressed += button =>
+                {
+                    if (K2Pressed != null) K2Pressed(button);
+                    K2Actions.Run(button, this);
+                };
+            }
+            else if (!want && k2Key != null)
+            {
+                k2Key.Dispose();
+                k2Key = null;
+            }
         }
 
         public void ConnectTeams()
@@ -608,6 +640,7 @@ namespace Krabbz.Blynclight
             calls.Recheck();
             muteButton.Enabled = AppSettings.MuteSyncEnabled;
             K2Key.Disabled = AppSettings.K2Disabled;
+            UpdateK2Listener();
             muteButton.ApplySettings();
             if (AppSettings.OverrideTimesOut) StartOverrideTimerIfNeeded();
             else light.SetReturnToTeams(null);
@@ -1272,7 +1305,7 @@ namespace Krabbz.Blynclight
             calls.Dispose();
             muteButton.Dispose(); // Turns its ring off.
             deviceCheck.Dispose();
-            k2Key.Dispose();
+            if (k2Key != null) k2Key.Dispose();
             if (teamsPoll != null) teamsPoll.Dispose();
             if (presence != null) presence.Dispose(); // Clears Busy if a phone call is in progress.
             if (updateTimer != null) updateTimer.Dispose();

@@ -98,7 +98,7 @@ Off is color 0,0,0. `BlyncDevice.FindLights()` finds both kinds, and `LightContr
 - The ring takes 13 bytes: `0x41`, then a red, green, blue triple (0-255) for each of its 4 LEDs. All zeros is off.
 - The ring goes dark unless its color is sent again every few seconds, so `MuteSyncButton` resends it every 2 seconds.
 
-**K2 USBC Key** (`04D9:A2D0`, a Holtek chip that reports itself as a gaming mouse): out of the box its buttons are a left and a right mouse click. `K2Key` registers for raw mouse and keyboard input to see which device sent each click, and a `WH_MOUSE_LL` hook cancels clicks whose raw input came from the K2, matched within 250 ms. Keys F13 and F14 from the K2 are taken as its left and right buttons.
+**K2 USBC Key** (`04D9:A2D0`, a Holtek chip that reports itself as a gaming mouse): out of the box its buttons are a left and a right mouse click. `K2Key` registers for raw mouse and keyboard input to see which device sent each click, and a `WH_MOUSE_LL` hook cancels clicks whose raw input came from the K2, matched within 250 ms. Both run only while a K2 is plugged in and Disable K2 Functions is off, so a PC without one never has the hook. Keys F13 and F14 from the K2 are taken as its left and right buttons.
 
 ---
 [Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

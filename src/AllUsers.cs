@@ -47,11 +47,14 @@ namespace Krabbz.Blynclight
             }
         }
 
-        // Starts the all-users copy once this one has closed. The caller exits right away; the all-users copy then
-        // removes this one.
+        // Starts the all-users copy, which waits for this one to close first. The caller exits right away; the
+        // all-users copy then removes this one.
         public static void HandOff(bool showWindow)
         {
-            RunHidden("ping -n 3 127.0.0.1 >nul & start \"\" \"" + ExePath + "\"" + (showWindow ? "" : " --tray"));
+            Process.Start(new ProcessStartInfo(ExePath, (showWindow ? "" : "--tray ") + "--after-pid " + Process.GetCurrentProcess().Id)
+            {
+                UseShellExecute = false,
+            });
         }
 
         // Reopens this copy once the background updater's flag is gone (or after 5 minutes). The caller exits right

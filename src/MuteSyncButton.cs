@@ -281,6 +281,9 @@ namespace Krabbz.Blynclight
         // use the same chip) are left alone: only one whose USB description says "MuteSync Button" counts.
         static string FindPort()
         {
+            // Asking WMI is only worth it when Windows has seen a CP210x serial device at all and some COM port
+            // exists; most PCs have neither, so they never run the query.
+            if (!CP210xSeen() || SerialPort.GetPortNames().Length == 0) return null;
             try
             {
                 using (var search = new ManagementObjectSearcher(
@@ -300,6 +303,17 @@ namespace Krabbz.Blynclight
             catch (ManagementException) { }
             catch (COMException) { }
             return null;
+        }
+
+        // Whether a device with the button's chip (USB VID 10C4 / PID EA60) has ever been plugged into this PC.
+        static bool CP210xSeen()
+        {
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Enum\USB\VID_10C4&PID_EA60"))
+                    return key != null;
+            }
+            catch (Exception) { return true; } // Can't tell: look anyway.
         }
 
         static string UsbDescription(ManagementObject device)
