@@ -27,13 +27,13 @@ namespace Krabbz.Blynclight
         const int SearchMs = 10000;
         readonly object gate = new object();
         readonly Timer timer;
-        SerialPort port;
-        bool enabled;
+        volatile SerialPort port;
+        volatile bool enabled;
         // The ring color last sent (at full brightness; black is off), or null before the first.
         Color? shownRing;
         DateTime lastSent, lastSearch = DateTime.MinValue;
         bool buttonDown;
-        string status = "Not found";
+        volatile string status = "Not found";
         bool warnedInUse;
         // Ring settings from Light Control, read once rather than from the registry twice a second.
         string mutedColor, liveColor;
@@ -57,8 +57,9 @@ namespace Krabbz.Blynclight
             timer = new Timer(delegate { Program.Guard("mutesync button", Tick); }, null, 1000, TickMs);
         }
 
-        public string Status { get { lock (gate) return enabled ? status : "Turned off"; } }
-        public bool Connected { get { lock (gate) return port != null; } }
+        // Read without the lock, so the window never waits on the button.
+        public string Status { get { return enabled ? status : "Turned off"; } }
+        public bool Connected { get { return port != null; } }
 
         void LoadSettings()
         {
@@ -141,7 +142,9 @@ namespace Krabbz.Blynclight
             string old = status;
             string name = FindPort();
             if (name == null) { status = "Not found"; return status != old; }
-            var serial = new SerialPort(name, Baud, Parity.None, 8, StopBits.One);
+            // Time limits on reading and writing: with none, a button that stops answering would hold the lock forever,
+            // and the window (and closing for an update) would wait on it.
+            var serial = new SerialPort(name, Baud, Parity.None, 8, StopBits.One) { WriteTimeout = 500, ReadTimeout = 500 };
             try { serial.Open(); }
             catch (UnauthorizedAccessException)
             {

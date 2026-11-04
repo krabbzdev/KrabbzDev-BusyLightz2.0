@@ -142,6 +142,12 @@ namespace Krabbz.Blynclight
             try
             {
                 Directory.CreateDirectory(AllUsersInstall.UpdatesDir);
+                // Another run (the scheduled one, or one started by hand) is installing already; two at once collide.
+                if (AllUsersInstall.UpdateInProgress)
+                {
+                    Log("An update is already installing; skipped");
+                    return 0;
+                }
                 var update = Updater.DownloadAllUsersIfNewer(Program.UpdateRepo, Program.Version, AllUsersInstall.UpdatesDir);
                 if (update == null)
                 {
@@ -152,9 +158,11 @@ namespace Krabbz.Blynclight
                 // Each user's copy sees the flag, closes, and reopens once it's gone.
                 File.WriteAllText(AllUsersInstall.UpdatingFlag, update.Version.ToString());
                 WaitForOtherCopiesToClose(TimeSpan.FromSeconds(30));
+                // A copy still open now is stuck closing (it would keep the installer waiting); end it. Each copy's
+                // reopen helper starts the new version once the update's done.
+                EndOtherCopies();
                 string log = Path.Combine(AllUsersInstall.UpdatesDir, "install-" + update.Version + ".log");
-                // From a helper, so this exe isn't in use when the installer replaces it. Copies still open after the
-                // wait are closed by the installer.
+                // From a helper, so this exe isn't in use when the installer replaces it.
                 Process.Start(new ProcessStartInfo("cmd.exe", "/c ping -n 3 127.0.0.1 >nul" +
                     " & start \"\" /wait msiexec.exe /i \"" + update.MsiPath + "\" /qn /norestart /l*v \"" + log + "\"" +
                     " & del /f /q \"" + AllUsersInstall.UpdatingFlag + "\"")
@@ -184,6 +192,22 @@ namespace Krabbz.Blynclight
                 if (!others) return;
                 Thread.Sleep(1000);
             }
+        }
+
+        static void EndOtherCopies()
+        {
+            int self = Process.GetCurrentProcess().Id;
+            foreach (var process in Process.GetProcessesByName("BusyLightz"))
+                using (process)
+                {
+                    if (process.Id == self) continue;
+                    try
+                    {
+                        process.Kill();
+                        Log("Ended a copy that didn't close for the update (process " + process.Id + ")");
+                    }
+                    catch (Exception ex) { Log("Couldn't end process " + process.Id + ": " + ex.Message); }
+                }
         }
 
         // updater.log in the updates folder, kept short.

@@ -144,7 +144,7 @@ namespace Krabbz.Blynclight
         // so a freeze shows in app.log even if the app is then forced closed. Also keeps last-seen.txt current.
         public static void WatchForFreezes(Control ui)
         {
-            const int CheckMs = 5000, FrozenMs = 30000, LastSeenMs = 60000;
+            const int CheckMs = 5000, FrozenMs = 30000, RestartMs = 120000, LastSeenMs = 60000;
             var watcher = new Thread(delegate ()
             {
                 bool frozen = false;
@@ -163,6 +163,9 @@ namespace Krabbz.Blynclight
                         frozen = true;
                         LogEvent("Stopped responding: the window hasn't answered for " + (int)(quietMs / 1000) + " seconds");
                     }
+                    // Frozen for good: start a fresh copy rather than leave the lights, Teams status and buttons
+                    // stuck (and every launch quietly handing over to the frozen copy).
+                    if (frozen && quietMs > RestartMs) RestartFrozen((int)(quietMs / 1000));
                     else if (frozen && quietMs < CheckMs * 2)
                     {
                         frozen = false;
@@ -177,6 +180,44 @@ namespace Krabbz.Blynclight
             });
             watcher.IsBackground = true;
             watcher.Start();
+        }
+
+        // Ends this frozen copy and starts a fresh one a few seconds later, in the tray. While an update installs,
+        // just ends it: the updater opens the new version.
+        static void RestartFrozen(int seconds)
+        {
+            bool updating = AllUsersInstall.UpdateInProgress;
+            LogEvent("Still frozen after " + seconds + " seconds; " + (updating ? "closing it so the update can finish" : "restarting"));
+            if (!updating)
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe",
+                        "/c ping -n 4 127.0.0.1 >nul & start \"\" \"" + Application.ExecutablePath + "\" --autostart")
+                    { CreateNoWindow = true, WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden, UseShellExecute = false });
+                }
+                catch (Exception ex) { LogError("Couldn't start a fresh copy", ex); }
+            }
+            ClearLastSeen();
+            System.Diagnostics.Process.GetCurrentProcess().Kill();
+        }
+
+        static int forceCloseStarted;
+
+        // A safety net for closing: if the app hasn't finished closing after ms (something it was shutting down got
+        // stuck), it's ended outright, so an update can always replace it and it can always be started again.
+        public static void ForceCloseAfter(int ms, string why)
+        {
+            if (Interlocked.Exchange(ref forceCloseStarted, 1) == 1) return;
+            var timer = new Thread(delegate ()
+            {
+                Thread.Sleep(ms);
+                LogEvent("Still closing (" + why + ") after " + ms / 1000 + " seconds; ending it");
+                ClearLastSeen();
+                System.Diagnostics.Process.GetCurrentProcess().Kill();
+            });
+            timer.IsBackground = true;
+            timer.Start();
         }
 
         // A one-line note in app.log, e.g. "Started" or "Closed".
@@ -739,6 +780,7 @@ namespace Krabbz.Blynclight
                     Program.LogEvent("Handing over to the copy installed for everyone on this PC");
                     Program.ClearLastSeen();
                     AllUsersInstall.HandOff(showWindow);
+                    Program.ForceCloseAfter(10000, "handing over");
                     Application.Exit();
                 }
                 else if (AllUsersInstall.IsThisCopy && AllUsersInstall.UpdateInProgress)
@@ -747,6 +789,8 @@ namespace Krabbz.Blynclight
                     Program.LogEvent("Closing while an update installs");
                     Program.ClearLastSeen();
                     AllUsersInstall.ReopenAfterUpdate(showWindow);
+                    // An update can't replace the app while it's still open, so it mustn't get stuck closing.
+                    Program.ForceCloseAfter(10000, "for an update");
                     Application.Exit();
                 }
             };
@@ -785,6 +829,7 @@ namespace Krabbz.Blynclight
                             Program.LogEvent("Closing to install version " + update.Version);
                             Program.ClearLastSeen();
                             Updater.Install(update, Application.ExecutablePath, form != null && form.Visible);
+                            Program.ForceCloseAfter(10000, "for an update");
                             Application.Exit();
                         }
                         else if (manual)
@@ -1220,6 +1265,7 @@ namespace Krabbz.Blynclight
         protected override void ExitThreadCore()
         {
             exiting = true;
+            Program.ForceCloseAfter(10000, "exit");
             for (int id = 0; id < HotkeyStates.Length; id++) UnregisterHotKey(messages.Handle, id);
             calls.Dispose();
             muteButton.Dispose(); // Turns its ring off.
