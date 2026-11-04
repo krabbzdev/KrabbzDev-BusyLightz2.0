@@ -185,12 +185,18 @@ namespace Krabbz.Blynclight
         public string Status = "";
         public string Lights = "";
         public bool OverrideOn;
+        public int Blynclights, Luxafors;
 
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
             var g = e.Graphics;
             Theme.FillRounded(g, new Rectangle(0, 0, Width - 1, Height - 1), 10, Theme.Card, Theme.Border);
+
+            // Bottom right: a tile for each kind of light plugged in.
+            int tiles = DeviceTiles.Width(Blynclights, Luxafors);
+            DeviceTiles.Draw(g, Width - 14 - tiles, Height - 8 - DeviceTiles.Height, Blynclights, Luxafors, DotColor,
+                Theme.Page, Theme.Border, Theme.Muted);
 
             var dot = Theme.Soften(DotColor);
             using (var halo = new SolidBrush(Theme.Wash(dot, 0.82)))
@@ -199,7 +205,7 @@ namespace Krabbz.Blynclight
                 g.FillEllipse(fill, 28, 26, 44, 44);
 
             TextRenderer.DrawText(g, "Your lights are", Theme.Small, new Point(98, 16), Theme.Muted);
-            TextRenderer.DrawText(g, Status, Theme.Status, new Rectangle(96, 32, Width - 104, 34), Theme.Text,
+            TextRenderer.DrawText(g, Status, Theme.Status, new Rectangle(96, 32, Width - 104 - tiles - 8, 34), Theme.Text,
                 TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
             TextRenderer.DrawText(g, Lights, Theme.Small, new Point(98, 66), Theme.Muted);
 
@@ -454,7 +460,14 @@ namespace Krabbz.Blynclight
             if (Small.Length > 0)
                 TextRenderer.DrawText(g, Small, Theme.Small, new Rectangle(inner.X, top + bigHeight, inner.Width, 18), soft, center);
             TextRenderer.DrawText(g, Lights, Theme.Small, new Rectangle(0, ring.Bottom + 8, Width, 18), soft, center);
+
+            // Bottom corners: a tile for each kind of light plugged in, and the beta sticker.
+            DeviceTiles.Draw(g, Pad, Height - 12 - DeviceTiles.Height, Blynclights, Luxafors, DotColor,
+                Color.FromArgb(235, 255, 255, 255), Color.FromArgb(235, 255, 255, 255), soft);
+            DeviceTiles.BetaSticker(g, Width - Pad - 62, Height - 40);
         }
+
+        public int Blynclights, Luxafors;
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
@@ -552,6 +565,7 @@ namespace Krabbz.Blynclight
         const string SettingsText = "⚙  Settings";
         public Color DotColor = Color.Gray;
         public string Status = "", Detail = "", Countdown;
+        public int Blynclights, Luxafors;
         public event Action SettingsClicked;
         Rectangle settingsBounds;
 
@@ -569,7 +583,13 @@ namespace Krabbz.Blynclight
             settingsBounds = new Rectangle(Width - Pad - size.Width, 8, size.Width, size.Height + 8);
             TextRenderer.DrawText(g, SettingsText, Theme.Small, settingsBounds, text, TextFormatFlags.VerticalCenter);
 
-            TextRenderer.DrawText(g, Status, Theme.Hero, new Rectangle(Pad - 2, 36, Width - 2 * Pad, 40), text,
+            // On the right: a tile for each kind of light plugged in, and the beta sticker under them.
+            int tiles = DeviceTiles.Width(Blynclights, Luxafors);
+            DeviceTiles.Draw(g, Width - Pad - tiles, 38, Blynclights, Luxafors, DotColor,
+                Color.FromArgb(235, 255, 255, 255), Color.FromArgb(235, 255, 255, 255), soft);
+            DeviceTiles.BetaSticker(g, Width - Pad - 62, Height - 20);
+
+            TextRenderer.DrawText(g, Status, Theme.Hero, new Rectangle(Pad - 2, 36, Width - 2 * Pad - tiles - 8, 40), text,
                 TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
             TextRenderer.DrawText(g, Detail, Theme.Small, new Point(Pad, 76), soft);
 
@@ -685,7 +705,8 @@ namespace Krabbz.Blynclight
             // Top: the status, shown the style's way.
             if (style == WindowStyles.ColorBlock)
             {
-                block = new ColorBlock { Bounds = new Rectangle(0, 0, WindowWidth, 132) };
+                // Tall enough for the light tiles with the beta sticker under them.
+                block = new ColorBlock { Bounds = new Rectangle(0, 0, WindowWidth, 146) };
                 block.SettingsClicked += delegate { tray.ShowSettings(); };
                 Controls.Add(block);
                 y = block.Bottom + 12;
@@ -700,7 +721,8 @@ namespace Krabbz.Blynclight
             else
             {
                 y = AddHeader() + 14;
-                status = new StatusCard { Bounds = new Rectangle(Pad, y, width, 96) };
+                // Tall enough for the light tiles under the override pill.
+                status = new StatusCard { Bounds = new Rectangle(Pad, y, width, 110) };
                 Controls.Add(status);
                 y = status.Bottom + 8;
             }
@@ -747,6 +769,7 @@ namespace Krabbz.Blynclight
             header.Paint += (sender, e) =>
             {
                 using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, header.Height - 1, header.Width, header.Height - 1);
+                DeviceTiles.BetaSticker(e.Graphics, WindowWidth - Pad - 92 - 82, 26);
             };
             header.Controls.Add(new Label { Text = "BusyLightz 2.0", Font = Theme.Strong, ForeColor = Theme.Text, AutoSize = true, Location = new Point(Pad, 9) });
             header.Controls.Add(new Label { Text = "by KrabbzDev", Font = Theme.Small, ForeColor = Theme.Muted, AutoSize = true, Location = new Point(Pad + 1, 29) });
@@ -862,8 +885,14 @@ namespace Krabbz.Blynclight
             string picked = tray.Light.State;
             string statusText = tray.StatusText, lights = "Lights: " + tray.Light.LightSummary;
             string left = tray.OverrideTimeLeft;
+            // Lights turned off (Disable USB Light Integration) show no tiles.
+            bool enabled = tray.Light.LightsEnabled;
+            int blynclights = enabled ? tray.Light.CountOf(LightKind.Blynclight) : 0;
+            int luxafors = enabled ? tray.Light.CountOf(LightKind.Luxafor) : 0;
             if (status != null)
             {
+                status.Blynclights = blynclights;
+                status.Luxafors = luxafors;
                 status.DotColor = tray.DisplayColor;
                 status.Status = statusText;
                 status.Lights = lights;
@@ -883,6 +912,8 @@ namespace Krabbz.Blynclight
                     small = statusText.Substring(paren + 2, statusText.Length - paren - 3);
                 }
                 ring.DotColor = tray.DisplayColor;
+                ring.Blynclights = blynclights;
+                ring.Luxafors = luxafors;
                 ring.Big = big;
                 ring.OverrideOn = tray.OverrideOn;
                 ring.Small = left != null ? left + " left" : tray.OverrideOn ? "Until you change it" : small;
@@ -892,6 +923,8 @@ namespace Krabbz.Blynclight
             if (block != null)
             {
                 block.DotColor = tray.DisplayColor;
+                block.Blynclights = blynclights;
+                block.Luxafors = luxafors;
                 block.Status = statusText;
                 block.Detail = lights;
                 block.Countdown = !tray.OverrideOn ? null : "Manual override on" + (left != null ? "  ·  " + left + " left" : "");

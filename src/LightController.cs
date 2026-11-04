@@ -82,6 +82,7 @@ namespace Krabbz.Blynclight
         }
         public bool OverrideActive { get { lock (sync) return callOverride != null; } }
         public int LightCount { get { lock (sync) return knownLights.Count; } }
+        public int CountOf(LightKind kind) { lock (sync) return knownLights.FindAll(l => l.Kind == kind).Count; }
         // How far round the color wheel Party Mode moves every PartyStepMs.
         public int PartyHueStep { get { return 360 * PartyStepMs / PartyCycleMs % 360; } }
 

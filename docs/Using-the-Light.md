@@ -9,7 +9,7 @@ You control the light from the **app window** or the **tray icon**.
 | **Embrava Blynclight** (USB) | Any Blynclight model that plugs in by USB. |
 | **Luxafor Flag** (USB) | Controlled directly over USB; Luxafor's own app isn't needed. |
 
-You can plug in **any number of each**. They all show the same color at the same time, including Test Lights, calls and Teams status. Lights plugged in later are found within a couple of seconds and set to match. The window shows what's connected, e.g. *Lights: Blynclight + 2 Luxafor*.
+You can plug in **any number of each**. They all show the same color at the same time, including Party Mode, calls and Teams status. Lights plugged in later are found within a couple of seconds and set to match. The window shows what's connected, e.g. *Lights: Blynclight + 2 Luxafor*, with a tile for each kind of light plugged in: a drawing of the light glowing in its current color, a green dot meaning it's seen and connected, and its name (e.g. *2 Luxafor*).
 
 **Use a data cable.** Some USB cables only carry power: the light may glow at plug-in but Windows can't see it, so the app can't control it.
 
