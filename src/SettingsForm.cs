@@ -16,7 +16,7 @@ namespace Krabbz.Blynclight
         // Tags the version line, shown in the softer text color.
         const string VersionLabel = "version";
         // Page icons: Segoe MDL2 Assets settings gear, phone, people, microphone and keyboard.
-        const string GeneralGlyph = "\uE713", CallsGlyph = "\uE717", TeamsGlyph = "\uE716", MuteSyncGlyph = "\uE720", K2Glyph = "\uE765";
+        const string GeneralGlyph = "\uE713", CallsGlyph = "\uE717", TeamsGlyph = "\uE716", MuteSyncGlyph = "\uE720", K2Glyph = "\uE765", AboutGlyph = "\uE946", LightGlyph = "\uE82F";
 
         readonly TrayContext tray;
         readonly CheckBox startWithWindows, openWindow;
@@ -27,6 +27,8 @@ namespace Krabbz.Blynclight
         readonly Timer refresh = new Timer { Interval = RefreshMs };
         readonly List<SettingsPage> pages = new List<SettingsPage>();
         readonly List<NavItem> navItems = new List<NavItem>();
+        // Where the Light Control page is in the list, for the mutesync page's Ring colors button.
+        int lightControlPage;
         // The page being filled in while building, its cards, and where the open card started (-1 when none is open).
         SettingsPage page;
         int cardTop = -1;
@@ -47,37 +49,60 @@ namespace Krabbz.Blynclight
             StartPage("General", GeneralGlyph);
             Heading("General", GeneralGlyph);
             AppearancePickers();
-            startWithWindows = Box("Start with Windows", AppSettings.StartWithWindows, v => AppSettings.StartWithWindows = v);
+            startWithWindows = Box("Start with Windows", AppSettings.StartWithWindows, v => AppSettings.StartWithWindows = v,
+                help: "Starts BusyLightz when you sign in to Windows, so your lights work without you opening it.");
             openWindow = Box("Open the window at sign-in (off: start in the tray only)", AppSettings.OpenWindowAtSignIn,
-                v => AppSettings.OpenWindowAtSignIn = v, true);
+                v => AppSettings.OpenWindowAtSignIn = v, true,
+                "Shows the BusyLightz window when it starts. Off, it starts quietly as an icon in the tray.");
             startWithWindows.CheckedChanged += delegate { openWindow.Enabled = startWithWindows.Checked; };
             openWindow.Enabled = startWithWindows.Checked;
             // Red, Green and On A Call override Teams status until this runs out.
             var timesOut = Box("Go back to Follow Teams Status after",
-                AppSettings.OverrideTimesOut, v => { AppSettings.OverrideTimesOut = v; tray.ApplySettings(); });
+                AppSettings.OverrideTimesOut, v => { AppSettings.OverrideTimesOut = v; tray.ApplySettings(); },
+                help: "When you pick Busy, Available or On a call yourself, your lights go back to following your Teams status after this long. Off, they stay until you change them.");
             var minutes = OverrideMinutesPicker(timesOut);
             timesOut.CheckedChanged += delegate { minutes.Enabled = timesOut.Checked; };
             minutes.Enabled = timesOut.Checked;
-            Box("Show a notification when the lights change", AppSettings.ShowNotifications, v => AppSettings.ShowNotifications = v);
-            Box("Hotkeys: Alt+R for Busy, Alt+G for Available", AppSettings.HotkeysEnabled, v => { AppSettings.HotkeysEnabled = v; tray.ApplySettings(); });
-            var updates = Box("Install updates automatically", AppSettings.AutoUpdate, v => AppSettings.AutoUpdate = v);
+            Box("Show a notification when the lights change", AppSettings.ShowNotifications, v => AppSettings.ShowNotifications = v,
+                help: "Shows a small Windows notification each time your lights change color.");
+            Box("Hotkeys: Alt+R for Busy, Alt+G for Available", AppSettings.HotkeysEnabled, v => { AppSettings.HotkeysEnabled = v; tray.ApplySettings(); },
+                help: "Press Alt+R for Busy or Alt+G for Available from any app, without opening BusyLightz. Turn off if another app uses these keys.");
+            var updates = Box("Install updates automatically", AppSettings.AutoUpdate, v => AppSettings.AutoUpdate = v,
+                help: "Downloads and installs new versions of BusyLightz by itself. Check now looks for one right away.");
             if (Program.UpdateRepo != null) SideButton(updates, "Check now", delegate { tray.CheckForUpdates(true); });
             // Updates are automatic for the all-users copy (its background updater installs them).
             if (AllUsersInstall.IsThisCopy) updates.Enabled = false;
             else if (Program.UpdateRepo != null) InstallForEveryoneRow();
+            // The project on GitHub: what it is, the code, release notes and the guide.
+            if (Program.UpdateRepo != null)
+            {
+                Heading("About", AboutGlyph);
+                var project = new ModernButton
+                {
+                    Text = "Learn more about this project here",
+                    Accent = true,
+                    Glyph = "", // open in new window
+                    Bounds = new Rectangle(24, y, 300, 36),
+                };
+                project.Click += delegate { tray.OpenProjectPage(); };
+                Add(project);
+                y += 48;
+            }
             EndPage();
 
             StartPage("Calls", CallsGlyph);
             Heading("Calls", CallsGlyph);
             var red = Box("Turn lights red when my mic is in use", AppSettings.CallsTurnRed,
-                v => { AppSettings.CallsTurnRed = v; tray.ApplySettings(); });
+                v => { AppSettings.CallsTurnRed = v; tray.ApplySettings(); },
+                help: "When any app uses your microphone (Teams, Zoom, Cytracom and other softphones), your lights turn red until it stops. Ignore apps lists apps that shouldn't count.");
             SideButton(red, "Ignore apps...", delegate
             {
                 using (var dialog = new IgnoreAppsDialog()) dialog.ShowDialog(this);
                 tray.ApplySettings();
             });
             var flash = Box("Flash red and blue instead of steady red", AppSettings.FlashOnCalls,
-                v => { AppSettings.FlashOnCalls = v; tray.ApplySettings(); }, true);
+                v => { AppSettings.FlashOnCalls = v; tray.ApplySettings(); }, true,
+                "During calls your lights switch between red and blue instead of staying red. Change the colors and speed in Light Control. Test microphone checks that calls are detected.");
             SideButton(flash, "Test microphone...", delegate
             {
                 using (var dialog = new MicTestForm()) dialog.ShowDialog(this);
@@ -86,7 +111,8 @@ namespace Krabbz.Blynclight
             red.CheckedChanged += delegate { flash.Enabled = red.Checked; };
             flash.Enabled = red.Checked;
             Box("Show me as Busy in Teams during calls in other apps", AppSettings.TeamsBusyOnCalls,
-                v => { AppSettings.TeamsBusyOnCalls = v; tray.ApplySettings(); });
+                v => { AppSettings.TeamsBusyOnCalls = v; tray.ApplySettings(); },
+                help: "Sets your Teams status to Busy while you're on a call in another app, like Zoom or a softphone, and back afterwards. Needs BusyLightz connected to Teams.");
             EndPage();
 
             StartPage("Microsoft Teams", TeamsGlyph);
@@ -106,11 +132,15 @@ namespace Krabbz.Blynclight
             var orgApp = new ModernButton { Text = "Organization's Teams app...", Bounds = new Rectangle(24, y, 220, 32) };
             orgApp.Click += delegate { ShowTeamsAppDialog(); };
             Add(orgApp);
-            y += 44;
+            Info(orgApp, "Connect signs in with your work account so your lights follow your Teams status. " +
+                "Your IT admin sets up your organization's Teams app once; this is where its details go.");
+            y += 32 + RowGap;
             Box("Match my Teams status when I pick Busy, Available or On a call", AppSettings.TeamsBusyWhenPicked,
-                v => { AppSettings.TeamsBusyWhenPicked = v; tray.ApplySettings(); });
+                v => { AppSettings.TeamsBusyWhenPicked = v; tray.ApplySettings(); },
+                help: "When you pick Busy, Available or On a call in BusyLightz, your Teams status changes to match.");
             var messageOn = Box("Set my Teams status message while my lights are red:",
-                AppSettings.TeamsStatusMessageOn, v => { AppSettings.TeamsStatusMessageOn = v; tray.ApplySettings(); });
+                AppSettings.TeamsStatusMessageOn, v => { AppSettings.TeamsStatusMessageOn = v; tray.ApplySettings(); },
+                help: "Shows a status message in Teams while your lights are red, so people know you're busy. It's cleared when your lights change back.");
             var message = StatusMessagePicker(24 + 46);
             messageOn.CheckedChanged += delegate { message.Enabled = messageOn.Checked; };
             message.Enabled = messageOn.Checked;
@@ -120,28 +150,39 @@ namespace Krabbz.Blynclight
             // Pressing a mutesync button mutes or unmutes the mic; its ring shows red when muted, green when live.
             Heading("mutesync button", MuteSyncGlyph);
             var muteSync = Box("Mute and unmute my mic with a mutesync button", AppSettings.MuteSyncEnabled,
-                v => { AppSettings.MuteSyncEnabled = v; tray.ApplySettings(); RefreshDevices(); });
-            SideButton(muteSync, "Ring colors...", delegate
-            {
-                using (var dialog = new LightsDialog(tray)) dialog.ShowDialog(this);
-            });
-            y -= 6;
+                v => { AppSettings.MuteSyncEnabled = v; tray.ApplySettings(); RefreshDevices(); },
+                help: "Pressing your mutesync button mutes or unmutes your mic in Windows, for every app. Its ring shows red when muted and green when live. Close the MuteMe app so BusyLightz can use the button.");
+            // Just under the switch's text.
+            y -= RowGap - 2;
             muteButtonStatus.Location = new Point(24 + 46, y);
             Add(muteButtonStatus);
-            y += 30;
+            y += 20 + RowGap;
+            RingSection();
             EndPage();
 
             StartPage("K2 Key", K2Glyph);
             K2Section();
             EndPage();
+
+            // Brightness, call flash speed, colors and the mutesync ring: the Light Control window, shown in its page.
+            lightControlPage = pages.Count;
+            StartPage("Light Control", LightGlyph);
+            var lights = new LightsDialog(tray, true) { Location = new Point(12, 4) };
+            Add(lights);
+            lights.Show();
+            y = lights.Bottom + 8;
+            EndPage();
             RefreshDevices();
+            PlaceInfoIcons();
 
             // Below the pages, across the whole window.
             int bottom = 0;
             foreach (var p in pages) bottom = Math.Max(bottom, p.ContentHeight);
             bottom = Math.Max(bottom, 12 + navItems.Count * 44);
             int room = Screen.FromPoint(Cursor.Position).WorkingArea.Height - 80 - 92;
-            int pageHeight = Math.Min(bottom, room);
+            // No taller than the General page needs; longer pages (Light Control) scroll.
+            const int MaxPageHeight = 680;
+            int pageHeight = Math.Min(Math.Min(bottom, MaxPageHeight), room);
             foreach (var p in pages) p.Bounds = new Rectangle(navWidth, 0, width, pageHeight);
             y = pageHeight + 8;
             Footer();
@@ -157,26 +198,89 @@ namespace Krabbz.Blynclight
             FormClosed += delegate { refresh.Dispose(); };
         }
 
+        // The mutesync button's ring: brightness, its muted and live colors, and whether it's lit only during calls.
+        // Each change shows on the button for a few seconds.
+        void RingSection()
+        {
+            const int PreviewMs = 4000;
+            Action preview = () =>
+            {
+                tray.MuteButton.ApplySettings();
+                tray.MuteButton.Preview(PreviewMs);
+            };
+            Heading("Ring", MuteSyncGlyph);
+
+            var name = new Label { Text = "Ring brightness", AutoSize = true, Location = new Point(24, y) };
+            Add(name);
+            Info(name, "How bright the button's ring glows. 25% matches the MuteMe app.");
+            var value = new Label { Text = AppSettings.MuteSyncBrightness + "%", AutoSize = false, TextAlign = ContentAlignment.TopRight, Bounds = new Rectangle(width - 120, y, 96, 22) };
+            Add(value);
+            var slider = new TrackBar
+            {
+                Minimum = AppSettings.MinBrightness / 5,
+                Maximum = 20,
+                Value = Math.Max(AppSettings.MinBrightness / 5, Math.Min(20, AppSettings.MuteSyncBrightness / 5)),
+                TickStyle = TickStyle.None,
+                AutoSize = false,
+                Bounds = new Rectangle(18, y + 24, width - 48, 30),
+            };
+            slider.ValueChanged += delegate
+            {
+                value.Text = slider.Value * 5 + "%";
+                AppSettings.MuteSyncBrightness = slider.Value * 5;
+                preview();
+            };
+            Add(slider);
+            y += 56 + RowGap;
+
+            RingColor("Muted", AppSettings.MuteSyncMutedColor, name2 => AppSettings.MuteSyncMutedColor = name2, preview,
+                "The ring's color while your mic is muted.");
+            RingColor("Live (not muted)", AppSettings.MuteSyncLiveColor, name2 => AppSettings.MuteSyncLiveColor = name2, preview,
+                "The ring's color while your mic is on.");
+            Box("Only light the ring while an app is using my mic", AppSettings.MuteSyncOnlyOnCalls,
+                v => { AppSettings.MuteSyncOnlyOnCalls = v; preview(); },
+                help: "Keeps the ring dark except during calls (while any app is using your microphone), so it isn't glowing all day.");
+        }
+
+        void RingColor(string label, string current, Action<string> save, Action preview, string help)
+        {
+            var name = new Label { Text = label, AutoSize = true, Location = new Point(24, y + 4) };
+            Add(name);
+            Info(name, help);
+            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
+            picker.Items.AddRange(BlyncDevice.ColorNames);
+            picker.SelectedItem = current;
+            picker.SelectedIndexChanged += delegate
+            {
+                save((string)picker.SelectedItem);
+                preview();
+            };
+            Add(picker);
+            y += 30 + RowGap;
+        }
+
         // The K2 macro key: an action for each button and for both together, and the email address it can type.
         void K2Section()
         {
             Heading("K2 Key", K2Glyph);
             k2Status.Location = new Point(24, y);
             Add(k2Status);
-            y += 28;
-            K2Row("Left button", K2Key.Button.Left);
-            K2Row("Right button", K2Key.Button.Right);
-            K2Row("Both together", K2Key.Button.Both);
+            y += 22 + RowGap;
+            K2Row("Left button", K2Key.Button.Left, "What happens when you press the K2's left button on its own.");
+            K2Row("Right button", K2Key.Button.Right, "What happens when you press the K2's right button on its own.");
+            K2Row("Both together", K2Key.Button.Both, "What happens when you press both buttons at the same time. It counts once, so it doesn't also run Left or Right.");
             y += 4;
-            Add(new Label { Text = "My email address", AutoSize = true, Location = new Point(24, y + 4) });
+            var emailName = new Label { Text = "My email address", AutoSize = true, Location = new Point(24, y + 4) };
+            Add(emailName);
+            Info(emailName, "The address the \"Type my email address\" action types. The setup checklist asks for it too.");
             var email = new TextBox { Bounds = new Rectangle(190, y, 290, 28), Text = AppSettings.MacroEmail };
             email.TextChanged += delegate { AppSettings.MacroEmail = email.Text; };
             Add(email);
-            y += 40;
+            y += 28 + RowGap + 4;
             Add(new Label
             {
-                Text = "Out of the box the K2's buttons are also mouse clicks, so each press clicks where your pointer is too. " +
-                       "To stop that, set them to F13 and F14 with the K2's own setup tool.",
+                Text = "No K2 software needed. Out of the box its buttons are mouse clicks; BusyLightz cancels those clicks " +
+                       "so a press only runs your action. Your real mouse isn't affected.",
                 AutoSize = true,
                 MaximumSize = new Size(width - 48, 0),
                 Font = new Font("Segoe UI", 9f),
@@ -197,14 +301,16 @@ namespace Krabbz.Blynclight
         }
 
         // A K2 button's action, and a box for the text it needs (greyed out for actions that need none).
-        void K2Row(string label, K2Key.Button button)
+        void K2Row(string label, K2Key.Button button, string help)
         {
-            Add(new Label { Text = label, AutoSize = true, Location = new Point(24, y + 4) });
-            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(140, y, 200, 30) };
+            var name = new Label { Text = label, AutoSize = true, Location = new Point(24, y + 4) };
+            Add(name);
+            Info(name, help);
+            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(150, y, 192, 30) };
             foreach (var action in K2Actions.All) picker.Items.Add(action[1]);
             string current = AppSettings.K2Action(button);
             for (int i = 0; i < K2Actions.All.Length; i++) if (K2Actions.All[i][0] == current) picker.SelectedIndex = i;
-            var value = new TextBox { Bounds = new Rectangle(348, y + 1, 132, 28), Text = AppSettings.K2Value(button) };
+            var value = new TextBox { Bounds = new Rectangle(350, y + 1, 130, 28), Text = AppSettings.K2Value(button) };
             Action showValue = () =>
             {
                 string action = K2Actions.All[picker.SelectedIndex][0];
@@ -222,7 +328,7 @@ namespace Krabbz.Blynclight
             showValue();
             Add(picker);
             Add(value);
-            y += 40;
+            y += 30 + RowGap;
         }
 
         [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
@@ -291,14 +397,13 @@ namespace Krabbz.Blynclight
             var help = new ModernButton { Text = "Help", Bounds = new Rectangle(170, y, 80, 34) };
             help.Click += delegate { tray.OpenHelp(); };
             Controls.Add(help);
-            // Brightness, call flash speed and colors, in their own window.
-            // In the Party Mode colors, with a light bulb, so it stands out as the fun one.
-            var lights = new ModernButton { Text = "Light Control", Rainbow = true, Glyph = "\uE82F", Bounds = new Rectangle(258, y, 124, 34) };
-            lights.Click += delegate
+            // Ideas and problems, as an issue on the project's GitHub page.
+            if (Program.UpdateRepo != null)
             {
-                using (var dialog = new LightsDialog(tray)) dialog.ShowDialog(this);
-            };
-            Controls.Add(lights);
+                var feedback = new ModernButton { Text = "Send feedback...", Glyph = "", Bounds = new Rectangle(258, y, 160, 34) };
+                feedback.Click += delegate { tray.ShowFeedback(); };
+                Controls.Add(feedback);
+            }
             var close = new ModernButton { Text = "Close", Accent = true, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(full - 112, y, 100, 34) };
             close.Click += delegate { Close(); };
             Controls.Add(close);
@@ -421,28 +526,62 @@ namespace Krabbz.Blynclight
                 x += 26;
             }
             Add(new Label { Text = text, Font = new Font("Segoe UI Semibold", 11f), AutoSize = true, Location = new Point(x, y) });
-            y += 32;
+            y += 34;
             cardTop = y;
-            y += 12;
+            y += 18;
         }
 
         void CloseCard()
         {
             if (cardTop < 0) return;
-            page.Cards.Add(new Rectangle(12, cardTop, width - 24, y + 2 - cardTop));
-            y += 4;
+            y += 6;
+            page.Cards.Add(new Rectangle(12, cardTop, width - 24, y - cardTop));
+            y += 6;
             cardTop = -1;
         }
 
-        // An on/off switch row; indented ones line up under the text of the row above, which they depend on.
-        CheckBox Box(string text, bool value, Action<bool> save, bool indented = false)
+        // Room kept beside a row's text for its "i".
+        const int InfoRoom = 28;
+        // Gap between rows.
+        const int RowGap = 16;
+
+        // An on/off switch row; indented ones line up under the text of the row above, which they depend on. help is
+        // what its "i" says.
+        CheckBox Box(string text, bool value, Action<bool> save, bool indented = false, string help = null)
         {
             int x = indented ? 24 + 46 : 24;
-            var box = new ToggleBox { Text = text, Checked = value, AutoSize = true, Location = new Point(x, y), MaximumSize = new Size(width - 24 - x, 0) };
+            var box = new ToggleBox { Text = text, Checked = value, AutoSize = true, Location = new Point(x, y), MaximumSize = new Size(width - 24 - x - InfoRoom, 0) };
             box.CheckedChanged += delegate { save(box.Checked); };
             Add(box);
-            y += Math.Max(32, box.Height + 10);
+            y += Math.Max(32, box.Height) + RowGap;
+            if (help != null) Info(box, help);
             return box;
+        }
+
+        // Explanations for the "i" beside each setting: shown on hover, or on click.
+        readonly ToolTip tips = new ToolTip { AutoPopDelay = 20000, InitialDelay = 150, ReshowDelay = 100 };
+        // Each "i" and the control it follows; placed once every row has its final width (see PlaceInfoIcons).
+        readonly List<KeyValuePair<InfoIcon, Control>> infoIcons = new List<KeyValuePair<InfoIcon, Control>>();
+
+        // A small "i" just after a control's text, explaining the setting.
+        void Info(Control anchor, string help)
+        {
+            var icon = new InfoIcon { Size = new Size(16, 16) };
+            tips.SetToolTip(icon, help);
+            icon.Click += delegate { tips.Show(help, icon, 20, 0, 12000); };
+            Add(icon);
+            infoIcons.Add(new KeyValuePair<InfoIcon, Control>(icon, anchor));
+        }
+
+        void PlaceInfoIcons()
+        {
+            foreach (var pair in infoIcons)
+            {
+                var anchor = pair.Value;
+                // Level with the first line of text (a switch's text sits a little lower than its top).
+                int top = anchor is CheckBox ? anchor.Top + 4 : anchor.Top + (Math.Min(anchor.Height, 24) - 16) / 2;
+                pair.Key.Location = new Point(anchor.Right + 6, top);
+            }
         }
 
         // Puts the page and card colors behind the controls (Theme.Apply only colors them in Dark mode, and with
@@ -478,13 +617,17 @@ namespace Krabbz.Blynclight
         void AppearancePickers()
         {
             Picker("Window style", WindowStyles.Names, Array.IndexOf(WindowStyles.All, AppSettings.WindowStyle),
-                index => AppSettings.WindowStyle = WindowStyles.All[index]);
-            Picker("Appearance", new[] { "Light", "Dark" }, AppSettings.DarkMode ? 1 : 0, index => AppSettings.DarkMode = index == 1);
+                index => AppSettings.WindowStyle = WindowStyles.All[index],
+                "How the main window looks: Orbit (a big status ring), Color block or Fluent (a list, like Windows Settings).");
+            Picker("Appearance", new[] { "Light", "Dark" }, AppSettings.DarkMode ? 1 : 0, index => AppSettings.DarkMode = index == 1,
+                "Light or Dark colors for BusyLightz's windows.");
         }
 
-        void Picker(string label, string[] choices, int current, Action<int> save)
+        void Picker(string label, string[] choices, int current, Action<int> save, string help)
         {
-            Add(new Label { Text = label, AutoSize = true, Location = new Point(24, y + 3) });
+            var name = new Label { Text = label, AutoSize = true, Location = new Point(24, y + 4) };
+            Add(name);
+            Info(name, help);
             var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
             picker.Items.AddRange(choices);
             picker.SelectedIndex = current;
@@ -494,7 +637,7 @@ namespace Krabbz.Blynclight
                 tray.ApplyTheme();
             };
             Add(picker);
-            y += 36;
+            y += 30 + RowGap;
         }
 
         // How long an override lasts, next to its checkbox. A change restarts a running timer with the new length.
@@ -580,9 +723,39 @@ namespace Krabbz.Blynclight
         // Makes room for a control beside the row just added; text that now wraps pushes the next row down.
         void Narrow(CheckBox row, int maxWidth)
         {
-            row.MaximumSize = new Size(maxWidth, 0);
+            row.MaximumSize = new Size(maxWidth - InfoRoom, 0);
             row.Size = row.GetPreferredSize(Size.Empty);
-            y = Math.Max(y, row.Top + Math.Max(32, row.Height + 10));
+            y = Math.Max(y, row.Top + Math.Max(32, row.Height) + RowGap);
+        }
+    }
+
+    // A small round "i" beside a setting; hovering or clicking shows what the setting does.
+    class InfoIcon : Control
+    {
+        static readonly Font Letter = new Font("Segoe UI Semibold", 7.5f);
+        bool hover;
+
+        public InfoIcon()
+        {
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            Cursor = Cursors.Help;
+            TabStop = false;
+        }
+
+        protected override void OnMouseEnter(EventArgs e) { hover = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { hover = false; Invalidate(); base.OnMouseLeave(e); }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.Clear(BackColor);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            var color = hover ? Theme.Teams : Theme.Muted;
+            var circle = new Rectangle(1, 1, Width - 3, Height - 3);
+            if (hover) using (var fill = new SolidBrush(Theme.Wash(Theme.Teams, 0.85))) g.FillEllipse(fill, circle);
+            using (var pen = new Pen(color, 1.3f)) g.DrawEllipse(pen, circle);
+            TextRenderer.DrawText(g, "i", Letter, new Rectangle(0, 0, Width, Height - 1), color,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
         }
     }
 
@@ -671,15 +844,21 @@ namespace Krabbz.Blynclight
         readonly List<ComboBox> colorPickers = new List<ComboBox>();
         int y = 16;
 
-        public LightsDialog(TrayContext tray)
+        // embedded: shown inside Settings as its Light Control page, with no border or Close button.
+        public LightsDialog(TrayContext tray, bool embedded = false)
         {
             this.tray = tray;
             Text = "Light Control";
-            FormBorderStyle = FormBorderStyle.FixedDialog;
+            FormBorderStyle = embedded ? FormBorderStyle.None : FormBorderStyle.FixedDialog;
             MaximizeBox = MinimizeBox = false;
             ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
             Font = new Font("Segoe UI", 10);
+            if (embedded)
+            {
+                TopLevel = false;
+                BackColor = Theme.Page;
+            }
 
             Controls.Add(new Label
             {
@@ -769,46 +948,16 @@ namespace Krabbz.Blynclight
             int buttonsY = y;
             y += 50;
 
-            // The mutesync button's ring, which isn't a USB light, so it's left on by Disable All Light Functions.
-            // Reset colors puts these back too.
-            Controls.Add(new Label { Text = "mutesync button ring", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), AutoSize = true, Location = new Point(16, y) });
-            y += 30;
-            Slider("Ring brightness", AppSettings.MinBrightness / 5, 20, AppSettings.MuteSyncBrightness / 5, v => v * 5 + "%", v =>
+            ClientSize = new Size(width, y);
+            if (embedded)
             {
-                AppSettings.MuteSyncBrightness = v * 5;
-                PreviewRing();
-            });
-            RingColorPicker("Muted", AppSettings.MuteSyncMutedColor, AppSettings.DefaultMuteSyncMutedColor, name => AppSettings.MuteSyncMutedColor = name);
-            RingColorPicker("Live (not muted)", AppSettings.MuteSyncLiveColor, AppSettings.DefaultMuteSyncLiveColor, name => AppSettings.MuteSyncLiveColor = name);
-            var onlyOnCalls = new ToggleBox
-            {
-                Text = "Only light the ring while an app is using my mic",
-                Checked = AppSettings.MuteSyncOnlyOnCalls,
-                AutoSize = true,
-                Location = new Point(24, y + 4),
-            };
-            onlyOnCalls.CheckedChanged += delegate
-            {
-                AppSettings.MuteSyncOnlyOnCalls = onlyOnCalls.Checked;
-                PreviewRing();
-            };
-            Controls.Add(onlyOnCalls);
-            y += 44;
-            Controls.Add(new Label
-            {
-                Text = "Pressing the button mutes and unmutes your mic in Windows. Close the MuteMe app so BusyLightz can use it.",
-                AutoSize = true,
-                MaximumSize = new Size(width - 48, 0),
-                Font = new Font("Segoe UI", 9),
-                Location = new Point(24, y),
-                Tag = MutedText,
-            });
-            y += 48;
-
+                // The Settings page scrolls instead.
+                Load += delegate { ApplyColors(); };
+                return;
+            }
             var close = new ModernButton { Text = "Close", Accent = true, DialogResult = DialogResult.Cancel, Bounds = new Rectangle(width - 120, buttonsY, 100, 34) };
             Controls.Add(close);
             CancelButton = close;
-            ClientSize = new Size(width, y);
             // Scrolls on short screens rather than running off the bottom.
             int room = Screen.FromPoint(Cursor.Position).WorkingArea.Height - 40 - (Height - ClientSize.Height);
             if (y > room)
@@ -819,42 +968,23 @@ namespace Krabbz.Blynclight
             Load += delegate
             {
                 Theme.Apply(this);
-                foreach (Control control in Controls)
-                {
-                    // Rounded buttons show the window behind their corners.
-                    if (control is TrackBar || control is ModernButton) control.BackColor = BackColor;
-                    if (MutedText.Equals(control.Tag)) control.ForeColor = Theme.Muted;
-                }
+                ApplyColors();
             };
+        }
+
+        void ApplyColors()
+        {
+            if (TopLevel == false && AppSettings.DarkMode) foreach (Control control in Controls) control.ForeColor = Theme.Text;
+            foreach (Control control in Controls)
+            {
+                // Rounded buttons show the window behind their corners.
+                if (control is TrackBar || control is ModernButton || control is Label || control is CheckBox) control.BackColor = BackColor;
+                if (MutedText.Equals(control.Tag)) control.ForeColor = Theme.Muted;
+            }
         }
 
         // Tags a label shown in the softer text color.
         const string MutedText = "muted";
-
-        // Shows ring changes on the button for a few seconds, even if it's set to light only during calls.
-        void PreviewRing()
-        {
-            tray.MuteButton.ApplySettings();
-            tray.MuteButton.Preview(PreviewMs);
-        }
-
-        // A labelled color list for the mutesync ring; Reset colors puts it back to fallback.
-        void RingColorPicker(string label, string current, string fallback, Action<string> save)
-        {
-            Controls.Add(new Label { Text = label, AutoSize = true, Location = new Point(24, y + 3) });
-            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(width - 150, y, 130, 30) };
-            picker.Items.AddRange(BlyncDevice.ColorNames);
-            picker.SelectedItem = current;
-            picker.SelectedIndexChanged += delegate
-            {
-                save((string)picker.SelectedItem);
-                PreviewRing();
-            };
-            picker.Tag = fallback;
-            colorPickers.Add(picker);
-            Controls.Add(picker);
-            y += 36;
-        }
 
         // A labelled slider from min to max with the current value shown on the right. save runs as it moves.
         void Slider(string label, int min, int max, int current, Func<int, string> describe, Action<int> save)

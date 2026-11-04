@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Krabbz.Blynclight
@@ -11,12 +12,13 @@ namespace Krabbz.Blynclight
     // Each of its buttons, and both pressed together, runs a macro picked in Settings (see K2Actions).
     //
     // Out of the box its buttons are a left and a right mouse click. BusyLightz reads them through Windows raw input,
-    // which tells which device sent each click, so a normal mouse never triggers a macro. Raw input can't stop the
-    // click itself, though, so the K2 also clicks wherever the pointer is. Setting its buttons to F13 and F14 with its
-    // own setup tool avoids that; BusyLightz takes F13 as the left button and F14 as the right.
-    // A hidden top-level window of its own receives the input (a parentless Control would be parked under WinForms'
-    // parking window, which isn't a reliable target for raw input).
-    sealed class K2Key : NativeWindow, IDisposable
+    // which says which device sent each click, so a normal mouse never runs a macro. Raw input can't stop a click,
+    // so a low-level mouse hook does: when Windows is about to act on a click, the hook first reads any raw input
+    // waiting for it, and if that click came from the K2, cancels it. Clicks from any other mouse go through
+    // untouched. If the K2 has been set to F13 and F14 with its own tool, those keys work too (F13 left, F14 right).
+    //
+    // All of this runs on a thread of its own, so a busy window never slows the mouse down.
+    sealed class K2Key : IDisposable
     {
         const string DeviceId = "VID_04D9&PID_A2D0";
         public enum Button { Left, Right, Both }
@@ -27,6 +29,10 @@ namespace Krabbz.Blynclight
         struct RAWINPUTDEVICE { public ushort UsagePage, Usage; public uint Flags; public IntPtr Target; }
         [StructLayout(LayoutKind.Sequential)]
         struct RAWINPUTHEADER { public uint Type, Size; public IntPtr Device, WParam; }
+        [StructLayout(LayoutKind.Sequential)]
+        struct MSG { public IntPtr Window; public uint Message; public IntPtr WParam, LParam; public uint Time; public int X, Y; }
+
+        delegate IntPtr HookProc(int code, IntPtr wParam, IntPtr lParam);
 
         [DllImport("user32.dll", SetLastError = true)]
         static extern uint GetRawInputDeviceList([Out] RAWINPUTDEVICELIST[] list, ref uint count, uint size);
@@ -36,37 +42,127 @@ namespace Krabbz.Blynclight
         static extern bool RegisterRawInputDevices(RAWINPUTDEVICE[] devices, uint count, uint size);
         [DllImport("user32.dll")]
         static extern uint GetRawInputData(IntPtr input, uint command, IntPtr data, ref uint size, uint headerSize);
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr SetWindowsHookEx(int hook, HookProc proc, IntPtr module, uint threadId);
+        [DllImport("user32.dll")]
+        static extern bool UnhookWindowsHookEx(IntPtr hook);
+        [DllImport("user32.dll")]
+        static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")]
+        static extern bool PeekMessage(out MSG msg, IntPtr window, uint first, uint last, uint remove);
+        [DllImport("user32.dll")]
+        static extern IntPtr DispatchMessage(ref MSG msg);
+        [DllImport("user32.dll")]
+        static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+        [DllImport("kernel32.dll")]
+        static extern IntPtr GetModuleHandle(string name);
 
-        const int WM_INPUT = 0xFF;
+        const int WM_INPUT = 0xFF, WM_APP_STOP = 0x8000 + 1;
+        const int WH_MOUSE_LL = 14;
+        const int WM_LBUTTONDOWN = 0x201, WM_LBUTTONUP = 0x202, WM_RBUTTONDOWN = 0x204, WM_RBUTTONUP = 0x205;
+        const uint PM_REMOVE = 1;
         const uint RIDI_DEVICENAME = 0x20000007, RID_INPUT = 0x10000003, RIDEV_INPUTSINK = 0x100;
         const uint RIM_TYPEMOUSE = 0, RIM_TYPEKEYBOARD = 1;
         const ushort LeftDown = 0x1, LeftUp = 0x2, RightDown = 0x4, RightUp = 0x8;
         const ushort KeyBreak = 0x1;
+        // A K2 click is matched to the click Windows is about to act on within this long; one left unmatched (its
+        // click already went through) is dropped after it, so it can't swallow a later click from a real mouse.
+        const int MatchMs = 250;
 
+        readonly SynchronizationContext ui;
+        readonly Thread thread;
+        readonly ManualResetEvent started = new ManualResetEvent(false);
+        Listener listener;
+        IntPtr hook;
+        HookProc hookProc; // Kept so the delegate isn't collected while Windows still calls it.
         // Which raw input devices are a K2, by handle (looked up once each).
         readonly Dictionary<IntPtr, bool> isK2 = new Dictionary<IntPtr, bool>();
+        // K2 clicks seen in raw input but not yet matched to the click Windows acts on: button flag and when.
+        readonly List<KeyValuePair<ushort, int>> unmatched = new List<KeyValuePair<ushort, int>>();
         bool leftDown, rightDown, bothSeen;
+        int blocked;
 
-        // Raised on the UI thread when a press finishes: Left or Right alone, or Both if the two were held together.
+        // Raised on the thread that made this (the UI thread) when a press finishes: Left or Right alone, or Both if
+        // the two were held together.
         public event Action<Button> Pressed;
 
-        public void Dispose()
-        {
-            if (Handle != IntPtr.Zero) DestroyHandle();
-        }
+        // How many of the K2's own clicks have been cancelled, for the log and tests.
+        public int ClicksBlocked { get { return blocked; } }
 
         public K2Key()
         {
-            CreateHandle(new CreateParams { Caption = "BusyLightz K2 key" });
-            // Mouse and keyboard input from every device comes here too, even while another app is in front; only
-            // the K2's is acted on (see WndProc), and nothing is recorded.
-            var devices = new[]
+            ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+            thread = new Thread(Run) { IsBackground = true, Name = "K2 key" };
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            started.WaitOne(5000);
+        }
+
+        void Run()
+        {
+            Program.Guard("K2 key", delegate
             {
-                new RAWINPUTDEVICE { UsagePage = 1, Usage = 2, Flags = RIDEV_INPUTSINK, Target = Handle },
-                new RAWINPUTDEVICE { UsagePage = 1, Usage = 6, Flags = RIDEV_INPUTSINK, Target = Handle },
-            };
-            if (!RegisterRawInputDevices(devices, (uint)devices.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE))))
-                Program.LogEvent("Couldn't listen for the K2 key (error " + Marshal.GetLastWin32Error() + ")");
+                listener = new Listener(this);
+                // Mouse and keyboard input from every device comes here, even while another app is in front; only
+                // the K2's is acted on, and nothing is recorded.
+                var devices = new[]
+                {
+                    new RAWINPUTDEVICE { UsagePage = 1, Usage = 2, Flags = RIDEV_INPUTSINK, Target = listener.Handle },
+                    new RAWINPUTDEVICE { UsagePage = 1, Usage = 6, Flags = RIDEV_INPUTSINK, Target = listener.Handle },
+                };
+                if (!RegisterRawInputDevices(devices, (uint)devices.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE))))
+                    Program.LogEvent("Couldn't listen for the K2 key (error " + Marshal.GetLastWin32Error() + ")");
+                hookProc = OnMouse;
+                hook = SetWindowsHookEx(WH_MOUSE_LL, hookProc, GetModuleHandle(null), 0);
+                if (hook == IntPtr.Zero)
+                    Program.LogEvent("Couldn't stop the K2 key's own clicks (error " + Marshal.GetLastWin32Error() + ")");
+            });
+            started.Set();
+            Application.Run();
+        }
+
+        public void Dispose()
+        {
+            if (listener != null && listener.Handle != IntPtr.Zero)
+                PostMessage(listener.Handle, WM_APP_STOP, IntPtr.Zero, IntPtr.Zero);
+            thread.Join(2000);
+        }
+
+        // Called by Windows, on this thread, before it acts on any mouse event.
+        IntPtr OnMouse(int code, IntPtr wParam, IntPtr lParam)
+        {
+            if (code >= 0)
+            {
+                int message = wParam.ToInt32();
+                ushort flag = message == WM_LBUTTONDOWN ? LeftDown : message == WM_LBUTTONUP ? LeftUp
+                    : message == WM_RBUTTONDOWN ? RightDown : message == WM_RBUTTONUP ? RightUp : (ushort)0;
+                if (flag != 0)
+                {
+                    try
+                    {
+                        // The raw input for this click is already waiting; read it first.
+                        MSG msg;
+                        while (PeekMessage(out msg, listener.Handle, WM_INPUT, WM_INPUT, PM_REMOVE)) DispatchMessage(ref msg);
+                        if (TakeUnmatched(flag))
+                        {
+                            blocked++;
+                            return (IntPtr)1;
+                        }
+                    }
+                    catch (Exception) { } // Never let a problem here stop the mouse.
+                }
+            }
+            return CallNextHookEx(hook, code, wParam, lParam);
+        }
+
+        bool TakeUnmatched(ushort flag)
+        {
+            int now = Environment.TickCount;
+            unmatched.RemoveAll(click => now - click.Value > MatchMs);
+            int index = unmatched.FindIndex(click => click.Key == flag);
+            if (index < 0) return false;
+            unmatched.RemoveAt(index);
+            return true;
         }
 
         // Whether a K2 is plugged in now. Cheap enough to call every few seconds.
@@ -108,16 +204,6 @@ namespace Krabbz.Blynclight
             return k2;
         }
 
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == WM_INPUT)
-            {
-                IntPtr input = m.LParam;
-                Program.Guard("K2 key", () => OnInput(input));
-            }
-            base.WndProc(ref m);
-        }
-
         void OnInput(IntPtr input)
         {
             uint size = 0, header = (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER));
@@ -134,6 +220,9 @@ namespace Krabbz.Blynclight
                 {
                     // RAWMOUSE: usFlags, then the button flags at offset 4.
                     ushort flags = (ushort)Marshal.ReadInt16(data, 4);
+                    int now = Environment.TickCount;
+                    foreach (var flag in new[] { LeftDown, RightDown, LeftUp, RightUp })
+                        if ((flags & flag) != 0) unmatched.Add(new KeyValuePair<ushort, int>(flag, now));
                     if ((flags & LeftDown) != 0) Down(Button.Left);
                     if ((flags & RightDown) != 0) Down(Button.Right);
                     if ((flags & LeftUp) != 0) Up(Button.Left);
@@ -166,9 +255,40 @@ namespace Krabbz.Blynclight
             if (!wasDown || leftDown || rightDown) return;
             var pressed = bothSeen ? Button.Both : button;
             bothSeen = false;
-            if (Pressed != null) Pressed(pressed);
+            ui.Post(delegate { if (Pressed != null) Pressed(pressed); }, null);
+        }
+
+        // The hidden window raw input is sent to.
+        sealed class Listener : NativeWindow
+        {
+            readonly K2Key owner;
+
+            public Listener(K2Key owner)
+            {
+                this.owner = owner;
+                CreateHandle(new CreateParams { Caption = "BusyLightz K2 key" });
+            }
+
+            protected override void WndProc(ref Message m)
+            {
+                if (m.Msg == WM_INPUT)
+                {
+                    IntPtr input = m.LParam;
+                    Program.Guard("K2 key", () => owner.OnInput(input));
+                }
+                else if (m.Msg == WM_APP_STOP)
+                {
+                    if (owner.hook != IntPtr.Zero) UnhookWindowsHookEx(owner.hook);
+                    owner.hook = IntPtr.Zero;
+                    DestroyHandle();
+                    Application.ExitThread();
+                    return;
+                }
+                base.WndProc(ref m);
+            }
         }
     }
+
 
     // What a K2 button does, picked in Settings for Left, Right and Both.
     static class K2Actions

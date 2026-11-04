@@ -333,6 +333,7 @@ namespace Krabbz.Blynclight
                 AddItem(menu, "Check for updates", UpdateGlyph, delegate { CheckForUpdates(true); });
                 AddItem(menu, "Help (user guide)", HelpGlyph, delegate { OpenHelp(); });
             }
+            if (Program.UpdateRepo != null) AddItem(menu, "Send feedback...", FeedbackGlyph, delegate { ShowFeedback(); });
             AddItem(menu, "Email crash log...", MailGlyph, delegate { CrashReport.Email(); });
             // A coffee-yellow dot: the coffee emoji came out as a half-drawn circle in the menu's font.
             var coffee = AddItem(menu, "Buy me a coffee", null, delegate { OpenCoffee(); });
@@ -695,6 +696,19 @@ namespace Krabbz.Blynclight
         public void OpenCoffee()
         {
             System.Diagnostics.Process.Start(CoffeeUrl);
+        }
+
+        // Segoe MDL2 Assets feedback (speech bubble with a pen) icon.
+        const string FeedbackGlyph = "";
+        FeedbackForm feedbackForm;
+
+        // An idea, problem or question, as a new issue on the project's GitHub page.
+        public void ShowFeedback()
+        {
+            if (feedbackForm == null || feedbackForm.IsDisposed) feedbackForm = new FeedbackForm(this);
+            feedbackForm.Show();
+            if (feedbackForm.WindowState == FormWindowState.Minimized) feedbackForm.WindowState = FormWindowState.Normal;
+            feedbackForm.Activate();
         }
 
         public void OpenProjectPage()

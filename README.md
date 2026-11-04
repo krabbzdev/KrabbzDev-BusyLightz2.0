@@ -98,3 +98,7 @@ Windows doesn't let installers pin apps to the Start menu. Pin it yourself (righ
 | [Setting Up Teams for Your Organization](docs/Setting-Up-Teams-for-Your-Organization.md) | One-time steps for an IT admin |
 | [Troubleshooting and FAQ](docs/Troubleshooting-and-FAQ.md) | Common problems and questions |
 | [For Developers](docs/For-Developers.md) | Building, publishing releases, project layout, light protocols |
+
+## License
+
+BusyLightz uses the [BusyLightz Beer-Ware License](LICENSE). Use it, change it and share it however you like, as long as you keep the license notice and credit KrabbzDev. If you think it's worth it, you can buy me a beer.

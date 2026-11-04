@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
@@ -183,7 +183,6 @@ namespace Krabbz.Blynclight
     {
         public Color DotColor = Color.Gray;
         public string Status = "";
-        public string Lights = "";
         public bool OverrideOn;
         public int Blynclights, Luxafors;
 
@@ -203,7 +202,6 @@ namespace Krabbz.Blynclight
             TextRenderer.DrawText(g, "Your lights are", Theme.Small, new Point(98, 16), Theme.Muted);
             TextRenderer.DrawText(g, Status, Theme.Status, new Rectangle(96, 32, Width - 104 - tiles - 8, 34), Theme.Text,
                 TextFormatFlags.EndEllipsis | TextFormatFlags.SingleLine);
-            TextRenderer.DrawText(g, Lights, Theme.Small, new Point(98, 66), Theme.Muted);
 
             if (OverrideOn) Theme.Pill(g, "Manual override on", Width - 12, 12, Theme.OverrideTint, Theme.OverrideText);
         }
@@ -427,14 +425,19 @@ namespace Krabbz.Blynclight
         }
     }
 
-    // Orbit style: the top of the window filled with the lights' color, with the name and Settings, a big ring
-    // holding the status, and which lights are connected below it.
+    // Orbit style: the top of the window in the lights' color, glowing behind a big ring that holds the status with
+    // an icon, inside two faint orbits with a "satellite" on each. During an override the ring is a countdown: it
+    // empties as the time left runs out.
     class OrbitRing : PaintedControl
     {
-        const int Pad = 16, Diameter = 168, Thickness = 9, RingTop = 58;
+        const int Pad = 16, Diameter = 168, Thickness = 10, RingTop = 58;
         const string SettingsText = "⚙  Settings", OverrideText = "Manual override on";
         public Color DotColor = Color.Gray;
-        public string Big = "", Small = "", Lights = "";
+        public string Big = "", Small = "";
+        // Segoe MDL2 Assets icon over the status, or null.
+        public string Glyph;
+        // How much of an override's time is left, 0 to 1; a full ring when there's no countdown.
+        public float Progress = 1;
         public bool OverrideOn;
         public event Action SettingsClicked;
         Rectangle settingsBounds;
@@ -444,9 +447,14 @@ namespace Krabbz.Blynclight
             base.OnPaint(e);
             var g = e.Graphics;
             var fill = Theme.Soften(DotColor);
-            using (var brush = new SolidBrush(fill)) g.FillRectangle(brush, ClientRectangle);
+            // Lighter at the top, deeper at the bottom.
+            using (var brush = new LinearGradientBrush(ClientRectangle, Theme.Mix(fill, Color.White, 0.12),
+                Theme.Mix(fill, Color.Black, 0.22), LinearGradientMode.Vertical))
+                g.FillRectangle(brush, ClientRectangle);
             var text = Theme.TextOn(fill);
             var soft = Theme.Mix(text, fill, 0.25);
+            var ring = new Rectangle((Width - Diameter) / 2, RingTop, Diameter, Diameter);
+            DrawGlowAndOrbits(g, ring, fill, text);
 
             TextRenderer.DrawText(g, "BusyLightz 2.0", Theme.Strong, new Point(Pad, 10), text);
             TextRenderer.DrawText(g, "by KrabbzDev", Theme.Small, new Point(Pad + 1, 30), soft);
@@ -461,27 +469,106 @@ namespace Krabbz.Blynclight
                 Theme.Pill(g, OverrideText, (Width + pill) / 2, 14, Theme.Mix(fill, Color.Black, 0.25), text);
             }
 
-            // A darker disc inside a light ring, both from the status color.
-            var ring = new Rectangle((Width - Diameter) / 2, RingTop, Diameter, Diameter);
-            using (var inside = new SolidBrush(Theme.Mix(fill, Color.Black, 0.14))) g.FillEllipse(inside, ring);
-            using (var pen = new Pen(Theme.Mix(text, fill, 0.1), Thickness))
-                g.DrawEllipse(pen, Rectangle.Inflate(ring, -Thickness / 2, -Thickness / 2));
+            // A deep disc, lit a little from the top, inside the ring.
+            using (var inside = new LinearGradientBrush(ring, Theme.Mix(fill, Color.Black, 0.06), Theme.Mix(fill, Color.Black, 0.3),
+                LinearGradientMode.Vertical))
+                g.FillEllipse(inside, ring);
+            // The ring: a faint track, with the time left drawn over it from the top, clockwise.
+            var track = Rectangle.Inflate(ring, -Thickness / 2, -Thickness / 2);
+            using (var pen = new Pen(Color.FromArgb(70, text), Thickness)) g.DrawEllipse(pen, track);
+            float sweep = 360f * Math.Max(0f, Math.Min(1f, Progress));
+            if (sweep >= 359.5f)
+                using (var pen = new Pen(Theme.Mix(text, fill, 0.08), Thickness)) g.DrawEllipse(pen, track);
+            else if (sweep > 0)
+                using (var pen = new Pen(Theme.Mix(text, fill, 0.08), Thickness) { StartCap = LineCap.Round, EndCap = LineCap.Round })
+                    g.DrawArc(pen, track, -90, sweep);
 
             var inner = Rectangle.Inflate(ring, -Thickness - 8, 0);
             var font = TextRenderer.MeasureText(g, Big, Theme.Hero).Width <= inner.Width ? Theme.Hero : Theme.Status;
             var center = TextFormatFlags.HorizontalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis;
             int bigHeight = TextRenderer.MeasureText(g, "Ag", font).Height;
-            int top = ring.Top + (ring.Height - bigHeight - (Small.Length > 0 ? 18 : 0)) / 2;
+            int glyphHeight = Glyph != null && Theme.Icons != null ? 28 : 0;
+            int top = ring.Top + (ring.Height - glyphHeight - bigHeight - (Small.Length > 0 ? 18 : 0)) / 2;
+            if (glyphHeight > 0)
+            {
+                using (var icon = new Font(Theme.Icons.FontFamily, 17f))
+                    TextRenderer.DrawText(g, Glyph, icon, new Rectangle(inner.X, top, inner.Width, glyphHeight), soft, center);
+                top += glyphHeight;
+            }
             TextRenderer.DrawText(g, Big, font, new Rectangle(inner.X, top, inner.Width, bigHeight), text, center);
             if (Small.Length > 0)
                 TextRenderer.DrawText(g, Small, Theme.Small, new Rectangle(inner.X, top + bigHeight, inner.Width, 18), soft, center);
-            TextRenderer.DrawText(g, Lights, Theme.Small, new Rectangle(0, ring.Bottom + 8, Width, 18), soft, center);
 
             // Bottom right: the beta sticker. Device tiles are in the Active Devices panel.
             DeviceTiles.BetaSticker(g, Width - Pad - 62, Height - 40);
         }
 
         public int Blynclights, Luxafors;
+
+        // The satellites drift round their orbits: the inner one clockwise once every 20 seconds, the outer one the
+        // other way once every 30. Slow, smooth movement only, so nothing flashes. The timer runs only while the
+        // window is showing.
+        const int OrbitFrameMs = 40;
+        readonly Timer orbitTimer = new Timer { Interval = OrbitFrameMs };
+        readonly System.Diagnostics.Stopwatch orbitClock = System.Diagnostics.Stopwatch.StartNew();
+
+        public OrbitRing()
+        {
+            orbitTimer.Tick += delegate { Invalidate(); };
+            VisibleChanged += delegate { orbitTimer.Enabled = Visible; };
+            orbitTimer.Enabled = true;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) orbitTimer.Dispose();
+            base.Dispose(disposing);
+        }
+
+        // A soft glow behind the ring, and two faint orbits around it with a small "satellite" on each.
+        void DrawGlowAndOrbits(Graphics g, Rectangle ring, Color fill, Color text)
+        {
+            double seconds = orbitClock.Elapsed.TotalSeconds;
+            var glowArea = Rectangle.Inflate(ring, 70, 70);
+            using (var path = new GraphicsPath())
+            {
+                path.AddEllipse(glowArea);
+                using (var glow = new PathGradientBrush(path))
+                {
+                    glow.CenterColor = Color.FromArgb(120, Theme.Mix(fill, Color.White, 0.45));
+                    glow.SurroundColors = new[] { Color.FromArgb(0, fill) };
+                    g.FillEllipse(glow, glowArea);
+                }
+            }
+            var cx = ring.X + ring.Width / 2f;
+            var cy = ring.Y + ring.Height / 2f;
+            // Radius past the ring, where the satellite starts (degrees, clockwise from the right), its size, and its
+            // speed in degrees a second (negative goes the other way).
+            var orbits = new[] { new[] { 24f, 215f, 4.5f, 18f }, new[] { 50f, 330f, 3.5f, -12f } };
+            foreach (var orbit in orbits)
+            {
+                float r = ring.Width / 2f + orbit[0];
+                using (var pen = new Pen(Color.FromArgb(45, text), 1.2f)) g.DrawEllipse(pen, cx - r, cy - r, 2 * r, 2 * r);
+                double angle = (orbit[1] + orbit[3] * seconds) % 360 * Math.PI / 180;
+                float sx = cx + (float)(r * Math.Cos(angle)), sy = cy + (float)(r * Math.Sin(angle)), d = orbit[2];
+                using (var halo = new SolidBrush(Color.FromArgb(60, text))) g.FillEllipse(halo, sx - d * 2, sy - d * 2, d * 4, d * 4);
+                using (var dot = new SolidBrush(Color.FromArgb(220, text))) g.FillEllipse(dot, sx - d, sy - d, d * 2, d * 2);
+            }
+        }
+
+        // The icon for a status shown in the ring, by its big text.
+        public static string GlyphFor(string status)
+        {
+            string s = (status ?? "").ToLowerInvariant();
+            if (s.Contains("available")) return "";           // check mark
+            if (s.Contains("call")) return "";                // phone
+            // A minus, like Teams' Do not disturb (the no-entry sign isn't in Segoe MDL2 Assets on Windows 10).
+            if (s.Contains("busy") || s.Contains("disturb") || s.Contains("presenting")) return "";
+            if (s.Contains("away") || s.Contains("right back")) return ""; // clock
+            if (s.Contains("party")) return "";               // smiley
+            if (s.Contains("off")) return "";                 // power
+            return "";                                        // people (Teams)
+        }
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
@@ -578,7 +665,7 @@ namespace Krabbz.Blynclight
         const int Pad = 16;
         const string SettingsText = "⚙  Settings";
         public Color DotColor = Color.Gray;
-        public string Status = "", Detail = "", Countdown;
+        public string Status = "", Countdown;
         public int Blynclights, Luxafors;
         public event Action SettingsClicked;
         Rectangle settingsBounds;
@@ -603,7 +690,6 @@ namespace Krabbz.Blynclight
 
             TextRenderer.DrawText(g, Status, Theme.Hero, new Rectangle(Pad - 2, 36, Width - 2 * Pad - tiles - 8, 40), text,
                 TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
-            TextRenderer.DrawText(g, Detail, Theme.Small, new Point(Pad, 76), soft);
 
             if (Countdown == null) return;
             var pill = TextRenderer.MeasureText(g, Countdown, Theme.Small, Size.Empty, TextFormatFlags.NoPadding);
@@ -685,13 +771,10 @@ namespace Krabbz.Blynclight
     {
         const int WindowWidth = 440, Pad = 16;
         const string BackNowLink = "Back to Teams now";
-        const string AboutText = "BusyLightz automatically updates your busy lights and Teams status together. " +
-            "It triggers against any app that is actively using your microphone.";
-        const string InfoLink = "See our Info page for more detail";
 
         readonly TrayContext tray;
         readonly OverrideStrip strip = new OverrideStrip();
-        readonly LinkLabel testLink = new LinkLabel();
+        readonly ModernButton partyButton = new ModernButton { Text = "Party Mode", Rainbow = true, Glyph = "" };
         // Only the parts the chosen style uses are created; the rest stay null.
         StatusCard status;
         ModeTile[] tiles;
@@ -745,7 +828,8 @@ namespace Krabbz.Blynclight
             Controls.Add(devices);
             y = devices.Bottom + 8;
 
-            strip.Bounds = new Rectangle(Pad, y, width, 70);
+            // One line: the override countdown, or a short tip.
+            strip.Bounds = new Rectangle(Pad, y, width, 38);
             strip.LinkClicked += delegate
             {
                 if (tray.OverrideOn) tray.SetState(LightState.FollowTeams);
@@ -831,45 +915,58 @@ namespace Krabbz.Blynclight
         // Party Mode, then version, links and the beta note. Flat drops the card and the line above it.
         Panel AddFooter(int top, bool flat)
         {
-            var footer = new Panel { Bounds = new Rectangle(0, top, WindowWidth, 92), BackColor = flat ? Theme.Page : Theme.Card };
+            var footer = new Panel { Bounds = new Rectangle(0, top, WindowWidth, 68), BackColor = flat ? Theme.Page : Theme.Card };
             footer.Paint += (sender, e) =>
             {
                 if (!flat) using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, 0, footer.Width, 0);
-                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                Theme.Pill(e.Graphics, "Beta", footer.Width - Pad, 12, Theme.OverrideTint, Theme.OverrideText);
             };
-            FooterLink(footer, testLink, "Party Mode", Pad, LightState.Party);
+            // A rainbow button with a smiley, whose colors drift while hovered; during a party it ends it.
+            // Small, at the lower left, with the version and links beside it.
+            partyButton.Bounds = new Rectangle(Pad, 16, 124, 32);
+            partyButton.Click += delegate
+            {
+                tray.SetState(tray.Light.State == LightState.Party ? LightState.FollowTeams : LightState.Party);
+            };
+            footer.Controls.Add(partyButton);
 
+            // Beside Party Mode: the version on one line, the links on the next, with room between them.
             DateTime built;
             string date = DateTime.TryParse(Program.BuildDate, out built) ? built.ToString("MMM d, yyyy") : Program.BuildDate;
-            string versionText = "Version " + Program.VersionText + "  ·  Last updated " + date;
-            const string UpdatesLink = "Check for updates", ProjectLink = "Project page", HelpLink = "Help";
-            if (Program.UpdateRepo != null) versionText += "\n" + UpdatesLink + "  ·  " + ProjectLink + "  ·  " + HelpLink;
-            var version = new LinkLabel
+            footer.Controls.Add(new Label
             {
-                Text = versionText,
+                Text = "Version " + Program.VersionText + "   ·   Last updated " + date,
                 ForeColor = Theme.Muted,
-                LinkColor = Theme.Muted,
-                ActiveLinkColor = Theme.Text,
                 Font = Theme.Small,
                 AutoSize = true,
-                LinkBehavior = LinkBehavior.HoverUnderline,
-                Location = new Point(Pad, 42),
-            };
-            version.Links.Clear();
+                Location = new Point(Pad + 124 + 14, 13),
+            });
             if (Program.UpdateRepo != null)
             {
-                version.Links.Add(versionText.IndexOf(UpdatesLink), UpdatesLink.Length, "updates");
-                version.Links.Add(versionText.IndexOf(ProjectLink), ProjectLink.Length, "project");
-                version.Links.Add(versionText.LastIndexOf(HelpLink), HelpLink.Length, "help");
+                const string UpdatesLink = "Check for updates", ProjectLink = "Project page", HelpLink = "Help", Gap = "   ·   ";
+                string linksText = UpdatesLink + Gap + ProjectLink + Gap + HelpLink;
+                var links = new LinkLabel
+                {
+                    Text = linksText,
+                    ForeColor = Theme.Muted,
+                    LinkColor = Theme.Muted,
+                    ActiveLinkColor = Theme.Text,
+                    Font = Theme.Small,
+                    AutoSize = true,
+                    LinkBehavior = LinkBehavior.HoverUnderline,
+                    Location = new Point(Pad + 124 + 14, 35),
+                };
+                links.Links.Clear();
+                links.Links.Add(linksText.IndexOf(UpdatesLink), UpdatesLink.Length, "updates");
+                links.Links.Add(linksText.IndexOf(ProjectLink), ProjectLink.Length, "project");
+                links.Links.Add(linksText.LastIndexOf(HelpLink), HelpLink.Length, "help");
+                links.LinkClicked += (sender, e) =>
+                {
+                    if ((string)e.Link.LinkData == "updates") tray.CheckForUpdates(true);
+                    else if ((string)e.Link.LinkData == "help") tray.OpenHelp();
+                    else tray.OpenProjectPage();
+                };
+                footer.Controls.Add(links);
             }
-            version.LinkClicked += (sender, e) =>
-            {
-                if ((string)e.Link.LinkData == "updates") tray.CheckForUpdates(true);
-                else if ((string)e.Link.LinkData == "help") tray.OpenHelp();
-                else tray.OpenProjectPage();
-            };
-            footer.Controls.Add(version);
 
             // The beta note and the close-to-tray hint live in a tooltip so the window stays clean.
             var tips = new ToolTip { AutoPopDelay = 15000 };
@@ -886,23 +983,26 @@ namespace Krabbz.Blynclight
             base.Dispose(disposing);
         }
 
-        void FooterLink(Panel footer, LinkLabel link, string text, int x, string state)
+        // How much of an override is left, from its "14:00" (or "1:05:00") time left and its full length; 1 (a full
+        // ring) with no countdown.
+        static float TimeLeftFraction(string left)
         {
-            link.Text = text;
-            link.Font = Theme.Body;
-            link.AutoSize = true;
-            link.LinkColor = Theme.Text;
-            link.ActiveLinkColor = Theme.Teams;
-            link.LinkBehavior = LinkBehavior.HoverUnderline;
-            link.Location = new Point(x, 12);
-            link.LinkClicked += delegate { tray.SetState(state); };
-            footer.Controls.Add(link);
+            if (string.IsNullOrEmpty(left)) return 1;
+            int seconds = 0;
+            foreach (string part in left.Split(':'))
+            {
+                int n;
+                if (!int.TryParse(part.Trim(), out n)) return 1;
+                seconds = seconds * 60 + n;
+            }
+            int total = AppSettings.OverrideMinutes * 60;
+            return total <= 0 ? 1 : Math.Max(0f, Math.Min(1f, seconds / (float)total));
         }
 
         void RefreshDisplay()
         {
             string picked = tray.Light.State;
-            string statusText = tray.StatusText, lights = "Lights: " + tray.Light.LightSummary;
+            string statusText = tray.StatusText;
             string left = tray.OverrideTimeLeft;
             // Lights turned off (Disable USB Light Integration) show no tiles.
             bool enabled = tray.Light.LightsEnabled;
@@ -920,7 +1020,6 @@ namespace Krabbz.Blynclight
                 status.Luxafors = luxafors;
                 status.DotColor = shown;
                 status.Status = statusText;
-                status.Lights = lights;
                 status.OverrideOn = tray.OverrideOn;
                 status.Invalidate();
             }
@@ -940,9 +1039,10 @@ namespace Krabbz.Blynclight
                 ring.Blynclights = blynclights;
                 ring.Luxafors = luxafors;
                 ring.Big = big;
+                ring.Glyph = OrbitRing.GlyphFor(big);
+                ring.Progress = TimeLeftFraction(left);
                 ring.OverrideOn = tray.OverrideOn;
                 ring.Small = left != null ? left + " left" : tray.OverrideOn ? "Until you change it" : small;
-                ring.Lights = lights;
                 ring.Invalidate();
             }
             if (block != null)
@@ -951,17 +1051,16 @@ namespace Krabbz.Blynclight
                 block.Blynclights = blynclights;
                 block.Luxafors = luxafors;
                 block.Status = statusText;
-                block.Detail = lights;
                 block.Countdown = !tray.OverrideOn ? null : "Manual override on" + (left != null ? "  ·  " + left + " left" : "");
                 block.Invalidate();
             }
 
             strip.Highlighted = tray.OverrideOn;
-            strip.Wrapped = !tray.OverrideOn;
+            strip.Wrapped = false;
             if (!tray.OverrideOn)
             {
-                strip.Message = picked == LightState.FollowTeams ? AboutText : HotkeyTip();
-                strip.Link = picked == LightState.FollowTeams && Program.UpdateRepo != null ? InfoLink : null;
+                strip.Message = HotkeyTip();
+                strip.Link = null;
             }
             else
             {
@@ -973,7 +1072,7 @@ namespace Krabbz.Blynclight
             if (tiles != null) foreach (var tile in tiles) tile.Active = tile.State == picked;
             if (pills != null) { pills.Active = picked; pills.Invalidate(); }
             if (list != null) { list.Active = picked; list.Invalidate(); }
-            testLink.LinkColor = picked == LightState.Party ? Theme.Teams : Theme.Text;
+            partyButton.Text = picked == LightState.Party ? "Stop the party" : "Party Mode";
         }
 
         static string HotkeyTip()

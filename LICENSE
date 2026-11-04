@@ -1,0 +1,20 @@
+"THE BUSYLIGHTZ BEER-WARE LICENSE"
+(based on "THE BEER-WARE LICENSE" (Revision 42) by Poul-Henning Kamp)
+
+Copyright (c) 2026 KrabbzDev
+
+KrabbzDev wrote BusyLightz 2.0. You can do whatever you want with it: use it,
+copy it, change it, share it, and sell things made with it, as long as:
+
+  1. You keep this notice with any copy of the code, changed or not.
+
+  2. You credit KrabbzDev. Anything you share or ship that uses this code says,
+     in its README, About screen or documentation, something like:
+     "Based on BusyLightz 2.0 by KrabbzDev
+      (https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0)".
+
+If we meet some day and you think this stuff is worth it, you can buy me a
+beer in return (or one now: https://buymeacoffee.com/krabbzdev).
+
+BusyLightz comes as is, with no warranty of any kind. KrabbzDev isn't liable
+for anything that happens from using it.
