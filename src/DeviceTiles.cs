@@ -235,29 +235,59 @@ namespace Krabbz.Blynclight
             Theme.FillRounded(g, foot, 3, dark, dark);
         }
 
-        // A yellow "Product Still BETA" sticker, tilted a little like a real one, centered on (x, y).
-        public static void BetaSticker(Graphics g, int x, int y)
+        // "Product Still BETA" as police tape: a yellow band with black edges and the words repeated in heavy capitals,
+        // with zig-zag cut ends and a soft shadow, centered on (x, y) and turned angle degrees. A long band across a
+        // corner gets cut off by the edges like real tape.
+        public static void BetaSticker(Graphics g, int x, int y, float angle = -8, int length = 210)
         {
-            const string text = "Product Still BETA";
-            var yellow = Color.FromArgb(255, 221, 0);
-            using (var font = new Font("Segoe UI Black", 8.5f))
+            const string Words = "PRODUCT STILL BETA";
+            var yellow = Color.FromArgb(255, 214, 0);
+            var ink = Color.FromArgb(22, 22, 24);
+            const int Band = 24, Edge = 3, Notch = 5;
+            var state = g.Save();
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.TranslateTransform(x, y);
+            g.RotateTransform(angle);
+            float half = length / 2f, top = -Band / 2f, bottom = Band / 2f;
+            // The tape's outline, with zig-zag cuts at both ends.
+            var outline = new List<PointF> { new PointF(-half, top), new PointF(half, top) };
+            for (int i = 1; i <= 4; i++) outline.Add(new PointF(half + (i % 2 == 1 ? -Notch : 0), top + i * Band / 4f));
+            outline.Add(new PointF(-half, bottom));
+            for (int i = 3; i >= 1; i--) outline.Add(new PointF(-half + (i % 2 == 1 ? Notch : 0), top + i * Band / 4f));
+            using (var path = new GraphicsPath())
             {
-                var size = TextRenderer.MeasureText(g, text, font, Size.Empty, TextFormatFlags.NoPadding);
-                var r = new Rectangle(-size.Width / 2 - 10, -size.Height / 2 - 4, size.Width + 20, size.Height + 8);
-                var state = g.Save();
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                g.TranslateTransform(x, y);
-                g.RotateTransform(-6);
-                using (var shadow = Theme.Rounded(new Rectangle(r.X + 2, r.Y + 3, r.Width, r.Height), 5))
-                using (var dark = new SolidBrush(Color.FromArgb(60, 0, 0, 0)))
-                    g.FillPath(dark, shadow);
-                Theme.FillRounded(g, r, 5, yellow, Theme.Mix(yellow, Color.Black, 0.25));
-                // TextRenderer ignores the rotation, so the text is drawn with GDI+.
-                using (var ink = new SolidBrush(Color.FromArgb(30, 30, 34)))
-                using (var center = new StringFormat { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center })
-                    g.DrawString(text, font, ink, new RectangleF(r.X, r.Y + 1, r.Width, r.Height), center);
-                g.Restore(state);
+                path.AddPolygon(outline.ToArray());
+                using (var shadow = new SolidBrush(Color.FromArgb(70, 0, 0, 0)))
+                {
+                    g.TranslateTransform(2, 3);
+                    g.FillPath(shadow, path);
+                    g.TranslateTransform(-2, -3);
+                }
+                using (var fill = new LinearGradientBrush(new RectangleF(-half, top, length, Band), Color.FromArgb(255, 226, 40), yellow, LinearGradientMode.Vertical))
+                    g.FillPath(fill, path);
+                // Black edges along the top and bottom, kept inside the tape.
+                var clip = g.Save();
+                g.SetClip(path);
+                using (var edge = new SolidBrush(ink))
+                {
+                    g.FillRectangle(edge, -half, top, length, Edge);
+                    g.FillRectangle(edge, -half, bottom - Edge, length, Edge);
+                }
+                // The words, repeated along the tape with a bullet between them.
+                using (var font = new Font("Segoe UI Black", 8f))
+                using (var brush = new SolidBrush(ink))
+                using (var format = new StringFormat { LineAlignment = StringAlignment.Center })
+                {
+                    string phrase = Words + "  \u25CF  ";
+                    float step = g.MeasureString(phrase, font).Width;
+                    // One copy centered on the tape, so the words read in full however much of the tape shows.
+                    float start = -step / 2 - step * (float)Math.Ceiling(half / step);
+                    for (float tx = start; tx < half; tx += step)
+                        g.DrawString(phrase, font, brush, new RectangleF(tx, top + 1, step + 4, Band - 2), format);
+                }
+                g.Restore(clip);
             }
+            g.Restore(state);
         }
 
         // Luxafor Flag: a white upright bar with the colored flag on its side.

@@ -153,10 +153,12 @@ namespace Krabbz.Blynclight
             Heading(null, null);
             DevicePicture(new MuteSyncPicture(), muteButtonStatus,
                 "Its ring here shows what your button is showing right now.");
-            Box("Mute and unmute my mic with a Mutesync Button", AppSettings.MuteSyncEnabled,
-                v => { AppSettings.MuteSyncEnabled = v; tray.ApplySettings(); RefreshDevices(); },
-                help: "Pressing your Mutesync Button mutes or unmutes your mic in Windows, for every app. Its ring shows red when muted and green when live. Close the MuteMe app so BusyLightz can use the button.");
+            var muteSyncOff = DisableSwitch("Disable Mutesync Button Functions", !AppSettings.MuteSyncEnabled,
+                v => { AppSettings.MuteSyncEnabled = !v; tray.ApplySettings(); RefreshDevices(); },
+                "BusyLightz lets go of the button: pressing it won't mute your mic, and its ring goes dark. Turn this on to use the MuteMe app instead.");
+            int firstRingControl = page.Controls.Count;
             RingSection();
+            GreyOutWhile(muteSyncOff, firstRingControl);
             EndPage();
 
             StartPage("K2 USBC Key", K2Glyph, PageColors.K2, "Two buttons for anything you like: type, mute, set your status.");
@@ -206,6 +208,44 @@ namespace Krabbz.Blynclight
         }
 
         readonly K2Picture k2Picture = new K2Picture();
+
+        // A "Disable ... Functions" switch in bold, with what it does underneath; on means the device is left alone.
+        CheckBox DisableSwitch(string text, bool value, Action<bool> save, string note)
+        {
+            var box = new ToggleBox
+            {
+                Text = text,
+                Checked = value,
+                AutoSize = true,
+                Font = new Font("Segoe UI Semibold", 10.5f),
+                Location = new Point(24, y),
+                Accent = Theme.Red,
+            };
+            box.CheckedChanged += delegate { save(box.Checked); };
+            Add(box);
+            y += 28;
+            Add(new Label
+            {
+                Text = note,
+                AutoSize = true,
+                MaximumSize = new Size(width - 24 - 70 - 24, 0),
+                Font = new Font("Segoe UI", 9f),
+                Location = new Point(24 + 46, y),
+                Tag = VersionLabel,
+            });
+            y += 40 + RowGap;
+            return box;
+        }
+
+        // Greys out the controls added to this page from index first on, while the switch is on.
+        void GreyOutWhile(CheckBox off, int first)
+        {
+            var controls = new List<Control>();
+            for (int i = first; i < page.Controls.Count; i++) controls.Add(page.Controls[i]);
+            Action apply = () => { foreach (var control in controls) control.Enabled = !off.Checked; };
+            off.CheckedChanged += delegate { apply(); };
+            apply();
+        }
 
         // A device's picture on the left, with its status and a short note beside it.
         void DevicePicture(Control picture, Label status, string note)
@@ -294,6 +334,10 @@ namespace Krabbz.Blynclight
             DevicePicture(k2Picture, k2Status, "Press a button on your K2 and it lights up here.");
             tray.K2Pressed += k2Picture.Flash;
             FormClosed += delegate { tray.K2Pressed -= k2Picture.Flash; };
+            var k2Off = DisableSwitch("Disable K2 Functions", AppSettings.K2Disabled,
+                v => { AppSettings.K2Disabled = v; tray.ApplySettings(); },
+                "BusyLightz leaves the K2 alone: no actions run, and its buttons are ordinary left and right mouse clicks again.");
+            int firstK2Control = page.Controls.Count;
             K2Row("Left button", K2Key.Button.Left, "What happens when you press the K2 USBC Key's left button on its own.");
             K2Row("Right button", K2Key.Button.Right, "What happens when you press the K2 USBC Key's right button on its own.");
             K2Row("Both together", K2Key.Button.Both, "What happens when you press both buttons at the same time. It counts once, so it doesn't also run Left or Right.");
@@ -305,6 +349,7 @@ namespace Krabbz.Blynclight
             email.TextChanged += delegate { AppSettings.MacroEmail = email.Text; };
             Add(email);
             y += 28 + RowGap + 4;
+            GreyOutWhile(k2Off, firstK2Control);
             Add(new Label
             {
                 Text = "No K2 software needed. Out of the box the K2 USBC Key's buttons are mouse clicks; BusyLightz cancels those clicks " +
@@ -342,9 +387,14 @@ namespace Krabbz.Blynclight
             Action showValue = () =>
             {
                 string action = K2Actions.All[picker.SelectedIndex][0];
-                value.Enabled = K2Actions.NeedsValue(action);
+                // Read-only (not disabled) when the action needs no text, so Disable K2 Functions can grey the row and
+                // turning it off again leaves this as the action wants it.
+                bool needs = K2Actions.NeedsValue(action);
+                value.ReadOnly = !needs;
+                value.TabStop = needs;
+                value.ForeColor = needs ? Theme.Text : Theme.Muted;
                 // A hint in the empty box for what goes there; the email action shows the address it types.
-                value.Text = value.Enabled ? AppSettings.K2Value(button) : action == "TypeEmail" ? AppSettings.MacroEmail : "";
+                value.Text = needs ? AppSettings.K2Value(button) : action == "TypeEmail" ? AppSettings.MacroEmail : "";
                 SetCue(value, K2Actions.Hint(action));
             };
             picker.SelectedIndexChanged += delegate
@@ -352,7 +402,7 @@ namespace Krabbz.Blynclight
                 AppSettings.SetK2Action(button, K2Actions.All[picker.SelectedIndex][0]);
                 showValue();
             };
-            value.TextChanged += delegate { if (value.Enabled) AppSettings.SetK2Value(button, value.Text); };
+            value.TextChanged += delegate { if (!value.ReadOnly) AppSettings.SetK2Value(button, value.Text); };
             showValue();
             Add(picker);
             Add(value);
@@ -1116,6 +1166,7 @@ namespace Krabbz.Blynclight
             var disableAll = new ToggleBox
             {
                 Text = "Disable All Light Functions",
+                Accent = Theme.Red,
                 Checked = AppSettings.UsbLightsDisabled,
                 AutoSize = true,
                 Font = new Font("Segoe UI Semibold", 10),

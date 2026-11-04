@@ -89,6 +89,10 @@ namespace Krabbz.Blynclight
         // How many of the K2's own clicks have been cancelled, for the log and tests.
         public int ClicksBlocked { get { return blocked; } }
 
+        // Set from Disable K2 Functions in Settings: the K2's clicks go through as ordinary clicks, and no press is
+        // reported, so no action runs.
+        public static volatile bool Disabled;
+
         public K2Key()
         {
             ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
@@ -136,7 +140,7 @@ namespace Krabbz.Blynclight
                 int message = wParam.ToInt32();
                 ushort flag = message == WM_LBUTTONDOWN ? LeftDown : message == WM_LBUTTONUP ? LeftUp
                     : message == WM_RBUTTONDOWN ? RightDown : message == WM_RBUTTONUP ? RightUp : (ushort)0;
-                if (flag != 0)
+                if (flag != 0 && !Disabled)
                 {
                     try
                     {
@@ -255,6 +259,7 @@ namespace Krabbz.Blynclight
             if (!wasDown || leftDown || rightDown) return;
             var pressed = bothSeen ? Button.Both : button;
             bothSeen = false;
+            if (Disabled) return;
             ui.Post(delegate { if (Pressed != null) Pressed(pressed); }, null);
         }
 

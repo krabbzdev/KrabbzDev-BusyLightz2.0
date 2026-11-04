@@ -33,7 +33,7 @@ Pick how the window looks under **Window style** in [Settings](#settings). Each 
 
 | Style | Looks like |
 | --- | --- |
-| **Orbit** (the default) | The top of the window glows in your status color, with a big ring showing the status and its icon, e.g. ✓ *Available* over *From Teams Status*. Two faint orbits circle the ring, each with a small dot that drifts slowly around it. During an override the ring is a countdown: it empties as the time left runs out. In the lower left, **Time since last reboot** is a running clock in hours, to the millisecond (e.g. *34:08:49.234*); after 24 hours it turns into a red pill with a ☹. (Windows' Fast Startup keeps the clock running through a shut down; only a restart resets it.) The modes are one pill-shaped switcher below. |
+| **Orbit** (the default) | The top of the window glows in your status color, with a big ring showing the status and its icon, e.g. ✓ *Available* over *From Teams Status*. Two faint orbits circle the ring, each with a small dot that drifts slowly around it. During an override the ring is a countdown: it empties as the time left runs out. Under the ring, **Time since last reboot** is a running clock in hours, to the millisecond (e.g. *34:08:49.234*); after 24 hours it turns into a red pill with a ☹. (Windows' Fast Startup keeps the clock running through a shut down; only a restart resets it.) The modes are one pill-shaped switcher below. |
 | **Color block** | The top of the window fills with your status color, with the status in large text. The modes are four tiles below. |
 | **Fluent list** | A status card, with the modes as a list like Windows Settings, hotkeys on the right. |
 

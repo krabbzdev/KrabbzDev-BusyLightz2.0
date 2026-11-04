@@ -171,6 +171,9 @@ namespace Krabbz.Blynclight
         }
         public static bool MuteSyncOnlyOnCalls { get { return Get("MuteSyncOnlyOnCalls", false); } set { Set("MuteSyncOnlyOnCalls", value); } }
 
+        // Leaves the K2 key alone: no actions, and its buttons are ordinary mouse clicks again. Off unless changed.
+        public static bool K2Disabled { get { return Get("K2Disabled", false); } set { Set("K2Disabled", value); } }
+
         // K2 macro key: what each button (and both together) does, from K2Actions.All, and the text it needs.
         internal static string K2Action(K2Key.Button button)
         {

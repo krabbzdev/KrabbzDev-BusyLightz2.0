@@ -416,6 +416,7 @@ namespace Krabbz.Blynclight
             };
             K2Connected = K2Key.Present();
             // The K2 key's buttons run the macros picked in Settings.
+            K2Key.Disabled = AppSettings.K2Disabled;
             k2Key = new K2Key();
             k2Key.Pressed += button =>
             {
@@ -606,6 +607,7 @@ namespace Krabbz.Blynclight
             light.ApplySettings();
             calls.Recheck();
             muteButton.Enabled = AppSettings.MuteSyncEnabled;
+            K2Key.Disabled = AppSettings.K2Disabled;
             muteButton.ApplySettings();
             if (AppSettings.OverrideTimesOut) StartOverrideTimerIfNeeded();
             else light.SetReturnToTeams(null);

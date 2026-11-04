@@ -501,7 +501,7 @@ namespace Krabbz.Blynclight
 
             // Bottom left: how long since the PC last restarted, to the millisecond; bottom right: the beta sticker.
             DrawUptime(g, text, soft);
-            DeviceTiles.BetaSticker(g, Width - Pad - 62, Height - 40);
+            DeviceTiles.BetaSticker(g, Width - 84, Height - 42, -28, 300);
         }
 
         [System.Runtime.InteropServices.DllImport("kernel32.dll")]
@@ -520,21 +520,25 @@ namespace Krabbz.Blynclight
             // A running clock in total hours: hours:minutes:seconds.milliseconds, e.g. 34:08:49.234 after a day and 10 hours.
             string value = ((int)up.TotalHours).ToString("00") + ":" + up.Minutes.ToString("00") + ":" +
                 up.Seconds.ToString("00") + "." + up.Milliseconds.ToString("000");
-            int x = Pad, top = Height - 40;
-            TextRenderer.DrawText(g, "Time since last reboot", UptimeLabelFont, new Point(x, top), overADay ? text : soft);
-            var size = TextRenderer.MeasureText(g, value, UptimeFont, Size.Empty, TextFormatFlags.NoPadding);
+            // Centered under the ring. Sized from a template of zeros, so it doesn't shift as the digits tick.
+            var labelSize = TextRenderer.MeasureText(g, "Time since last reboot", UptimeLabelFont, Size.Empty, TextFormatFlags.NoPadding);
+            var size = TextRenderer.MeasureText(g, System.Text.RegularExpressions.Regex.Replace(value, "[0-9]", "0"), UptimeFont, Size.Empty, TextFormatFlags.NoPadding);
+            int top = Height - 44;
+            TextRenderer.DrawText(g, "Time since last reboot", UptimeLabelFont, new Point((Width - labelSize.Width) / 2, top), overADay ? text : soft, TextFormatFlags.NoPadding);
             if (!overADay)
             {
-                TextRenderer.DrawText(g, value, UptimeFont, new Point(x, top + 16), text, TextFormatFlags.NoPadding);
+                TextRenderer.DrawText(g, value, UptimeFont, new Rectangle((Width - size.Width) / 2 - 4, top + 17, size.Width + 8, size.Height), text,
+                    TextFormatFlags.NoPadding | TextFormatFlags.HorizontalCenter);
                 return;
             }
             // Over a day: a red pill with a sad face.
-            const string Sad = "☹";
+            const string Sad = "\u2639";
             var face = TextRenderer.MeasureText(g, Sad, SadFont, Size.Empty, TextFormatFlags.NoPadding);
-            var pill = new Rectangle(x - 4, top + 14, face.Width + 6 + size.Width + 12, Math.Max(size.Height, face.Height) + 4);
+            int width = face.Width + 6 + size.Width + 18;
+            var pill = new Rectangle((Width - width) / 2, top + 15, width, Math.Max(size.Height, face.Height) + 4);
             Theme.FillRounded(g, pill, pill.Height / 2, Color.FromArgb(200, 18, 24), Color.FromArgb(255, 220, 220));
-            TextRenderer.DrawText(g, Sad, SadFont, new Point(pill.X + 6, pill.Y + (pill.Height - face.Height) / 2), Color.White, TextFormatFlags.NoPadding);
-            TextRenderer.DrawText(g, value, UptimeFont, new Point(pill.X + 6 + face.Width + 4, pill.Y + (pill.Height - size.Height) / 2), Color.White, TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, Sad, SadFont, new Point(pill.X + 8, pill.Y + (pill.Height - face.Height) / 2), Color.White, TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, value, UptimeFont, new Point(pill.X + 8 + face.Width + 4, pill.Y + (pill.Height - size.Height) / 2), Color.White, TextFormatFlags.NoPadding);
         }
 
 
@@ -721,7 +725,7 @@ namespace Krabbz.Blynclight
 
             // The beta sticker on the right; device tiles are in the Active Devices panel.
             const int tiles = 0;
-            DeviceTiles.BetaSticker(g, Width - Pad - 62, Height - 20);
+            DeviceTiles.BetaSticker(g, Width - 84, Height - 34, -24, 300);
 
             TextRenderer.DrawText(g, Status, Theme.Hero, new Rectangle(Pad - 2, 36, Width - 2 * Pad - tiles - 8, 40), text,
                 TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
@@ -844,7 +848,7 @@ namespace Krabbz.Blynclight
             }
             else if (style == WindowStyles.Orbit)
             {
-                ring = new OrbitRing { Bounds = new Rectangle(0, 0, WindowWidth, 264) };
+                ring = new OrbitRing { Bounds = new Rectangle(0, 0, WindowWidth, 280) };
                 ring.SettingsClicked += delegate { tray.ShowSettings(); };
                 Controls.Add(ring);
                 y = ring.Bottom + 12;
@@ -907,7 +911,7 @@ namespace Krabbz.Blynclight
             header.Paint += (sender, e) =>
             {
                 using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, header.Height - 1, header.Width, header.Height - 1);
-                DeviceTiles.BetaSticker(e.Graphics, WindowWidth - Pad - 92 - 82, 26);
+                DeviceTiles.BetaSticker(e.Graphics, WindowWidth - Pad - 92 - 84, 26, -3, 150);
             };
             header.Controls.Add(new Label { Text = "BusyLightz 2.0", Font = Theme.Strong, ForeColor = Theme.Text, AutoSize = true, Location = new Point(Pad, 9) });
             header.Controls.Add(new Label { Text = "by KrabbzDev", Font = Theme.Small, ForeColor = Theme.Muted, AutoSize = true, Location = new Point(Pad + 1, 29) });

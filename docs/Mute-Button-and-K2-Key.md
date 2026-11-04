@@ -31,7 +31,7 @@ Open **Settings > Mutesync Button**. At the top, a picture of the button shows i
 
 | Setting | What it does |
 | --- | --- |
-| **Mute and unmute my mic with a Mutesync Button** | Turns mutesync support on or off. On by default; it does nothing until a button is plugged in. The status underneath says *Connected on COM3* (or another port), *Not found* or *In use by another app*. |
+| **Disable Mutesync Button Functions** | Off by default. Turn it on and BusyLightz lets go of the button: pressing it won't mute your mic and its ring goes dark, so you can use the MuteMe app instead. The ring settings are greyed out while it's on. The status beside the picture says *Connected on COM3* (or another port), *Not found*, *In use by another app* or *Turned off*. |
 | **Ring brightness** | 5% to 100%. The default, 25%, matches the MuteMe app. |
 | **Muted** / **Live (not muted)** | The ring's colors. Red and green by default; click a dot to pick from the same colors as your lights. |
 | **Only light the ring while an app is using my mic** | Keeps the ring dark except during calls, so it isn't glowing all day. Off by default. |
@@ -45,6 +45,8 @@ The K2's two buttons each run an action, and so does pressing **both together**.
 Out of the box the K2's buttons are a left and a right mouse click. BusyLightz catches those clicks before Windows acts on them, so a press only runs your action and doesn't click wherever the pointer is. Clicks from your real mouse aren't affected. While BusyLightz isn't running, the K2 clicks like a mouse again.
 
 ### What each button can do
+
+**Disable K2 Functions** (off by default) makes BusyLightz leave the K2 alone: no actions run, and its buttons are ordinary left and right mouse clicks again. The actions below are greyed out while it's on.
 
 Pick an action for **Left button**, **Right button** and **Both together** in **Settings > K2 USBC Key**. At the top of that page, a picture of the K2 lights up the key you press on the real one (both keys for Both together), so you can check it's working.
 
