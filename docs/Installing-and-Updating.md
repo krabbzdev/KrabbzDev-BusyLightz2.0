@@ -16,7 +16,7 @@ After installing:
 
 ## Updates
 
-The app keeps itself up to date:
+The app keeps itself up to date. (Installed for everyone on the PC, a background updater does this instead: see [below](#installing-for-everyone-on-a-pc-program-files).)
 
 - It checks for a new version **1 minute after it starts, then every 6 hours**.
 - To check right now, click **Check for updates** in the window (bottom line) or in the tray menu.
@@ -28,7 +28,7 @@ The app keeps itself up to date:
 
 The same card shows after you install a newer version by hand.
 
-The version you're running is shown at the bottom of the window and in the tray menu.
+The version you're running, and when it was last updated, is shown at the bottom of the window and of Settings, and in the tray menu.
 
 ## Uninstall
 
@@ -80,8 +80,9 @@ The IDs are kept through later automatic updates.
 | Your chosen color | `%LOCALAPPDATA%\Krabbz9999 Blynclight\state.txt` |
 | Teams sign-in (encrypted to your Windows account) | `%LOCALAPPDATA%\Krabbz9999 Blynclight\teams-presence.dat` |
 | Error log, if anything went wrong | `%LOCALAPPDATA%\Krabbz9999 Blynclight\app.log` |
-| Downloaded updates and update logs | `%LOCALAPPDATA%\Krabbz9999 Blynclight\updates` |
-| Settings (ignored apps, notifications, Teams app IDs) | `HKEY_CURRENT_USER\Software\Krabbz9999\Blynclight App Control` |
+| Downloaded updates and update logs | `%LOCALAPPDATA%\Krabbz9999 Blynclight\updates`, or `C:\Program Files\BusyLightz Updates` (with the background updater's `updater.log`) when installed for everyone |
+| Settings (ignored apps, notifications, colors, Teams app IDs) | `HKEY_CURRENT_USER\Software\Krabbz9999\Blynclight App Control` |
+| Teams app IDs set for everyone by the all-users installer | `HKEY_LOCAL_MACHINE\Software\Krabbz9999\Blynclight App Control` |
 
 ---
 [Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

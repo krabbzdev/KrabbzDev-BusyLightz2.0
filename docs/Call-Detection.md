@@ -1,6 +1,6 @@
 # Call Detection
 
-**Whenever any app is using your microphone, the light flashes red and blue quickly**, so people can tell at a glance that you're on a call rather than just busy. When the app releases the microphone (you hang up or leave the meeting), the light goes back to what it was showing before.
+**Whenever any app is using your microphone, the light flashes red and blue**, so people can tell at a glance that you're on a call rather than just busy. When the app releases the microphone (you hang up or leave the meeting), the light goes back to what it was showing before.
 
 Prefer a steady red during calls? Open **Settings** (⚙ in the window, or the tray menu) and switch off **Flash red and blue instead of steady red**.
 
@@ -13,7 +13,6 @@ Windows keeps a record of which apps use the microphone (it's what shows the mic
 - **Mute doesn't count as hanging up.** Most calling apps keep the microphone open while you're muted, so the light keeps flashing.
 - **If you pick a color during a call,** your choice wins until that call ends. Going back to **Follow Teams Status** during a call (by hand, or when an override runs out) brings the call colors back.
 - **When connected to Teams,** calls in other apps also set Teams to *Busy, In a call*. See [Teams Status](Teams-Status.md#busy-in-teams-during-other-calls).
-- **An app only shows up after it has used the microphone at least once** on that PC.
 
 ## Ignoring apps
 

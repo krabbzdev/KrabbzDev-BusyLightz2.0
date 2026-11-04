@@ -17,17 +17,18 @@ A small Windows app that controls USB busy lights, so the people around you can 
 ## What it does
 
 - **Shows your status on the light:** pick **Busy** (red), **Available** (green) or **On a call** (flashing red and blue) yourself, or let the light **Follow Teams Status**. Choose from three window styles, in Light or Dark. See [Using the Light](Using-the-Light.md).
-- **Goes back to Teams on its own:** Busy, Available and On a call switch back to Follow Teams Status after 15 minutes, with a countdown so you know one is on. Change the time, or turn it off, in Settings. See [Override timer](Using-the-Light.md#override-timer).
+- **Goes back to Teams on its own:** whatever you pick switches back to Follow Teams Status after 15 minutes, with a countdown so you know one is on. Change the time, or turn it off, in Settings. See [Override timer](Using-the-Light.md#override-timer).
 - **Flashes whenever you're on a call:** any app using your microphone (Teams, Zoom, Cytracom, a browser call and so on) makes the light flash red and blue (or steady red, if you prefer), then it goes back when you hang up. See [Call Detection](Call-Detection.md).
 - **Tells Teams you're busy:** picking Busy or On a call sets your Teams status to Busy (and Available sets Available), and during calls in other apps, such as a Cytracom phone call, Teams shows you as *Busy, In a call*. See [Teams Status](Teams-Status.md).
 - **Sets a Teams status message:** coworkers see a message like *On a video call* (the default) or *In a meeting*, or your own, next to your name while your lights are red. See [Status message](Teams-Status.md#status-message-while-your-lights-are-red).
-- **Test lights:** cycles through every color the light can show, to check every light is working.
-- **Works with several lights at once:** every Blynclight and Luxafor Flag on the PC shows the same color, including ones plugged in later.
+- **Party Mode:** cycles quickly through every color, to check every light is working.
+- **Light Control:** set the brightness, how fast calls flash, and the color for each status. See [Light Control](Using-the-Light.md#light-control).
+- **Works with several lights at once:** every Blynclight and Luxafor Flag on the PC shows the same color, including ones plugged in later. Tested with the Blynclight Plus and Luxafor Flag 2.
 - **Keeps itself up to date:** new versions install silently in the background, then a card lists what changed.
 
 ## Quick start
 
-1. **[Download the installer](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases/latest/download/KrabbzDev-BusyLightz2.0.msi)** and run it. No admin rights are needed.
+1. **[Download the installer](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases/latest/download/KrabbzDev-BusyLightz2.0.msi)** and run it. It installs just for you, with no admin rights needed. (IT can [install it for everyone on a PC](Installing-and-Updating.md#installing-for-everyone-on-a-pc-program-files) instead.)
 2. The **Setup checklist** opens the first time. Follow it top to bottom:
    - Check your lights are found.
    - Click **Connect** and sign in with your work account.
@@ -42,7 +43,7 @@ A small Windows app that controls USB busy lights, so the people around you can 
 | [Installing and Updating](Installing-and-Updating.md) | Download, install, automatic updates, uninstall, deploying to many PCs |
 | [Using the Light](Using-the-Light.md) | The window, every button and menu item, override timer, hotkeys, notifications, Settings |
 | [Teams Status](Teams-Status.md) | Connecting to Teams, what each color means, Busy in Teams, status messages |
-| [Call Detection](Call-Detection.md) | How the light knows you're on a call, ignoring apps |
+| [Call Detection](Call-Detection.md) | How the light knows you're on a call, ignoring apps, Test microphone |
 | [Setup Checklist](Setup-Checklist.md) | Every step of the checklist explained |
 | [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) | One-time steps for an IT admin |
 | [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) | Common problems and questions |

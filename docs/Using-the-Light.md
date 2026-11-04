@@ -39,11 +39,11 @@ Every style has the same parts:
 | **Info line** (under the status) | While an override is on: how long until it goes back to Teams status, e.g. *Back to Teams status in 12:10*. Click **Back to Teams now** to go back early. While following Teams, a short note on what the app does, with a link to this guide. |
 | **Busy (Alt+R)** (stop sign) | Sets the light red, then back to Follow Teams Status after the [override time](#override-timer). |
 | **Available (Alt+G)** (check mark) | Sets the light green, then back to Follow Teams Status after the override time. |
-| **On a call** (phone) | Flashes red and blue quickly, then back to Follow Teams Status after the override time. Handy for a call the app can't detect, such as a desk phone. |
+| **On a call** (phone) | Flashes red and blue (switching once a second, unless you change it in [Light Control](#light-control)), then back to Follow Teams Status after the override time. Handy for a call the app can't detect, such as a desk phone. |
 | **Follow Teams Status** (people) | The light shows your Microsoft Teams status. See [Teams Status](Teams-Status.md). |
 | **Party Mode** (bottom left) | Cycles quickly through every color, four times a second, then back to Follow Teams Status after the override time. Handy for checking every light is working and matched. |
 | **⚙ Settings** (top right) | Opens [Settings](#settings). |
-| **Version line** | Shows the version and build date, plus **Check for updates**, **Project page** and **Help** (this guide) links. |
+| **Version line** | Shows the version and when it was last updated, plus **Check for updates**, **Project page** and **Help** (this guide) links. |
 
 The mode you picked is filled in with its color. The mode you pick is remembered, even after a restart, and is put back if you unplug and replug the light.
 
@@ -53,7 +53,7 @@ Busy, Available, On a call, Party Mode and Disable Lights (in the tray menu) *ov
 
 Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). To keep overrides on until you change them, switch off **Go back to Follow Teams Status after**.
 
-**During a call** the light flashes red and blue automatically (or shows steady red, if you turn flashing off in Settings) and goes back to your choice afterwards. See [Call Detection](Call-Detection.md). If you pick a color *during* a call, your choice wins until that call ends.
+**During a call** the light flashes red and blue automatically (or shows steady red, if you turn flashing off in Settings) and goes back to your choice afterwards. See [Call Detection](Call-Detection.md). If you pick a color *during* a call, your choice wins until that call ends. Going back to Follow Teams Status during a call (by hand, or when the override runs out) brings the call colors back.
 
 ## The tray menu (right-click the tray icon)
 
@@ -69,18 +69,18 @@ Each mode has a dot in its color, with a ring around the one that's on. The menu
 | **[:15 Min Override] Test Lights aka Party Mode!** | Same as the window's Party Mode button. |
 | **[:15 Min Override] Disable Lights** | Turns the lights off, then back to Follow Teams Status after the override time. A detected call still makes them flash. |
 | **Follow Teams Status** | Light follows Teams. |
-| **Connect to Microsoft Teams** | Sign in so the app can read your Teams status (ticked when connected; click again to disconnect). |
-| **Disable USB Light Integration** | When ticked, the app turns your USB lights off and stops controlling them. Teams status, call detection and the Teams status message keep working. Handy on a PC without a busy light, or when another app runs the light. Click again to turn the lights back on. Remembered after a restart. |
+| **Connect to Microsoft Teams** | Sign in so the app can read your Teams status (checked when connected; click again to disconnect). |
+| **Disable USB Light Integration** | When checked, the app turns your USB lights off and stops controlling them. Teams status, call detection and the Teams status message keep working. Handy on a PC without a busy light, or when another app runs the light. Click again to turn the lights back on. Remembered after a restart. The same setting as **Disable All Light Functions** in [Light Control](#light-control). |
 | **Settings...** | Opens [Settings](#settings). |
 | **Setup checklist...** | Opens the [Setup Checklist](Setup-Checklist.md). |
 | **Check for updates** | Looks for a newer version now. |
 | **Help (user guide)** | Opens this guide. |
 | **Email crash log...** | Starts an email with the app's log attached. See [If the app crashes](Troubleshooting-and-FAQ.md#if-the-app-crashes). |
 | **Buy me a coffee** | Opens KrabbzDev's Buy Me a Coffee page. |
-| **Exit tray app** | Closes the app. The light stays on its last color (Test Lights and flashing turn off). The app starts again at your next sign-in. |
+| **Exit tray app** | Closes the app. The light stays on its last color (Party Mode and flashing turn off). The app starts again at your next sign-in. |
 | **Version x** (at the bottom) | The version you're running. |
 
-The tick in the menu shows the color *you* chose, even while a call is temporarily showing red.
+The ring around a mode's dot shows the mode *you* chose, even while a call is temporarily showing the call colors.
 
 ## Hotkeys
 
@@ -101,7 +101,7 @@ Whenever what the light shows changes, a notification appears in the bottom-righ
 - *Light set to purple: Teams: Do not disturb.*
 - *No light found. Plug your Blynclight or Luxafor back in.*
 
-Test Lights's color changes don't notify. Turn notifications off in [Settings](#settings).
+Party Mode's color changes don't notify. Turn notifications off in [Settings](#settings).
 
 ## Settings
 
@@ -115,12 +115,13 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 | **Appearance** | **Light** (the default) or **Dark** colors for the window and Settings, title bar included. Changing either reopens the windows in the new look. |
 | **Start with Windows** | Starts the app when you sign in. |
 | **Open the window at sign-in** | When off, the app starts quietly in the tray. |
-| **Go back to Follow Teams Status after** | The [override timer](#override-timer) for Busy, Available and On a call. On by default. Pick how long overrides last on the right: 5, 10, 15 (default) or 30 minutes, or 1, 2 or 4 hours. |
+| **Go back to Follow Teams Status after** | The [override timer](#override-timer) for every mode you pick by hand. On by default. Pick how long overrides last on the right: 5, 10, 15 (default) or 30 minutes, or 1, 2 or 4 hours. |
 | **Show a notification when the lights change** | The pop-ups described above. |
 | **Hotkeys: Alt+R / Alt+G** | Turn off if they clash with another program. |
-| **Install updates automatically** | When off, the app only updates when you click **Check now** / **Check for updates**. |
+| **Install updates automatically** | When off, the app only updates when you click **Check now** / **Check for updates**. Greyed out when BusyLightz is installed for everyone on the PC: its background updater installs updates. |
+| **Install for everyone** | Shown when BusyLightz is installed just for you. Installs it in `C:\Program Files\BusyLightz` for everyone on the PC (needs an admin). See [Installing and Updating](Installing-and-Updating.md#installing-for-everyone-on-a-pc-program-files). |
 | **Turn lights red when my mic is in use** | [Call Detection](Call-Detection.md) on or off. **Ignore apps...** picks apps that shouldn't count. |
-| **Flash red and blue instead of steady red** | On by default: lights flash red and blue quickly during calls. Untick for steady red. |
+| **Flash red and blue instead of steady red** | On by default: lights flash red and blue during calls. Switch off for steady red. |
 | **Test microphone...** | Shows live which apps Windows reports using the microphone, for when a call doesn't turn the lights red. See [Call Detection](Call-Detection.md#test-microphone). |
 | **Show me as Busy in Teams during calls in other apps** | See [Teams Status](Teams-Status.md#busy-in-teams-during-other-calls). |
 | **Microsoft Teams** | Shows who you're connected as, with **Connect** / **Disconnect**, and **Organization's Teams app...** for [organization setup](Setting-Up-Teams-for-Your-Organization.md). |
@@ -130,7 +131,7 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 | **Light Control** | Brightness, On a call flash speed and the color for each status. See [Light Control](#light-control). |
 | **Email crash log...** (bottom left) | Starts an email with the app's log attached. See [If the app crashes](Troubleshooting-and-FAQ.md#if-the-app-crashes). |
 | **Version** (bottom middle) | The version you're running and when it was last updated, e.g. *Version 2.25.0 · Last updated Nov 3, 2026*. |
-| **☕ Buy me a coffee** (bottom right) | Opens [KrabbzDev's Buy Me a Coffee page](https://buymeacoffee.com/krabbzdev), if you'd like to say thanks. Also in the tray menu. |
+| **Buy me a coffee** (bottom right) | Opens [KrabbzDev's Buy Me a Coffee page](https://buymeacoffee.com/krabbzdev), if you'd like to say thanks. Also in the tray menu. |
 
 ### Light Control
 
@@ -155,9 +156,9 @@ These are the default colors. Change them in [Settings > Light Control](#light-c
 | 🔴 Red | Busy, or on a call |
 | 🟣 Purple | Teams: Do not disturb |
 | 🟡 Yellow | Teams: Away / Be right back |
-| ⚫ Off | Off, or Teams: Offline |
+| ⚫ Off | Disable Lights, or Teams: Offline |
 | 🔴🔵 Flashing red/blue | On a call (detected, or the On A Call button) |
-| 🌈 Cycling | Test Lights |
+| 🌈 Cycling | Party Mode |
 
 ---
 [Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

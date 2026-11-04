@@ -8,7 +8,7 @@ The app can show your **Microsoft Teams status** on the light and set Teams to *
 2. Your browser opens the normal Microsoft sign-in page. Sign in with your **work account**, including MFA if asked.
 3. When the browser says *"Sign-in finished. You can close this tab."*, close it. A notification confirms *"Connected to Teams as you@company.com"*.
 
-You stay connected from then on, including after restarts and updates. To disconnect, click **Connect to Microsoft Teams** again (it's ticked while connected).
+You stay connected from then on, including after restarts and updates. To disconnect, click **Connect to Microsoft Teams** again (it's checked while connected).
 
 **What the app can do with this sign-in:** read and set *your own* Teams presence, and nothing else. It can't read your mail, chats, calendar or files. The sign-in is stored encrypted, so only your Windows account can use it.
 
@@ -26,9 +26,9 @@ If **Connect** fails because Microsoft says the application wasn't found, your o
 | Away, Be right back | 🟡 Yellow |
 | Offline | ⚫ Off |
 
-The window shows the status, e.g. *Teams: Do not disturb*.
+The window shows the status, e.g. *Teams: Do not disturb*. These are the default colors; change them in [Light Control](Using-the-Light.md#light-control).
 
-**Red or Green override Teams.** Picking Red or Green (or Alt+R / Alt+G) holds that color until you click **Follow Teams Status** again.
+**Busy and Available override Teams.** Picking Busy or Available (or Alt+R / Alt+G) holds that color until the [override time](Using-the-Light.md#override-timer) runs out (15 minutes by default), or until you click **Follow Teams Status** again.
 
 ## Busy in Teams during other calls
 
@@ -40,7 +40,7 @@ While you're connected, when another app uses your microphone (a Cytracom phone 
 
 ## Teams matches what you pick
 
-While you're connected, picking **Busy** or **On a call** (in the window, the tray menu or with Alt+R) also sets your Teams status to **Busy**, and picking **Available** (Alt+G) sets it to **Available**, just as if you'd picked them in Teams. Available wins even if a meeting on your calendar would otherwise show you as Busy, but not while the app sees you on a call. Going back to **Follow Teams Status**, or Off or Test lights, puts Teams back to automatic. So does the [override timer](Using-the-Light.md#override-timer) running out.
+While you're connected, picking **Busy** or **On a call** (in the window, the tray menu or with Alt+R) also sets your Teams status to **Busy**, and picking **Available** (Alt+G) sets it to **Available**, just as if you'd picked them in Teams. Available wins even if a meeting on your calendar would otherwise show you as Busy, but not while the app sees you on a call. Going back to **Follow Teams Status**, or picking Party Mode or Disable Lights, puts Teams back to automatic. So does the [override timer](Using-the-Light.md#override-timer) running out.
 
 - On by default. Turn it off with **Match my Teams status when I pick Busy, Available or On a call** in [Settings](Using-the-Light.md#settings).
 - If the app or PC stops, Teams goes back to automatic on its own within an hour. The app renews the status every 30 minutes while you stay on it.
@@ -48,7 +48,7 @@ While you're connected, picking **Busy** or **On a call** (in the window, the tr
 
 ## Status message while your lights are red
 
-With **Set my Teams status message while my lights are red** on in [Settings](Using-the-Light.md#settings), coworkers see your chosen message next to your name in Teams whenever your lights are red: when you pick **Busy** or **On a call**, or when the app [detects a call](Call-Detection.md). It's on by default, showing *On a video call*; pick another message there, or untick it to turn it off.
+With **Set my Teams status message while my lights are red** on in [Settings](Using-the-Light.md#settings), coworkers see your chosen message next to your name in Teams whenever your lights are red: when you pick **Busy** or **On a call**, or when the app [detects a call](Call-Detection.md). It's on by default, showing *On a video call*; pick another message there, or switch it off.
 
 - **Messages:** *On a video call*, *In a meeting*, *On a phone call*, *Heads down, please message me*, *Back in a few minutes*, or **Custom message...** to type your own (up to 280 characters).
 - **When the lights stop being red,** the message is taken away. If you had your own status message before, it's put back.

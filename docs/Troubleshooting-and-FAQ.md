@@ -27,16 +27,15 @@ An app is holding your microphone open. The window says which one: *On a call (A
 Start a call, then open **Settings > Test microphone...**. It shows live what Windows reports about the microphone, which is all the app can see. See [Test microphone](Call-Detection.md#test-microphone).
 
 - The calling app must use the microphone. Calls through a desk phone aren't detected.
-- An app only appears after it has used the microphone once. Make one call, then check again.
 - Check the app isn't on the [ignore list](Call-Detection.md#ignoring-apps).
 - Check Windows lets apps use the microphone: Windows Settings > Privacy & security > Microphone, with **Microphone access** and **Let desktop apps access your microphone** on. Test microphone says if either is off.
 - A call app running as administrator, in a browser (it shows as Chrome or Edge), or in a remote desktop or Citrix session may not show up as itself, or at all.
 
 ## Follow Teams Status doesn't follow my Teams status
 
-- Are you connected? Tray menu > **Connect to Microsoft Teams** should be ticked.
+- Are you connected? Tray menu > **Connect to Microsoft Teams** should be checked.
 - Changes can take up to 20 seconds to show.
-- Did you pick Red or Green since? Those override Teams. Click **Follow Teams Status** again.
+- Did you pick Busy or Available since? Those override Teams until the override time runs out. Click **Follow Teams Status** to go back now.
 
 ## "Connect to Microsoft Teams" fails
 
@@ -53,6 +52,7 @@ Another program already uses that key combination; the app tells you when it sta
 - Click **Check for updates** in the window or tray menu. It says *"You're on the latest version"* if there's nothing newer.
 - Updates only arrive once they're published on the [Releases](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases) page.
 - Update logs are in `%LOCALAPPDATA%\Krabbz9999 Blynclight\updates`.
+- **Installed for everyone on the PC** (`C:\Program Files\BusyLightz`): updates come from the **BusyLightz Updater** task at startup and every 4 hours, not from the app. **Check for updates** only says whether a newer version is out. The updater's log is `C:\Program Files\BusyLightz Updates\updater.log`.
 
 ## If the app freezes
 
@@ -88,8 +88,8 @@ Turn them off in **Settings** (⚙ in the window, or tray menu > **Settings...**
 ## Is my data safe?
 
 - The app only reads and sets **your own Teams presence**. It can't see mail, chats, files or calendars.
-- Your Teams sign-in is stored encrypted, usable only by your Windows account. **Connect to Microsoft Teams** (when ticked) signs out and deletes it.
-- Call detection only reads Windows' record of *which app* uses the microphone, never any audio.
+- Your Teams sign-in is stored encrypted, usable only by your Windows account. **Connect to Microsoft Teams** (when checked) signs out and deletes it.
+- Call detection only asks Windows *which apps* are using the microphone, never any audio.
 - The only internet connections are to Microsoft (Teams status) and GitHub (updates).
 
 ## Can I pin it to the Start menu or taskbar?

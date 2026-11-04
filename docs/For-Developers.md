@@ -12,14 +12,14 @@
 .\build.ps1 -Version 2.8.1
 ```
 
-The MSI goes to `dist\`. **Use a new version number for every build you install or publish**, so installs and automatic updates replace the previous version cleanly.
+Two MSIs go to `dist\`: `KrabbzDev-BusyLightz2.0-<version>.msi` (installs just for the user) and `BusyLightz-Setup-<version>.msi` (installs for everyone in `C:\Program Files\BusyLightz`). **Use a new version number for every build you install or publish**, so installs and automatic updates replace the previous version cleanly.
 
 | Parameter | Default | Purpose |
 | --- | --- | --- |
 | `-Version` | required | Version shown in the app and used by the installer and updater |
 | `-UpdateRepo` | `krabbzdev/KrabbzDev-BusyLightz2.0` | GitHub repo the app checks for updates; empty disables updates |
 | `-GraphClientId`, `-GraphTenantId` | ShowTech's registration | Built-in Teams app registration; pass empty strings to build without one |
-| `-Publish` | off | Also publish the MSI as GitHub release `v<Version>` |
+| `-Publish` | off | Also publish GitHub release `v<Version>` (the per-user MSI) and `v<Version>-allusers` (the all-users MSI) |
 | `-Notes` | none | Release notes as Markdown list items; the app shows them in its *Updated to version x* card |
 
 ## Publish a release
@@ -30,29 +30,40 @@ The MSI goes to `dist\`. **Use a new version number for every build you install 
 
 Write the notes for people using the app: the update card shows about the first 200 characters, and clicking it opens the release page.
 
-This creates release `v2.8.1` with the installer attached as `KrabbzDev-BusyLightz2.0.msi`, a fixed name so the README's *latest/download* link always works. A second copy named `Krabbz9999-Blynclight-App-Control.msi` keeps links from before the rename working.
+This creates release `v2.8.1` with the per-user installer attached as `KrabbzDev-BusyLightz2.0.msi`, a fixed name so the README's *latest/download* link always works. Copies named `Krabbz9999-BusyLightz2.0.msi` and `Krabbz9999-Blynclight-App-Control.msi` keep links from before the rename working.
 
-The exe file (`Krabbz9999 Blynclight App Control.exe`), install folder, settings folder and registry key keep their original names on purpose: installed copies relaunch themselves by exe path after updating, so renaming them would leave updated PCs not running. Installed apps pick it up within 6 hours, or right away with **Check for updates**.
+It also creates release `v2.8.1-allusers` with the all-users installer as `BusyLightz-Setup.msi`, **never marked latest**. Copies installed just for one user install the last `.msi` in the latest release, so they must never see the all-users one. The all-users background updater and `scripts/Install-BusyLightz.ps1` find it by tag.
 
-GitHub records a SHA-256 digest for each upload. The app refuses any download that doesn't match it.
+The per-user exe (`Krabbz9999 Blynclight App Control.exe`), its install folder, the settings folder and the registry key keep their original names on purpose: installed copies relaunch themselves by exe path after updating, so renaming them would leave updated PCs not running. Per-user copies pick up a release within 6 hours, or right away with **Check for updates**; all-users copies within 4 hours (the BusyLightz Updater task).
+
+GitHub records a SHA-256 digest for each upload. The app, the background updater and the RMM script refuse any download that doesn't match it.
 
 ## Project layout
 
 | Path | What it is |
 | --- | --- |
 | `src/BlyncCore.cs` | USB/HID discovery, Blynclight and Luxafor report formats, light states, color wheel |
-| `src/LightController.cs` | Saved state, Test Lights (Party) cycling, call and Teams overrides, replug detection |
-| `src/TrayApp.cs` | Tray icon and menu, hotkeys, main window, notifications, wiring |
+| `src/LightController.cs` | Saved state, Party Mode cycling, call flashing, brightness and colors, call and Teams overrides, previews, replug detection. Every light write happens on its own thread |
+| `src/TrayApp.cs` | Program entry, logging and freeze watchdog, tray icon, hotkeys, notifications, wiring |
+| `src/TrayMenu.cs` | Tray menu drawing (Windows 11 style) |
+| `src/ControlForm.cs` | Main window, its three styles, and the shared colors and fonts (`Theme`) |
+| `src/DeviceTiles.cs` | Connected-light tiles and the beta sticker |
+| `src/ModernControls.cs` | On/off switch and rounded buttons |
 | `src/SetupForm.cs` | Setup checklist, Teams app dialog, ignore-apps dialog |
-| `src/SettingsForm.cs`, `src/AppSettings.cs` | Settings window and the stored settings (HKCU), including the sign-in startup entry |
-| `src/CallDetector.cs` | Reads Windows' microphone usage record; ignore list |
+| `src/SettingsForm.cs`, `src/AppSettings.cs` | Settings and Light Control windows, and the stored settings (HKCU), including the sign-in startup entry |
+| `src/CallDetector.cs`, `src/AudioSessions.cs` | Call detection from Windows' microphone usage record and from Windows audio; ignore list |
+| `src/MicTestForm.cs` | Test microphone window |
 | `src/TeamsPresence.cs` | Browser sign-in (auth code + PKCE), encrypted token, Graph presence read/set |
 | `src/TeamsAppConfig.cs` | Which Entra app registration to use; PC tenant detection |
 | `src/EmbravaConnect.cs` | Detects, quits and restarts Embrava Connect |
 | `src/Updater.cs` | Checks GitHub Releases, verifies and silently installs updates |
+| `src/AllUsers.cs` | The all-users install: hand-over from per-user copies, the SYSTEM background updater, Install for everyone |
+| `src/CrashReport.cs` | Email crash log |
 | `installer/Product.wxs` | Per-user MSI (WiX 3) |
+| `installer/ProductAllUsers.wxs` | All-users MSI (Program Files), with the BusyLightz Updater scheduled task |
+| `scripts/Install-BusyLightz.ps1` | RMM install script: gets, verifies and installs the newest all-users MSI |
 | `scripts/New-EntraAppRegistration.ps1` | Creates or updates the Entra app registration |
-| `scripts/Blynclight.ps1` | Stand-alone PowerShell command-line control (any color, dim, flash speed) |
+| `scripts/Blynclight.ps1`, `scripts/BlynclightCore.ps1` | Stand-alone PowerShell command-line control (any color, dim, flash speed) |
 | `assets/app.ico` | App icon (generated by `build.ps1` if missing) |
 
 ## Light protocols

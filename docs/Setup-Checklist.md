@@ -32,13 +32,13 @@ Once you're connected to Teams, this app replaces Embrava Connect, and running b
 - Until you're connected to Teams, keep Embrava Connect; this step shows a dash.
 
 ### 5. Light follows your Teams status
-This is on by default for new installs. If it shows **Turn on**, click it to switch back to Follow Teams Status. Picking Red or Green overrides it until you turn it back on.
+This is on by default for new installs. If it shows **Turn on**, click it to switch back to Follow Teams Status. Picking Busy, Available or another mode overrides it until the override time runs out, or until you turn it back on.
 
 ### 6. Red while your microphone is in use
-Always on. **Test microphone...** shows live which apps Windows reports using the microphone, and has **Ignore apps...** for apps whose microphone use shouldn't turn the light red. The step shows **!** if Windows is blocking apps from the microphone. See [Call Detection](Call-Detection.md).
+On unless you switch off *Turn lights red when my mic is in use* in Settings. **Test microphone...** shows live which apps Windows reports using the microphone, and has **Ignore apps...** for apps whose microphone use shouldn't turn the light red. The step shows **!** if Windows is blocking apps from the microphone. See [Call Detection](Call-Detection.md).
 
 ### Bottom buttons
-- **Test the light**: shows red for 3 seconds so you can see the light respond.
+- **Test the light**: shows the call colors (flashing red and blue, or steady red) for 3 seconds so you can see the light respond.
 - **Done**: closes the checklist. Reopen it anytime from the tray menu.
 
 ---
