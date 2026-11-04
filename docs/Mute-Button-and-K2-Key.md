@@ -27,13 +27,13 @@ If you mute some other way (from Windows' sound settings, for example) the ring 
 
 ### Mutesync Button settings
 
-Open **Settings > Mutesync Button**. Each change shows on the ring for a few seconds as you make it.
+Open **Settings > Mutesync Button**. At the top, a picture of the button shows its ring in the color your real one is showing right now, and follows it as you mute and unmute. Each change below shows on the ring for a few seconds as you make it.
 
 | Setting | What it does |
 | --- | --- |
 | **Mute and unmute my mic with a Mutesync Button** | Turns mutesync support on or off. On by default; it does nothing until a button is plugged in. The status underneath says *Connected on COM3* (or another port), *Not found* or *In use by another app*. |
 | **Ring brightness** | 5% to 100%. The default, 25%, matches the MuteMe app. |
-| **Muted** / **Live (not muted)** | The ring's colors. Red and green by default; pick from the same colors as your lights. |
+| **Muted** / **Live (not muted)** | The ring's colors. Red and green by default; click a dot to pick from the same colors as your lights. |
 | **Only light the ring while an app is using my mic** | Keeps the ring dark except during calls, so it isn't glowing all day. Off by default. |
 
 Plugging in and unplugging the button, and every mute and unmute, are noted in the app log.
@@ -46,7 +46,7 @@ Out of the box the K2's buttons are a left and a right mouse click. BusyLightz c
 
 ### What each button can do
 
-Pick an action for **Left button**, **Right button** and **Both together** in **Settings > K2 USBC Key**:
+Pick an action for **Left button**, **Right button** and **Both together** in **Settings > K2 USBC Key**. At the top of that page, a picture of the K2 lights up the key you press on the real one (both keys for Both together), so you can check it's working.
 
 | Action | What it does |
 | --- | --- |

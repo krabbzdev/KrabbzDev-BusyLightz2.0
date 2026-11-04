@@ -33,7 +33,7 @@ Pick how the window looks under **Window style** in [Settings](#settings). Each 
 
 | Style | Looks like |
 | --- | --- |
-| **Orbit** (the default) | The top of the window glows in your status color, with a big ring showing the status and its icon, e.g. ✓ *Available* over *From Teams Status*. Two faint orbits circle the ring, each with a small dot that drifts slowly around it. During an override the ring is a countdown: it empties as the time left runs out. The modes are one pill-shaped switcher below. |
+| **Orbit** (the default) | The top of the window glows in your status color, with a big ring showing the status and its icon, e.g. ✓ *Available* over *From Teams Status*. Two faint orbits circle the ring, each with a small dot that drifts slowly around it. During an override the ring is a countdown: it empties as the time left runs out. In the lower left, **Time since last reboot** is a running clock in hours, to the millisecond (e.g. *34:08:49.234*); after 24 hours it turns into a red pill with a ☹. (Windows' Fast Startup keeps the clock running through a shut down; only a restart resets it.) The modes are one pill-shaped switcher below. |
 | **Color block** | The top of the window fills with your status color, with the status in large text. The modes are four tiles below. |
 | **Fluent list** | A status card, with the modes as a list like Windows Settings, hotkeys on the right. |
 
@@ -113,9 +113,9 @@ Party Mode's color changes don't notify. Turn notifications off in [Settings](#s
 
 ## Settings
 
-Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Settings has a list of pages on the left: **General**, **Calls**, **Microsoft Teams**, **Mutesync Button**, **K2 USBC Key** and **Light Control**. Each setting has an on/off switch, and a small **ⓘ** beside it: hover over it, or click it, to see what the setting does. Changes take effect immediately.
+Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Settings has a list of pages on the left, each with its own colored icon: **General**, **Calls**, **Microsoft Teams**, **Mutesync Button**, **K2 USBC Key** and **Light Control**. Each page opens with a header saying what's on it. Each setting has an on/off switch in the page's color, and a small **ⓘ** beside it: hover over it, or click it, to see what the setting does. Changes take effect immediately.
 
-<img src="images/settings.png" alt="Settings on its General page: the page list on the left, then switches for startup, the override timer, notifications, hotkeys and updates, each with an i for help, and a Learn more about this project here button" width="440">
+<img src="images/settings.png" alt="Settings on its General page: a page list with colored icons on the left, a General header, then switches for startup, the override timer, notifications, hotkeys and updates, each with an i for help, and a Learn more about this project here button" width="440">
 
 ### General
 
@@ -166,16 +166,16 @@ The mute button's on/off switch and ring colors, and what each K2 USBC Key butto
 
 ### Light Control
 
-The **Light Control** page in Settings. Each change is saved at once and shows on your lights for a few seconds, whatever they were showing: the On a call slider flashes, a color shows that status, and brightness shows the lit color. The page scrolls.
+The **Light Control** page in Settings. At the top, a picture of a Blynclight and a Luxafor glows in whatever color your real lights are showing. Each change is saved at once and shows on your lights (and the picture) for a few seconds, whatever they were showing: the On a call slider flashes, a color shows that status, and brightness shows the lit color. The page scrolls.
 
-<img src="images/light-control.png" alt="Settings on its Light Control page: a Disable All Light Functions switch, Brightness and On a call speed sliders, and a color for each status" width="440">
+<img src="images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Disable All Light Functions switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="440">
 
 | Setting | What it does |
 | --- | --- |
 | **Disable All Light Functions** | Turns your USB lights off and stops controlling them, while Teams status and call detection keep working. The same setting as **Disable USB Light Integration** in the tray menu. While it's on, the other light settings are greyed out. |
 | **Brightness** | A slider from 5% to 100% (the default), for every light and color. |
 | **On a call: switch colors every** | A slider for how long On a call shows each of its two flash colors: a tenth of a second to 2 seconds. The default is 1 second. |
-| **Colors** | The color for Busy, Available, Teams Away, Teams Do not disturb, and the two colors On a call flashes between. Pick from red, orange, yellow, green, cyan, blue, purple, pink or white. The tray icon and window use your colors too. **Reset colors** puts the defaults back. |
+| **Colors** | The color for Busy, Available, Teams Away, Teams Do not disturb, and the two colors On a call flashes between. Click a dot to pick red, orange, yellow, green, cyan, blue, purple, pink or white; the chosen one is ringed with a check, and hovering a dot shows its name. The tray icon and window use your colors too. **Reset colors** puts the defaults back. |
 
 ## Send feedback
 

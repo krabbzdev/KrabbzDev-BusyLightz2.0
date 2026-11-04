@@ -8,7 +8,13 @@ A small Windows app that controls USB busy lights, so the people around you can 
 
 ## Why I made this
 
-> The reason I made this app, is I wanted an app to turn my lights red anytime I was on a call. Be it Zoom, Cytracom, Loom, Teams etc. If My MIC is hot, I want the lights red.
+> My workday runs through a lot of apps. Teams for meetings, Zoom when a client sends the invite, Cytracom for the phones, Loom for quick videos, and a browser call now and then. Every one of them has its own idea of whether I'm "busy", and none of them talk to each other.
+>
+> What I wanted was simple: **if my mic is hot, my lights are red.** It shouldn't matter which app the call is in.
+>
+> Once that worked, I wanted the rest to follow. Teams should show me as busy during a Cytracom or Zoom call, not just a Teams one. And the hardware on my desk should work together instead of each needing its own app: my Blynclight and Luxafor show the same color, my Mutesync Button mutes me in every app with its ring showing whether I'm muted, and my K2 key handles the little things I do all day.
+>
+> No vendor apps, no juggling. One small app that knows when I'm on a call and tells everything else.
 >
 > — KrabbzDev
 

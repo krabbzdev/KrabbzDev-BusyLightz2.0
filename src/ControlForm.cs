@@ -499,9 +499,44 @@ namespace Krabbz.Blynclight
             if (Small.Length > 0)
                 TextRenderer.DrawText(g, Small, Theme.Small, new Rectangle(inner.X, top + bigHeight, inner.Width, 18), soft, center);
 
-            // Bottom right: the beta sticker. Device tiles are in the Active Devices panel.
+            // Bottom left: how long since the PC last restarted, to the millisecond; bottom right: the beta sticker.
+            DrawUptime(g, text, soft);
             DeviceTiles.BetaSticker(g, Width - Pad - 62, Height - 40);
         }
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        static extern ulong GetTickCount64();
+        static readonly Font UptimeFont = new Font("Segoe UI Semibold", 10f);
+        static readonly Font UptimeLabelFont = new Font("Segoe UI", 8f);
+        static readonly Font SadFont = new Font("Segoe UI Symbol", 9f);
+
+        // "Time since last reboot" over a running clock, e.g. "01:22:34.512". Past 24 hours (e.g. "34:08:49.234") it
+        // turns into a red pill with a sad face. (Windows' Fast Startup keeps counting through a shut down; only a
+        // restart resets it.)
+        void DrawUptime(Graphics g, Color text, Color soft)
+        {
+            var up = TimeSpan.FromMilliseconds(GetTickCount64());
+            bool overADay = up.TotalHours >= 24;
+            // A running clock in total hours: hours:minutes:seconds.milliseconds, e.g. 34:08:49.234 after a day and 10 hours.
+            string value = ((int)up.TotalHours).ToString("00") + ":" + up.Minutes.ToString("00") + ":" +
+                up.Seconds.ToString("00") + "." + up.Milliseconds.ToString("000");
+            int x = Pad, top = Height - 40;
+            TextRenderer.DrawText(g, "Time since last reboot", UptimeLabelFont, new Point(x, top), overADay ? text : soft);
+            var size = TextRenderer.MeasureText(g, value, UptimeFont, Size.Empty, TextFormatFlags.NoPadding);
+            if (!overADay)
+            {
+                TextRenderer.DrawText(g, value, UptimeFont, new Point(x, top + 16), text, TextFormatFlags.NoPadding);
+                return;
+            }
+            // Over a day: a red pill with a sad face.
+            const string Sad = "☹";
+            var face = TextRenderer.MeasureText(g, Sad, SadFont, Size.Empty, TextFormatFlags.NoPadding);
+            var pill = new Rectangle(x - 4, top + 14, face.Width + 6 + size.Width + 12, Math.Max(size.Height, face.Height) + 4);
+            Theme.FillRounded(g, pill, pill.Height / 2, Color.FromArgb(200, 18, 24), Color.FromArgb(255, 220, 220));
+            TextRenderer.DrawText(g, Sad, SadFont, new Point(pill.X + 6, pill.Y + (pill.Height - face.Height) / 2), Color.White, TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, value, UptimeFont, new Point(pill.X + 6 + face.Width + 4, pill.Y + (pill.Height - size.Height) / 2), Color.White, TextFormatFlags.NoPadding);
+        }
+
 
         public int Blynclights, Luxafors;
 

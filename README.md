@@ -10,7 +10,13 @@ A small Windows tray app that controls USB busy lights directly over USB, so the
 
 ## Why I made this
 
-> The reason I made this app, is I wanted an app to turn my lights red anytime I was on a call. Be it Zoom, Cytracom, Loom, Teams etc. If My MIC is hot, I want the lights red.
+> My workday runs through a lot of apps. Teams for meetings, Zoom when a client sends the invite, Cytracom for the phones, Loom for quick videos, and a browser call now and then. Every one of them has its own idea of whether I'm "busy", and none of them talk to each other.
+>
+> What I wanted was simple: **if my mic is hot, my lights are red.** It shouldn't matter which app the call is in.
+>
+> Once that worked, I wanted the rest to follow. Teams should show me as busy during a Cytracom or Zoom call, not just a Teams one. And the hardware on my desk should work together instead of each needing its own app: my Blynclight and Luxafor show the same color, my Mutesync Button mutes me in every app with its ring showing whether I'm muted, and my K2 key handles the little things I do all day.
+>
+> No vendor apps, no juggling. One small app that knows when I'm on a call and tells everything else.
 >
 > — KrabbzDev
 
@@ -45,7 +51,7 @@ If BusyLightz saves you a few interruptions, you can [buy me a coffee](https://b
 - **Blynclight and Luxafor Flag together:** every connected light shows the same color, and lights plugged in later are matched within seconds.
 - **Four modes, one click each:** **Busy** (red), **Available** (green), **On a call** (flashing red and blue, for calls the app can't detect, like a desk phone) and **Follow Teams Status**. Pick them from the window, the tray menu, or anywhere with the hotkeys `Alt+R` (Busy) and `Alt+G` (Available).
 - **Override timer:** your pick goes back to Follow Teams Status on its own after 15 minutes, so you never forget one is on. Choose 5 minutes to 4 hours, or turn it off, in Settings. While an override is on, the window shows a countdown and the tray icon gets a small badge.
-- **Three window styles:** **Orbit** (the default, shown above, with orbiting dots and a countdown ring during overrides), **Color block** and **Fluent list**, each in Light or Dark mode.
+- **Three window styles:** **Orbit** (the default, shown above, with orbiting dots, a countdown ring during overrides, and a running *Time since last reboot* clock that turns red after 24 hours), **Color block** and **Fluent list**, each in Light or Dark mode.
 - **Light Control** (a page in Settings): brightness, how fast On a call flashes, and the color for each status, each shown on your lights as you change it.
 - **Party Mode:** a rainbow button that cycles quickly through every color on every light, to check they all work and match.
 
@@ -70,7 +76,7 @@ Connect once with a browser sign-in to your work account. No client secret is st
 
 - **Setup checklist** on first run, including setting up the Teams app for your organization.
 - **Light or Dark mode**, picked in Settings (Light is the default).
-- **Settings** (⚙ in the app or tray menu), in pages: General, Calls, Microsoft Teams, Mutesync Button, K2 USBC Key and Light Control. Every setting has an ⓘ explaining it.
+- **Settings** (⚙ in the app or tray menu), in colorful pages: General, Calls, Microsoft Teams, Mutesync Button, K2 USBC Key and Light Control. Every setting has an ⓘ explaining it, colors are picked from dots, and the device pages show live pictures of your Mutesync Button, K2 and lights.
 - **Notifications** when the lights change.
 - **Automatic, silent updates** from this repo's Releases, checked against GitHub's SHA-256 digest before installing, with a card afterwards listing what changed.
 - **Install just for you, or for everyone on the PC** in `C:\Program Files\BusyLightz`, with a background updater; IT can deploy it with an RMM script. See [Installing and Updating](docs/Installing-and-Updating.md).
@@ -79,7 +85,7 @@ Connect once with a browser sign-in to your work account. No client secret is st
 
 <p>
 <img src="docs/images/settings.png" alt="Settings on its General page: a page list on the left, switches with an i for help, and a Learn more about this project here button" width="330">
-<img src="docs/images/light-control.png" alt="Settings on its Light Control page: a Disable All Light Functions switch, Brightness and On a call speed sliders, and a color for each status" width="330">
+<img src="docs/images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Disable All Light Functions switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="330">
 <img src="docs/images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Follow Teams Status, Connect to Microsoft Teams, Settings, Check for updates and Exit" width="230">
 </p>
 

@@ -29,6 +29,8 @@ namespace Krabbz.Blynclight
         readonly List<NavItem> navItems = new List<NavItem>();
         // Where the Light Control page is in the list, for the mutesync page's Ring colors button.
         int lightControlPage;
+        // The color of the page being built, for its switches.
+        Color pageAccent = Theme.Teams;
         // The page being filled in while building, its cards, and where the open card started (-1 when none is open).
         SettingsPage page;
         int cardTop = -1;
@@ -46,8 +48,8 @@ namespace Krabbz.Blynclight
             BackColor = Theme.Page;
             DoubleBuffered = true;
 
-            StartPage("General", GeneralGlyph);
-            Heading("General", GeneralGlyph);
+            StartPage("General", GeneralGlyph, PageColors.General, "How BusyLightz looks, starts and updates.");
+            Heading(null, null);
             AppearancePickers();
             startWithWindows = Box("Start with Windows", AppSettings.StartWithWindows, v => AppSettings.StartWithWindows = v,
                 help: "Starts BusyLightz when you sign in to Windows, so your lights work without you opening it.");
@@ -90,8 +92,8 @@ namespace Krabbz.Blynclight
             }
             EndPage();
 
-            StartPage("Calls", CallsGlyph);
-            Heading("Calls", CallsGlyph);
+            StartPage("Calls", CallsGlyph, PageColors.Calls, "What your lights do while any app is using your microphone.");
+            Heading(null, null);
             var red = Box("Turn lights red when my mic is in use", AppSettings.CallsTurnRed,
                 v => { AppSettings.CallsTurnRed = v; tray.ApplySettings(); },
                 help: "When any app uses your microphone (Teams, Zoom, Cytracom and other softphones), your lights turn red until it stops. Ignore apps lists apps that shouldn't count.");
@@ -115,8 +117,8 @@ namespace Krabbz.Blynclight
                 help: "Sets your Teams status to Busy while you're on a call in another app, like Zoom or a softphone, and back afterwards. Needs BusyLightz connected to Teams.");
             EndPage();
 
-            StartPage("Microsoft Teams", TeamsGlyph);
-            Heading("Microsoft Teams", TeamsGlyph);
+            StartPage("Microsoft Teams", TeamsGlyph, PageColors.Teams, "Follow your Teams status, and keep Teams in step with your lights.");
+            Heading(null, null);
             teamsStatus.Location = new Point(24, y + 6);
             Add(teamsStatus);
             connectButton.Bounds = new Rectangle(350, y, 130, 32);
@@ -146,28 +148,25 @@ namespace Krabbz.Blynclight
             message.Enabled = messageOn.Checked;
             EndPage();
 
-            StartPage("Mutesync Button", MuteSyncGlyph);
+            StartPage("Mutesync Button", MuteSyncGlyph, PageColors.MuteSync, "Mute and unmute your mic with one press, with a ring that shows which.");
             // Pressing a mutesync button mutes or unmutes the mic; its ring shows red when muted, green when live.
-            Heading("Mutesync Button", MuteSyncGlyph);
-            var muteSync = Box("Mute and unmute my mic with a Mutesync Button", AppSettings.MuteSyncEnabled,
+            Heading(null, null);
+            DevicePicture(new MuteSyncPicture(), muteButtonStatus,
+                "Its ring here shows what your button is showing right now.");
+            Box("Mute and unmute my mic with a Mutesync Button", AppSettings.MuteSyncEnabled,
                 v => { AppSettings.MuteSyncEnabled = v; tray.ApplySettings(); RefreshDevices(); },
                 help: "Pressing your Mutesync Button mutes or unmutes your mic in Windows, for every app. Its ring shows red when muted and green when live. Close the MuteMe app so BusyLightz can use the button.");
-            // Just under the switch's text.
-            y -= RowGap - 2;
-            muteButtonStatus.Location = new Point(24 + 46, y);
-            Add(muteButtonStatus);
-            y += 20 + RowGap;
             RingSection();
             EndPage();
 
-            StartPage("K2 USBC Key", K2Glyph);
+            StartPage("K2 USBC Key", K2Glyph, PageColors.K2, "Two buttons for anything you like: type, mute, set your status.");
             K2Section();
             EndPage();
 
             // Brightness, call flash speed, colors and the mutesync ring: the Light Control window, shown in its page.
             lightControlPage = pages.Count;
-            StartPage("Light Control", LightGlyph);
-            var lights = new LightsDialog(tray, true) { Location = new Point(12, 4) };
+            StartPage("Light Control", LightGlyph, PageColors.Light, "Brightness, call flashing and the color for each status.");
+            var lights = new LightsDialog(tray, true) { Location = new Point(12, y - 8) };
             Add(lights);
             lights.Show();
             y = lights.Bottom + 8;
@@ -181,9 +180,17 @@ namespace Krabbz.Blynclight
             bottom = Math.Max(bottom, 12 + navItems.Count * 44);
             int room = Screen.FromPoint(Cursor.Position).WorkingArea.Height - 80 - 92;
             // No taller than the General page needs; longer pages (Light Control) scroll.
-            const int MaxPageHeight = 680;
+            const int MaxPageHeight = 790;
             int pageHeight = Math.Min(Math.Min(bottom, MaxPageHeight), room);
-            foreach (var p in pages) p.Bounds = new Rectangle(navWidth, 0, width, pageHeight);
+            foreach (var p in pages)
+            {
+                p.Bounds = new Rectangle(navWidth, 0, width, pageHeight);
+                // A page that scrolls loses room to its scroll bar; keep everything inside it so there's no sideways bar.
+                if (p.ContentHeight <= pageHeight) continue;
+                int right = width - SystemInformation.VerticalScrollBarWidth - 4;
+                foreach (Control control in p.Controls)
+                    if (control.Right > right) control.Width = Math.Max(10, right - control.Left);
+            }
             y = pageHeight + 8;
             Footer();
             ShowPage(0);
@@ -196,6 +203,29 @@ namespace Krabbz.Blynclight
             refresh.Tick += delegate { RefreshTeams(); RefreshDevices(); };
             Shown += delegate { RefreshTeams(); refresh.Start(); };
             FormClosed += delegate { refresh.Dispose(); };
+        }
+
+        readonly K2Picture k2Picture = new K2Picture();
+
+        // A device's picture on the left, with its status and a short note beside it.
+        void DevicePicture(Control picture, Label status, string note)
+        {
+            const int Size = 116;
+            picture.Bounds = new Rectangle(24, y, Size, Size);
+            Add(picture);
+            status.Font = new Font("Segoe UI Semibold", 10.5f);
+            status.Location = new Point(24 + Size + 20, y + 30);
+            Add(status);
+            Add(new Label
+            {
+                Text = note,
+                AutoSize = true,
+                MaximumSize = new Size(width - 24 - Size - 20 - 40, 0),
+                Font = new Font("Segoe UI", 9f),
+                Location = new Point(24 + Size + 20, y + 58),
+                Tag = VersionLabel,
+            });
+            y += Size + RowGap;
         }
 
         // The mutesync button's ring: brightness, its muted and live colors, and whether it's lit only during calls.
@@ -215,15 +245,14 @@ namespace Krabbz.Blynclight
             Info(name, "How bright the button's ring glows. 25% matches the MuteMe app.");
             var value = new Label { Text = AppSettings.MuteSyncBrightness + "%", AutoSize = false, TextAlign = ContentAlignment.TopRight, Bounds = new Rectangle(width - 120, y, 96, 22) };
             Add(value);
-            var slider = new TrackBar
+            var slider = new ModernSlider
             {
                 Minimum = AppSettings.MinBrightness / 5,
                 Maximum = 20,
-                Value = Math.Max(AppSettings.MinBrightness / 5, Math.Min(20, AppSettings.MuteSyncBrightness / 5)),
-                TickStyle = TickStyle.None,
-                AutoSize = false,
+                Accent = PageColors.MuteSync,
                 Bounds = new Rectangle(18, y + 24, width - 48, 30),
             };
+            slider.Value = Math.Max(AppSettings.MinBrightness / 5, Math.Min(20, AppSettings.MuteSyncBrightness / 5));
             slider.ValueChanged += delegate
             {
                 value.Text = slider.Value * 5 + "%";
@@ -244,28 +273,27 @@ namespace Krabbz.Blynclight
 
         void RingColor(string label, string current, Action<string> save, Action preview, string help)
         {
-            var name = new Label { Text = label, AutoSize = true, Location = new Point(24, y + 4) };
+            var name = new Label { Text = label, AutoSize = true, Location = new Point(24, y + 6) };
             Add(name);
             Info(name, help);
-            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
-            picker.Items.AddRange(BlyncDevice.ColorNames);
-            picker.SelectedItem = current;
-            picker.SelectedIndexChanged += delegate
+            var picker = new ColorSwatches(BlyncDevice.ColorNames) { Location = new Point(width - 24 - BlyncDevice.ColorNames.Length * ColorSwatches.Spacing, y) };
+            picker.Selected = current;
+            picker.SelectedChanged += delegate
             {
-                save((string)picker.SelectedItem);
+                save(picker.Selected);
                 preview();
             };
             Add(picker);
-            y += 30 + RowGap;
+            y += picker.Height + RowGap;
         }
 
         // The K2 macro key: an action for each button and for both together, and the email address it can type.
         void K2Section()
         {
-            Heading("K2 USBC Key", K2Glyph);
-            k2Status.Location = new Point(24, y);
-            Add(k2Status);
-            y += 22 + RowGap;
+            Heading(null, null);
+            DevicePicture(k2Picture, k2Status, "Press a button on your K2 and it lights up here.");
+            tray.K2Pressed += k2Picture.Flash;
+            FormClosed += delegate { tray.K2Pressed -= k2Picture.Flash; };
             K2Row("Left button", K2Key.Button.Left, "What happens when you press the K2 USBC Key's left button on its own.");
             K2Row("Right button", K2Key.Button.Right, "What happens when you press the K2 USBC Key's right button on its own.");
             K2Row("Both together", K2Key.Button.Both, "What happens when you press both buttons at the same time. It counts once, so it doesn't also run Left or Right.");
@@ -412,18 +440,24 @@ namespace Krabbz.Blynclight
         }
 
         // Starts a page and its entry in the list on the left; the helpers below add to it until EndPage.
-        void StartPage(string title, string glyph)
+        // color is the page's own color, for its icon in the list and its header (Color.Empty for the rainbow one);
+        // summary is the header's one line about the page.
+        void StartPage(string title, string glyph, Color color, string summary)
         {
             page = new SettingsPage { Visible = false };
+            pageAccent = color;
             pages.Add(page);
             Controls.Add(page);
             int index = navItems.Count;
-            var item = new NavItem { Text = title, Glyph = glyph, Bounds = new Rectangle(8, 12 + index * 44, navWidth - 16, 38) };
+            var item = new NavItem { Text = title, Glyph = glyph, Accent = color, Bounds = new Rectangle(8, 12 + index * 46, navWidth - 16, 40) };
             item.Click += delegate { ShowPage(index); };
             navItems.Add(item);
             Controls.Add(item);
             y = 8;
             cardTop = -1;
+            var header = new PageHeader { Title = title, Glyph = glyph, Accent = color, Summary = summary, Bounds = new Rectangle(12, y, width - 24, 86) };
+            Add(header);
+            y = header.Bottom + 6;
         }
 
         void EndPage()
@@ -490,8 +524,9 @@ namespace Krabbz.Blynclight
         // e.g. "Connected on COM3", and whether a K2 is plugged in.
         void RefreshDevices()
         {
-            muteButtonStatus.Text = "Status: " + tray.MuteButton.Status;
-            k2Status.Text = tray.K2Connected ? "Status: Connected" : "Status: Not plugged in";
+            muteButtonStatus.Text = tray.MuteButton.Status;
+            k2Status.Text = tray.K2Connected ? "Connected" : "Not plugged in";
+            if (k2Picture.Connected != tray.K2Connected) { k2Picture.Connected = tray.K2Connected; k2Picture.Invalidate(); }
         }
 
         void RefreshTeams()
@@ -514,11 +549,19 @@ namespace Krabbz.Blynclight
             }
         }
 
-        // A section title with its icon, starting a new card for the rows below it.
+        // A section title with its icon, starting a new card for the rows below it. With no text, just starts a card
+        // (the page header names the first one).
         void Heading(string text, string glyph)
         {
             CloseCard();
             y += page.Cards.Count == 0 ? 4 : 12;
+            if (text == null)
+            {
+                y += 4;
+                cardTop = y;
+                y += 18;
+                return;
+            }
             int x = 16;
             if (Theme.Icons != null)
             {
@@ -550,7 +593,7 @@ namespace Krabbz.Blynclight
         CheckBox Box(string text, bool value, Action<bool> save, bool indented = false, string help = null)
         {
             int x = indented ? 24 + 46 : 24;
-            var box = new ToggleBox { Text = text, Checked = value, AutoSize = true, Location = new Point(x, y), MaximumSize = new Size(width - 24 - x - InfoRoom, 0) };
+            var box = new ToggleBox { Text = text, Checked = value, AutoSize = true, Location = new Point(x, y), MaximumSize = new Size(width - 24 - x - InfoRoom, 0), Accent = PageColors.Solid(pageAccent) };
             box.CheckedChanged += delegate { save(box.Checked); };
             Add(box);
             y += Math.Max(32, box.Height) + RowGap;
@@ -729,6 +772,107 @@ namespace Krabbz.Blynclight
         }
     }
 
+    // A large drawing of the Mutesync Button whose ring shows the color the real one is showing right now (grey when
+    // it isn't connected). Redraws when the ring changes.
+    class MuteSyncPicture : Control
+    {
+        readonly Timer watch = new Timer { Interval = 300 };
+        Color? shown;
+
+        public MuteSyncPicture()
+        {
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+            watch.Tick += delegate
+            {
+                var ring = MuteSyncButton.Ring;
+                if (ring != shown) { shown = ring; Invalidate(); }
+            };
+            watch.Start();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) watch.Dispose();
+            base.Dispose(disposing);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.Clear(BackColor);
+            shown = MuteSyncButton.Ring;
+            DeviceTiles.DrawMuteSyncLarge(e.Graphics, ClientRectangle, shown);
+        }
+    }
+
+    // A Blynclight and a Luxafor side by side, glowing in the color the real lights are showing now (including
+    // previews and call flashing). Redraws when it changes.
+    class LightsPicture : Control
+    {
+        readonly Func<Color> color;
+        readonly Timer watch = new Timer { Interval = 150 };
+        Color shown;
+
+        public LightsPicture(Func<Color> color)
+        {
+            this.color = color;
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+            watch.Tick += delegate
+            {
+                var now = color();
+                if (now.ToArgb() != shown.ToArgb()) { shown = now; Invalidate(); }
+            };
+            watch.Start();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) watch.Dispose();
+            base.Dispose(disposing);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.Clear(BackColor);
+            shown = color();
+            DeviceTiles.DrawLightsLarge(e.Graphics, ClientRectangle, shown);
+        }
+    }
+
+    // A large drawing of the K2 USBC Key; a key lights up for a moment when it's pressed on the real one.
+    class K2Picture : Control
+    {
+        readonly Timer fade = new Timer { Interval = 700 };
+        bool left, right;
+        public bool Connected;
+
+        public K2Picture()
+        {
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+            fade.Tick += delegate { fade.Stop(); left = right = false; Invalidate(); };
+        }
+
+        public void Flash(K2Key.Button button)
+        {
+            left = button != K2Key.Button.Right;
+            right = button != K2Key.Button.Left;
+            Invalidate();
+            fade.Stop();
+            fade.Start();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) fade.Dispose();
+            base.Dispose(disposing);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.Clear(BackColor);
+            DeviceTiles.DrawK2Large(e.Graphics, ClientRectangle, Connected, left, right);
+        }
+    }
+
     // A small round "i" beside a setting; hovering or clicking shows what the setting does.
     class InfoIcon : Control
     {
@@ -787,10 +931,89 @@ namespace Krabbz.Blynclight
         }
     }
 
-    // An entry in Settings' page list: an icon and name, tinted with an accent bar while its page is showing.
+    // Each Settings page's own color, for its icon tile in the page list and its header.
+    static class PageColors
+    {
+        public static readonly Color General = Color.FromArgb(96, 110, 140);
+        public static readonly Color Calls = Color.FromArgb(229, 72, 77);
+        public static readonly Color Teams = Theme.Teams;
+        public static readonly Color MuteSync = Color.FromArgb(48, 164, 108);
+        public static readonly Color K2 = Color.FromArgb(247, 107, 21);
+        // Light Control's tile is a rainbow.
+        public static readonly Color Light = Color.Empty;
+        static readonly Color[] Rainbow = { Theme.Red, Color.FromArgb(247, 99, 12), Color.FromArgb(234, 179, 8), Theme.Green, Theme.CallBlue, Color.FromArgb(136, 23, 152) };
+
+        // One color to stand for the page (the rainbow's is purple).
+        public static Color Solid(Color accent) { return accent.IsEmpty ? Color.FromArgb(136, 23, 152) : accent; }
+
+        // A rounded tile in the page's color: a soft top-to-bottom shade, or the rainbow.
+        public static void FillTile(Graphics g, Rectangle r, Color accent, int radius)
+        {
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using (var path = Theme.Rounded(r, radius))
+            {
+                if (accent.IsEmpty)
+                {
+                    using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(r, Rainbow[0], Rainbow[Rainbow.Length - 1], 45f))
+                    {
+                        var blend = new System.Drawing.Drawing2D.ColorBlend { Colors = Rainbow, Positions = new float[Rainbow.Length] };
+                        for (int i = 0; i < Rainbow.Length; i++) blend.Positions[i] = i / (float)(Rainbow.Length - 1);
+                        brush.InterpolationColors = blend;
+                        g.FillPath(brush, path);
+                    }
+                }
+                else
+                    using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(r, Theme.Mix(accent, Color.White, 0.18), Theme.Mix(accent, Color.Black, 0.12), 90f))
+                        g.FillPath(brush, path);
+            }
+        }
+    }
+
+    // The top of each Settings page: a big icon tile in the page's color, its name, and a line about what's on it,
+    // on a card washed with the page's color.
+    class PageHeader : Control
+    {
+        public string Title, Glyph, Summary;
+        public Color Accent;
+        static readonly Font TitleFont = new Font("Segoe UI Semibold", 15f);
+        static readonly Font SummaryFont = new Font("Segoe UI", 9.5f);
+
+        public PageHeader()
+        {
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.Clear(Theme.Page);
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            var r = new Rectangle(0, 0, Width - 1, Height - 1);
+            var accent = PageColors.Solid(Accent);
+            using (var path = Theme.Rounded(r, 10))
+            using (var brush = new System.Drawing.Drawing2D.LinearGradientBrush(r, Theme.Wash(accent, 0.72), Theme.Card, 0f))
+                g.FillPath(brush, path);
+            using (var path = Theme.Rounded(r, 10))
+            using (var pen = new Pen(Theme.Wash(accent, 0.6))) g.DrawPath(pen, path);
+            var tile = new Rectangle(14, (Height - 48) / 2, 48, 48);
+            PageColors.FillTile(g, tile, Accent, 12);
+            if (Theme.Icons != null)
+                using (var icon = new Font(Theme.Icons.FontFamily, 18f))
+                    TextRenderer.DrawText(g, Glyph, icon, tile, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            int x = tile.Right + 16;
+            TextRenderer.DrawText(g, Title, TitleFont, new Point(x, 12), Theme.Text);
+            TextRenderer.DrawText(g, Summary, SummaryFont, new Rectangle(x, 40, Width - x - 12, 40), Theme.Muted,
+                TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis);
+        }
+    }
+
+    // An entry in Settings' page list: its icon on a tile in the page's color, and its name; tinted, with a bar in the
+    // page's color, while its page is showing.
     class NavItem : Control
     {
         public string Glyph;
+        // The page's color (Color.Empty: rainbow).
+        public Color Accent;
         bool selected, hover;
         static readonly Font SelectedFont = new Font("Segoe UI Semibold", 10f);
 
@@ -817,17 +1040,18 @@ namespace Krabbz.Blynclight
             g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
             g.Clear(Theme.Page);
             var r = new Rectangle(0, 0, Width - 1, Height - 1);
-            if (selected) Theme.FillRounded(g, r, 6, Theme.Card, Theme.Card);
-            else if (hover) Theme.FillRounded(g, r, 6, Theme.Wash(Theme.Teams, 0.9), Theme.Wash(Theme.Teams, 0.9));
+            var accent = PageColors.Solid(Accent);
+            if (selected) Theme.FillRounded(g, r, 8, Theme.Wash(accent, 0.82), Theme.Wash(accent, 0.7));
+            else if (hover) Theme.FillRounded(g, r, 8, Theme.Card, Theme.Card);
             if (selected)
-                using (var bar = new SolidBrush(Theme.Teams)) g.FillRectangle(bar, 0, Height / 2 - 8, 3, 16);
-            int x = 14;
+                using (var bar = new SolidBrush(accent)) g.FillRectangle(bar, 0, Height / 2 - 9, 3, 18);
+            // The page's icon, white on a rounded tile in the page's color.
+            var tile = new Rectangle(10, (Height - 26) / 2, 26, 26);
+            PageColors.FillTile(g, tile, Accent, 7);
             if (Theme.Icons != null)
-            {
-                using (var icon = new Font(Theme.Icons.FontFamily, 11f))
-                    TextRenderer.DrawText(g, Glyph, icon, new Rectangle(x, 0, 22, Height), Theme.Text, TextFormatFlags.VerticalCenter);
-                x += 28;
-            }
+                using (var icon = new Font(Theme.Icons.FontFamily, 10f))
+                    TextRenderer.DrawText(g, Glyph, icon, tile, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            int x = tile.Right + 10;
             TextRenderer.DrawText(g, Text, selected ? SelectedFont : Font, new Rectangle(x, 0, Width - x, Height),
                 Theme.Text, TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
         }
@@ -841,7 +1065,22 @@ namespace Krabbz.Blynclight
         const int width = 460;
         // A TrackBar can't be see-through, so Load gives each the window's color (Dark mode included).
         readonly TrayContext tray;
-        readonly List<ComboBox> colorPickers = new List<ComboBox>();
+        readonly List<ColorSwatches> colorPickers = new List<ColorSwatches>();
+
+        // A short name for each status color row, so its color dots fit beside it.
+        static string ShortColorName(string setting, string full)
+        {
+            switch (setting)
+            {
+                case "BusyColor": return "Busy";
+                case "AvailableColor": return "Available";
+                case "AwayColor": return "Away";
+                case "DndColor": return "Do not disturb";
+                case "CallColor1": return "On a call: 1st";
+                case "CallColor2": return "On a call: 2nd";
+                default: return full;
+            }
+        }
         int y = 16;
 
         // embedded: shown inside Settings as its Light Control page, with no border or Close button.
@@ -860,14 +1099,17 @@ namespace Krabbz.Blynclight
                 BackColor = Theme.Page;
             }
 
+            // Your lights, glowing in the color the real ones are showing, with a note beside them.
+            var lights = new LightsPicture(() => tray.DisplayColor) { Bounds = new Rectangle(20, y, 150, 96) };
+            Controls.Add(lights);
             Controls.Add(new Label
             {
-                Text = "Changes show on your lights for a few seconds as you make them.",
+                Text = "Changes show on your lights for a few seconds as you make them, and on the lights here too.",
                 AutoSize = true,
-                MaximumSize = new Size(width - 40, 0),
-                Location = new Point(20, y),
+                MaximumSize = new Size(width - lights.Right - 36, 0),
+                Location = new Point(lights.Right + 16, y + 26),
             });
-            y += 34;
+            y += lights.Height + 18;
 
             // The same setting as Disable USB Light Integration in the tray menu. While on, the rest of this window
             // has nothing to show, so it's greyed out.
@@ -912,28 +1154,31 @@ namespace Krabbz.Blynclight
             y += 8;
             Controls.Add(new Label { Text = "Colors", Font = new Font("Segoe UI", 10.5f, FontStyle.Bold), AutoSize = true, Location = new Point(16, y) });
             y += 30;
+            // A row of color dots for each status; the full name (e.g. "Busy (and Teams: Busy)") is its tooltip.
+            var names = new ToolTip();
             foreach (var role in AppSettings.LightColorRoles)
             {
                 string setting = role[0], previewState = role[3];
-                Controls.Add(new Label { Text = role[1], AutoSize = true, Location = new Point(24, y + 3) });
-                var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(width - 150, y, 130, 30) };
-                picker.Items.AddRange(BlyncDevice.ColorNames);
-                picker.SelectedItem = AppSettings.LightColorName(setting);
-                picker.SelectedIndexChanged += delegate
+                var name = new Label { Text = ShortColorName(setting, role[1]), AutoSize = true, Location = new Point(24, y + 6) };
+                names.SetToolTip(name, role[1]);
+                Controls.Add(name);
+                var picker = new ColorSwatches(BlyncDevice.ColorNames) { Location = new Point(width - 20 - BlyncDevice.ColorNames.Length * ColorSwatches.Spacing, y) };
+                picker.Selected = AppSettings.LightColorName(setting);
+                picker.SelectedChanged += delegate
                 {
-                    AppSettings.SetLightColorName(setting, (string)picker.SelectedItem);
+                    AppSettings.SetLightColorName(setting, picker.Selected);
                     tray.ApplySettings();
                     tray.Light.Preview(previewState, PreviewMs);
                 };
                 picker.Tag = role[2];
                 colorPickers.Add(picker);
                 Controls.Add(picker);
-                y += 36;
+                y += 40;
             }
 
             y += 12;
             var reset = new ModernButton { Text = "Reset colors", Bounds = new Rectangle(20, y, 130, 34) };
-            reset.Click += delegate { foreach (var picker in colorPickers) picker.SelectedItem = picker.Tag; };
+            reset.Click += delegate { foreach (var picker in colorPickers) picker.Selected = (string)picker.Tag; };
             Controls.Add(reset);
             var lightControls = new List<Control>();
             for (int i = firstLightControl; i < Controls.Count; i++) lightControls.Add(Controls[i]);
@@ -978,7 +1223,7 @@ namespace Krabbz.Blynclight
             foreach (Control control in Controls)
             {
                 // Rounded buttons show the window behind their corners.
-                if (control is TrackBar || control is ModernButton || control is Label || control is CheckBox) control.BackColor = BackColor;
+                if (control is LightsPicture || control is ModernSlider || control is ColorSwatches || control is ModernButton || control is Label || control is CheckBox) control.BackColor = BackColor;
                 if (MutedText.Equals(control.Tag)) control.ForeColor = Theme.Muted;
             }
         }
@@ -992,15 +1237,14 @@ namespace Krabbz.Blynclight
             Controls.Add(new Label { Text = label, AutoSize = true, Location = new Point(24, y) });
             var value = new Label { Text = describe(current), AutoSize = false, TextAlign = ContentAlignment.TopRight, Bounds = new Rectangle(width - 120, y, 100, 22) };
             Controls.Add(value);
-            var slider = new TrackBar
+            var slider = new ModernSlider
             {
                 Minimum = min,
                 Maximum = max,
-                Value = Math.Max(min, Math.Min(max, current)),
-                TickStyle = TickStyle.None,
-                AutoSize = false,
+                Accent = PageColors.Solid(PageColors.Light),
                 Bounds = new Rectangle(18, y + 24, width - 36, 30),
             };
+            slider.Value = Math.Max(min, Math.Min(max, current));
             slider.ValueChanged += delegate
             {
                 value.Text = describe(slider.Value);

@@ -376,7 +376,11 @@ namespace Krabbz.Blynclight
             K2Connected = K2Key.Present();
             // The K2 key's buttons run the macros picked in Settings.
             k2Key = new K2Key();
-            k2Key.Pressed += button => K2Actions.Run(button, this);
+            k2Key.Pressed += button =>
+            {
+                if (K2Pressed != null) K2Pressed(button);
+                K2Actions.Run(button, this);
+            };
             deviceCheck.Tick += delegate { Program.Guard("Device check", CheckDevices); };
             deviceCheck.Start();
             // The window's mutesync tile follows the button's ring.
@@ -460,6 +464,8 @@ namespace Krabbz.Blynclight
         // Whether a K2 macro key is plugged in, for the window's Active Devices; checked every few seconds.
         public bool K2Connected { get; private set; }
         readonly K2Key k2Key;
+        // Raised on the UI thread for each K2 press, so Settings can light that key in its picture.
+        public event Action<K2Key.Button> K2Pressed;
         readonly System.Windows.Forms.Timer deviceCheck = new System.Windows.Forms.Timer { Interval = 3000 };
 
         void CheckDevices()

@@ -104,6 +104,111 @@ namespace Krabbz.Blynclight
             Theme.FillRounded(g, button, 3, Color.FromArgb(34, 34, 40), Color.FromArgb(20, 20, 24));
         }
 
+        // A large Blynclight and Luxafor side by side, glowing in glow (gray or black draws them unlit), for Light
+        // Control.
+        public static void DrawLightsLarge(Graphics g, Rectangle r, Color glow)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            int s = Math.Min(r.Width / 2, r.Height) - 8;
+            int top = r.Y + (r.Height - s) / 2;
+            int gap = (r.Width - 2 * s) / 3;
+            DrawBlynclight(g, new Rectangle(r.X + gap, top, s, s), glow);
+            DrawLuxafor(g, new Rectangle(r.X + 2 * gap + s, top, s, s), glow);
+        }
+
+        // A large Mutesync Button for its Settings page: a rounded pad whose edge glows in the ring's color, with a
+        // dark square button in the middle. ring is null when no button is connected (drawn grey and unlit).
+        public static void DrawMuteSyncLarge(Graphics g, Rectangle r, Color? ring)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            bool on;
+            var lit = Lit(ring ?? Color.Gray, out on);
+            int s = Math.Min(r.Width, r.Height);
+            var pad = new Rectangle(r.X + (r.Width - s) / 2 + s / 10, r.Y + (r.Height - s) / 2 + s / 10, s * 8 / 10, s * 7 / 10);
+            int radius = pad.Width / 5;
+            if (on)
+            {
+                // A soft glow around the pad, like the real ring lighting the desk.
+                var glowArea = Rectangle.Inflate(pad, s / 8, s / 8);
+                using (var path = new GraphicsPath())
+                {
+                    path.AddEllipse(glowArea);
+                    using (var glow = new PathGradientBrush(path))
+                    {
+                        glow.CenterColor = Color.FromArgb(150, lit);
+                        glow.SurroundColors = new[] { Color.FromArgb(0, lit) };
+                        g.FillEllipse(glow, glowArea);
+                    }
+                }
+            }
+            // The dark base under the pad.
+            var dark = Color.FromArgb(36, 36, 42);
+            Theme.FillRounded(g, new Rectangle(pad.X, pad.Y + s / 14, pad.Width, pad.Height), radius, dark, dark);
+            // The pad, lit from the top.
+            using (var path = Theme.Rounded(pad, radius))
+            using (var fill = new LinearGradientBrush(pad, Theme.Mix(lit, Color.White, 0.25), Theme.Mix(lit, Color.Black, 0.15), LinearGradientMode.Vertical))
+                g.FillPath(fill, path);
+            using (var path = Theme.Rounded(pad, radius))
+            using (var edge = new Pen(Theme.Mix(lit, Color.Black, 0.25), 1.5f))
+                g.DrawPath(edge, path);
+            // The button in the middle, with a microphone on it.
+            int size = pad.Width * 9 / 20;
+            var button = new Rectangle(pad.X + (pad.Width - size) / 2, pad.Y + (pad.Height - size) / 2, size, size);
+            using (var path = Theme.Rounded(button, size / 6))
+            using (var fill = new LinearGradientBrush(button, Color.FromArgb(58, 58, 66), Color.FromArgb(24, 24, 28), LinearGradientMode.Vertical))
+                g.FillPath(fill, path);
+            if (Theme.Icons != null)
+                using (var icon = new Font(Theme.Icons.FontFamily, size / 4f, GraphicsUnit.Pixel))
+                    TextRenderer.DrawText(g, "", icon, button, Color.FromArgb(150, 150, 160),
+                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            // A soft shine across the top of the pad.
+            using (var shine = new SolidBrush(Color.FromArgb(on ? 70 : 110, 255, 255, 255)))
+                g.FillEllipse(shine, pad.X + pad.Width / 6, pad.Y + pad.Height / 20, pad.Width * 2 / 3, pad.Height / 6);
+        }
+
+        // A large K2 USBC Key for its Settings page: a clear base with two black keys side by side. A pressed key is
+        // drawn lit in the accent color; connected false draws it greyed out.
+        public static void DrawK2Large(Graphics g, Rectangle r, bool connected, bool leftLit, bool rightLit)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            int s = Math.Min(r.Width, r.Height);
+            var body = new Rectangle(r.X + (r.Width - s) / 2 + s / 12, r.Y + (r.Height - s) / 2 + s * 3 / 10, s * 10 / 12, s * 5 / 10);
+            int radius = s / 12;
+            // The clear acrylic base: pale, with a darker lower edge and the USB-C port.
+            Theme.FillRounded(g, new Rectangle(body.X, body.Y + s / 20, body.Width, body.Height), radius,
+                Color.FromArgb(180, 186, 196), Color.FromArgb(150, 156, 168));
+            using (var path = Theme.Rounded(body, radius))
+            using (var fill = new LinearGradientBrush(body, Color.FromArgb(240, 242, 246), Color.FromArgb(206, 210, 218), LinearGradientMode.Vertical))
+                g.FillPath(fill, path);
+            using (var path = Theme.Rounded(body, radius))
+            using (var edge = new Pen(Color.FromArgb(160, 166, 178), 1.2f))
+                g.DrawPath(edge, path);
+            var port = new Rectangle(body.X + body.Width / 2 - s / 14, body.Bottom - s / 24, s / 7, s / 22);
+            Theme.FillRounded(g, port, port.Height / 2, Color.FromArgb(70, 70, 78), Color.FromArgb(50, 50, 56));
+            // Two keys, standing up from the base.
+            int key = body.Width * 4 / 10, gap = body.Width / 14;
+            int left = body.X + (body.Width - 2 * key - gap) / 2;
+            for (int i = 0; i < 2; i++)
+            {
+                bool pressed = i == 0 ? leftLit : rightLit;
+                var cap = new Rectangle(left + i * (key + gap), body.Y - key / 2 + (pressed ? s / 40 : 0), key, key);
+                if (pressed)
+                    using (var halo = new SolidBrush(Color.FromArgb(90, Theme.Teams))) g.FillEllipse(halo, Rectangle.Inflate(cap, s / 14, s / 14));
+                var top = pressed ? Theme.Mix(Theme.Teams, Color.White, 0.2) : Color.FromArgb(56, 56, 64);
+                var bottom = pressed ? Theme.Teams : Color.FromArgb(20, 20, 24);
+                using (var path = Theme.Rounded(cap, key / 7))
+                using (var fill = new LinearGradientBrush(cap, top, bottom, LinearGradientMode.Vertical))
+                    g.FillPath(fill, path);
+                // The key's dished top.
+                var dish = Rectangle.Inflate(cap, -key / 7, -key / 7);
+                using (var path = Theme.Rounded(dish, key / 10))
+                using (var pen = new Pen(Color.FromArgb(pressed ? 90 : 40, 255, 255, 255), 1.2f))
+                    g.DrawPath(pen, path);
+            }
+            if (!connected)
+                using (var veil = new SolidBrush(Color.FromArgb(130, Theme.Card))) g.FillRectangle(veil, r);
+        }
+
         // Lit color for the drawings, or a soft gray when the lights are off.
         static Color Lit(Color glow, out bool on)
         {
