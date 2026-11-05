@@ -22,7 +22,19 @@ Two MSIs go to `dist\`: `KrabbzDev-BusyLightz2.0-<version>.msi` (installs just f
 | `-Publish` | off | Also publish GitHub release `v<Version>` (the per-user MSI) and `v<Version>-allusers` (the all-users MSI) |
 | `-Notes` | none | Release notes as Markdown list items; the app shows them in its *Updated to version x* card |
 
-## Publish a release
+## Build and release from GitHub (no Windows PC needed)
+
+The workflow `.github/workflows/release.yml` does the same as `build.ps1`, on a Windows machine in the cloud.
+
+1. On GitHub, open **Actions > Build and release > Run workflow**.
+2. Pick the **main** branch, type the version (e.g. `2.32.3`), and optionally release notes (separate items with `\n`).
+3. Leave **Publish** off to build only: the installers are kept as a download on the run page for 14 days, so you can install and test them first. Turn it on to publish the releases, and installed copies then update themselves.
+
+Pushing a tag like `v2.32.3` also builds and publishes it, as long as the tagged commit is already on `main`. Publishing only ever runs from `main`.
+
+It uses WiX 3.14 (already on the runner, downloaded if not) and GitHub's built-in token, so there are no secrets to set up. The first run needs **Settings > Actions > General > Workflow permissions** set to *Read and write* if the repo's default is read-only.
+
+## Publish a release (from your own PC)
 
 ```powershell
 .\build.ps1 -Version 2.8.1 -Publish -Notes "- Fixed this`n- Added that"

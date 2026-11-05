@@ -1,0 +1,103 @@
+# Builds the installers on a Windows machine in the cloud, and can publish them as GitHub releases, which installed
+# copies of the app then pick up through auto update. Same as running build.ps1 on your own PC.
+#
+# Run it from the repo's Actions tab: Build and release > Run workflow. Or push a version tag (e.g. v2.32.3) to
+# build and publish it.
+name: Build and release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, like 2.32.3 (no leading v)"
+        required: true
+      notes:
+        description: "Release notes as Markdown list items; separate items with \\n (shown in the app after updating)"
+        required: false
+      publish:
+        description: "Publish as a GitHub release so installed apps update. Off = build only, installers kept as a download."
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+# One build at a time, so two releases can't race.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # Pinned: this image has WiX 3 and .NET Framework 3.5, which WiX 3 needs.
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Work out the version
+        id: v
+        shell: powershell
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_PUBLISH: ${{ inputs.publish }}
+        run: |
+          if ($env:EVENT -eq 'push') {
+              $version = $env:REF_NAME.TrimStart('v')
+              $publish = 'true'
+              # A tag is only released if its commit is already on main.
+              git merge-base --is-ancestor HEAD origin/main
+              if ($LASTEXITCODE -ne 0) { throw "Tag $($env:REF_NAME) isn't on main. Merge to main first, then tag." }
+          } else {
+              $version = $env:INPUT_VERSION.Trim().TrimStart('v')
+              $publish = $env:INPUT_PUBLISH
+              if ($publish -eq 'true' -and $env:REF -ne 'refs/heads/main') {
+                  throw "Publishing only runs from main. Pick main under 'Use workflow from', or turn Publish off to just build."
+              }
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw "Version must look like 2.32.3, but got '$version'." }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "publish=$publish" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      # build.ps1 looks for WiX in tools\wix. The runner already has it installed; download it if that ever changes.
+      - name: Set up WiX 3.14
+        shell: powershell
+        run: |
+          $installed = "${env:ProgramFiles(x86)}\WiX Toolset v3.14\bin"
+          if (Test-Path "$installed\candle.exe") {
+              Copy-Item $installed tools\wix -Recurse
+          } else {
+              $zip = Join-Path $env:RUNNER_TEMP 'wix314-binaries.zip'
+              Invoke-WebRequest 'https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip' -OutFile $zip
+              Expand-Archive $zip -DestinationPath tools\wix
+          }
+          if (-not (Test-Path tools\wix\candle.exe)) { throw 'WiX 3.14 not found after setup.' }
+
+      - name: Build installers
+        shell: powershell
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+          PUBLISH: ${{ steps.v.outputs.publish }}
+          NOTES: ${{ inputs.notes }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The notes box is one line, so \n in it means a new line.
+          $notes = ($env:NOTES -replace '\\n', "`n").Trim()
+          $buildArgs = @{ Version = $env:VERSION }
+          if ($env:PUBLISH -eq 'true') { $buildArgs.Publish = $true }
+          if ($notes) { $buildArgs.Notes = $notes }
+          .\build.ps1 @buildArgs
+
+      - name: Keep the installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: BusyLightz-${{ steps.v.outputs.version }}
+          path: dist/*.msi
+          retention-days: 14
