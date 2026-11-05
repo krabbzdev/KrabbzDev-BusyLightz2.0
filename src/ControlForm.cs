@@ -1118,7 +1118,7 @@ namespace Krabbz.Blynclight
             }
             else
             {
-                strip.Message = left != null ? "⏱  Back to Teams status in " + left : "Stays on until you change it";
+                strip.Message = left != null ? "⏱  Back to Teams status in " + tray.OverrideTimeLeftInWords : "Stays on until you change it";
                 strip.Link = BackNowLink;
             }
             strip.Invalidate();

@@ -43,7 +43,7 @@ Every style has the same parts:
 | --- | --- |
 | **Status** | What the lights are doing right now, e.g. *Busy*, *Teams: Available*, *On a call (Zoom)*, *Party Mode* or *Light not found*. |
 | **Active Devices** | A tile for each device, lit when plugged in and greyed out when not. See [Active Devices](#active-devices). |
-| **Info line** | While an override is on: how long until it goes back to Teams status, e.g. *Back to Teams status in 12:10*. Click **Back to Teams now** to go back early. Otherwise, a tip about the hotkeys. |
+| **Info line** | While an override is on: how long until it goes back to Teams status, in words, rounded up to the minute, e.g. *Back to Teams status in 12 mins*, *1 hr 5 mins*, or *less than a minute*. (The ring and the tray tooltip keep the exact minutes and seconds.) Click **Back to Teams now** to go back early. Otherwise, a tip about the hotkeys. |
 | **Busy (Alt+R)** (stop sign) | Sets the light red, then back to Follow Teams Status after the [override time](#override-timer). |
 | **Available (Alt+G)** (check mark) | Sets the light green, then back to Follow Teams Status after the override time. |
 | **On a call** (phone) | Flashes red and blue (switching once a second, unless you change it in [Light Control](#light-control)), then back to Follow Teams Status after the override time. Handy for a call the app can't detect, such as a desk phone. |

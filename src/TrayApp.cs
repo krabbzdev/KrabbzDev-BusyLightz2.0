@@ -945,6 +945,22 @@ namespace Krabbz.Blynclight
             }
         }
 
+        // The time left in words for the strip under the modes, rounded up: "15 mins", "1 hr 5 mins", "less than a minute".
+        // Null when no override timer is running. The ring and tooltip keep the exact digits (OverrideTimeLeft).
+        public string OverrideTimeLeftInWords
+        {
+            get
+            {
+                var at = light.ReturnToTeamsAt;
+                if (at == null || !AppSettings.OverrideTimesOut) return null;
+                var left = at.Value - DateTime.UtcNow;
+                if (left.TotalSeconds < 60) return "less than a minute";
+                int mins = (int)Math.Ceiling(left.TotalMinutes), hours = mins / 60, rest = mins % 60;
+                if (hours == 0) return mins + (mins == 1 ? " min" : " mins");
+                return hours + (hours == 1 ? " hr" : " hrs") + (rest > 0 ? " " + rest + (rest == 1 ? " min" : " mins") : "");
+            }
+        }
+
         // e.g. "Back to Teams status in 14:52", or null when no override timer is running.
         public string OverrideCountdown
         {
