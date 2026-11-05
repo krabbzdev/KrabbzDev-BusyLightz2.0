@@ -34,8 +34,13 @@ Start a call, then open **Settings > Test microphone...**. It shows live what Wi
 ## Follow Teams Status doesn't follow my Teams status
 
 - Are you connected? Tray menu > **Connect to Microsoft Teams** should be checked.
+- Is **Disable Teams Integration** ticked (tray menu, or Settings > Microsoft Teams)? Then the app leaves Teams alone and says *Teams integration disabled*. Untick it.
 - Changes can take up to 20 seconds to show.
 - Did you pick Busy or Available since? Those override Teams until the override time runs out. Click **Follow Teams Status** to go back now.
+
+## "Not connected to Microsoft Teams" notification
+
+The app shows this when the light goes back to **Follow Teams Status** but there's no Teams sign-in and no Embrava Connect to show your status. Connect to Teams (tray menu > **Connect to Microsoft Teams**, or the [Setup Checklist](Setup-Checklist.md) if your organization's Teams app isn't set up yet). If you don't use Teams, tick **Disable Teams Integration** and it stops.
 
 ## "Connect to Microsoft Teams" fails
 

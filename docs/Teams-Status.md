@@ -56,9 +56,22 @@ With **Set my Teams status message while my lights are red** on in [Settings](Us
 - **If the app or PC stops,** Microsoft removes the message on its own within an hour. The app renews it every 30 minutes while the lights stay red.
 - It needs Teams connected (above). It uses the same sign-in and permission, so there's nothing extra to approve.
 
+## Turning Teams off
+
+To stop BusyLightz talking to Teams without signing out, tick **Disable Teams Integration** in the tray menu, or in **Settings > Microsoft Teams**.
+
+- The app stops reading your Teams status, setting **Busy** during other calls, and setting a status message. Anything it had set is put back, and your own status message returns.
+- Your lights and call detection keep working. Follow Teams Status shows *Teams integration disabled* instead of a status.
+- Your Teams sign-in is kept, so unticking it picks up again within a few seconds.
+- It's remembered after a restart.
+
+The lights have the matching switch: **Disable USB Light Integration** (see [Using the Light](Using-the-Light.md#the-tray-menu-right-click-the-tray-icon)).
+
 ## Without connecting to Teams
 
 You can still use the light without connecting. **Follow Teams Status** then hands the light to **Embrava Connect**, if it's installed, which shows your Teams status its own way. Embrava Connect only drives Blynclights, so any Luxafor lights keep their last color in this mode. Once you're connected, Embrava Connect isn't needed. Quit and uninstall it so the two apps don't fight over the light (the [Setup Checklist](Setup-Checklist.md) helps).
+
+If you go back to **Follow Teams Status** without being connected, and Embrava Connect isn't installed either, the app shows a notification: *"Not connected to Microsoft Teams, so your Teams status isn't showing on the light."* It says what to do next: open the Setup Checklist if your organization's Teams app isn't set up yet, or use **Connect to Microsoft Teams** in the tray menu.
 
 ---
 [Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
