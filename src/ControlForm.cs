@@ -523,12 +523,16 @@ namespace Krabbz.Blynclight
             // Centered under the ring. Sized from a template of zeros, so it doesn't shift as the digits tick.
             var labelSize = TextRenderer.MeasureText(g, "Time since last reboot", UptimeLabelFont, Size.Empty, TextFormatFlags.NoPadding);
             var size = TextRenderer.MeasureText(g, System.Text.RegularExpressions.Regex.Replace(value, "[0-9]", "0"), UptimeFont, Size.Empty, TextFormatFlags.NoPadding);
-            int top = Height - 44;
+            int top = Height - 60;
+            // The same time in plain words, under the clock and refreshed every repaint, e.g. "32 mins ago".
+            string words = AgoInWords(up);
+            var wordsSize = TextRenderer.MeasureText(g, words, UptimeLabelFont, Size.Empty, TextFormatFlags.NoPadding);
             TextRenderer.DrawText(g, "Time since last reboot", UptimeLabelFont, new Point((Width - labelSize.Width) / 2, top), overADay ? text : soft, TextFormatFlags.NoPadding);
             if (!overADay)
             {
                 TextRenderer.DrawText(g, value, UptimeFont, new Rectangle((Width - size.Width) / 2 - 4, top + 17, size.Width + 8, size.Height), text,
                     TextFormatFlags.NoPadding | TextFormatFlags.HorizontalCenter);
+                TextRenderer.DrawText(g, words, UptimeLabelFont, new Point((Width - wordsSize.Width) / 2, top + 17 + size.Height + 2), soft, TextFormatFlags.NoPadding);
                 return;
             }
             // Over a day: a red pill with a sad face.
@@ -539,6 +543,17 @@ namespace Krabbz.Blynclight
             Theme.FillRounded(g, pill, pill.Height / 2, Color.FromArgb(200, 18, 24), Color.FromArgb(255, 220, 220));
             TextRenderer.DrawText(g, Sad, SadFont, new Point(pill.X + 8, pill.Y + (pill.Height - face.Height) / 2), Color.White, TextFormatFlags.NoPadding);
             TextRenderer.DrawText(g, value, UptimeFont, new Point(pill.X + 8 + face.Width + 4, pill.Y + (pill.Height - size.Height) / 2), Color.White, TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, words, UptimeLabelFont, new Point((Width - wordsSize.Width) / 2, pill.Bottom + 3), text, TextFormatFlags.NoPadding);
+        }
+
+        // "Just now", "1 min ago", "32 mins ago", "1 hr 12 mins ago", "1 day 3 hrs ago". Only the two biggest units.
+        static string AgoInWords(TimeSpan span)
+        {
+            int days = (int)span.TotalDays, hours = span.Hours, minutes = span.Minutes;
+            if (days > 0) return days + (days == 1 ? " day" : " days") + (hours > 0 ? " " + hours + (hours == 1 ? " hr" : " hrs") : "") + " ago";
+            if (span.TotalHours >= 1) return (int)span.TotalHours + (hours == 1 ? " hr" : " hrs") + (minutes > 0 ? " " + minutes + (minutes == 1 ? " min" : " mins") : "") + " ago";
+            if (minutes == 0) return "Just now";
+            return minutes + (minutes == 1 ? " min" : " mins") + " ago";
         }
 
 
@@ -848,7 +863,7 @@ namespace Krabbz.Blynclight
             }
             else if (style == WindowStyles.Orbit)
             {
-                ring = new OrbitRing { Bounds = new Rectangle(0, 0, WindowWidth, 280) };
+                ring = new OrbitRing { Bounds = new Rectangle(0, 0, WindowWidth, 296) };
                 ring.SettingsClicked += delegate { tray.ShowSettings(); };
                 Controls.Add(ring);
                 y = ring.Bottom + 12;
