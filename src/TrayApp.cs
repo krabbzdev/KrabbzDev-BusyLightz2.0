@@ -1119,8 +1119,11 @@ namespace Krabbz.Blynclight
                 {
                     messages.BeginInvoke((Action)delegate
                     {
-                        tray.ShowBalloonTip(5000, Program.AppName,
-                            "Embrava Connect isn't installed, so nothing is showing your Teams status on the light.", ToolTipIcon.Warning);
+                        // Not signed in to Teams here, and no Embrava Connect to fall back on: say what to do.
+                        tray.ShowBalloonTip(5000, Program.AppName, presence == null
+                            ? "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Open Setup checklist from the tray menu to set it up."
+                            : "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Use Connect to Microsoft Teams in the tray menu.",
+                            ToolTipIcon.Warning);
                     });
                 }
                 catch (InvalidOperationException) { } // Window already gone during exit.
