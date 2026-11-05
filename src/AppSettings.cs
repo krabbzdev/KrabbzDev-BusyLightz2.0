@@ -148,6 +148,8 @@ namespace Krabbz.Blynclight
 
         // Leaves USB lights alone, for Teams status and call detection only. Off unless changed.
         public static bool UsbLightsDisabled { get { return Get("UsbLightsDisabled", false); } set { Set("UsbLightsDisabled", value); } }
+        // Leaves Microsoft Teams alone: no status reading, no Busy during calls, no status message. Off unless changed.
+        public static bool TeamsDisabled { get { return Get("TeamsDisabled", false); } set { Set("TeamsDisabled", value); } }
         // Use a plugged-in mutesync button to mute and unmute the mic (see MuteSyncButton).
         public static bool MuteSyncEnabled { get { return Get("MuteSyncEnabled"); } set { Set("MuteSyncEnabled", value); } }
         // Its ring: the color while muted and while live (names from BlyncDevice.ColorNames), brightness in percent

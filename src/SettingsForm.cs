@@ -119,6 +119,10 @@ namespace Krabbz.Blynclight
 
             StartPage("Microsoft Teams", TeamsGlyph, PageColors.Teams, "Follow your Teams status, and keep Teams in step with your lights.");
             Heading(null, null);
+            // The same setting as Disable Teams Integration in the tray menu.
+            var teamsOff = DisableSwitch("Disable Teams Integration", AppSettings.TeamsDisabled,
+                v => tray.SetTeamsDisabled(v),
+                "BusyLightz stops reading your Teams status and setting Busy or a status message. Your lights and call detection keep working, and your sign-in is kept.");
             teamsStatus.Location = new Point(24, y + 6);
             Add(teamsStatus);
             connectButton.Bounds = new Rectangle(350, y, 130, 32);
@@ -137,6 +141,8 @@ namespace Krabbz.Blynclight
             Info(orgApp, "Connect signs in with your work account so your lights follow your Teams status. " +
                 "Your IT admin sets up your organization's Teams app once; this is where its details go.");
             y += 32 + RowGap;
+            // Only the options below are greyed out while integration is off; Connect and the org app stay usable.
+            int firstTeamsControl = page.Controls.Count;
             Box("Match my Teams status when I pick Busy, Available or On a call", AppSettings.TeamsBusyWhenPicked,
                 v => { AppSettings.TeamsBusyWhenPicked = v; tray.ApplySettings(); },
                 help: "When you pick Busy, Available or On a call in BusyLightz, your Teams status changes to match.");
@@ -146,6 +152,7 @@ namespace Krabbz.Blynclight
             var message = StatusMessagePicker(24 + 46);
             messageOn.CheckedChanged += delegate { message.Enabled = messageOn.Checked; };
             message.Enabled = messageOn.Checked;
+            GreyOutWhile(teamsOff, firstTeamsControl);
             EndPage();
 
             StartPage("Mutesync Button", MuteSyncGlyph, PageColors.MuteSync, "Mute and unmute your mic with one press, with a ring that shows which.");
