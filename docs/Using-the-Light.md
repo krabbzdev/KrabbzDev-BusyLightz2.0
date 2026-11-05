@@ -33,7 +33,7 @@ Pick how the window looks under **Window style** in [Settings](#settings). Each 
 
 | Style | Looks like |
 | --- | --- |
-| **Orbit** (the default) | The top of the window glows in your status color, with a big ring showing the status and its icon, e.g. ✓ *Available* over *From Teams Status*. Two faint orbits circle the ring, each with a small dot that drifts slowly around it. During an override the ring is a countdown: it empties as the time left runs out. Under the ring, **Time since last reboot** is a running clock in hours, to the millisecond (e.g. *34:08:49.234*); after 24 hours it turns into a red pill with a ☹. (Windows' Fast Startup keeps the clock running through a shut down; only a restart resets it.) The modes are one pill-shaped switcher below. |
+| **Orbit** (the default) | The top of the window glows in your status color, with a big ring showing the status and its icon, e.g. ✓ *Available* over *From Teams Status*. Two faint orbits circle the ring, each with a small dot that drifts slowly around it. During an override the ring is a countdown: it empties as the time left runs out. Under the ring, **Time since last reboot** is a running clock in hours, to the millisecond (e.g. *34:08:49.234*), with the same time in words underneath that updates as the minutes pass (*Just now*, *1 min ago*, *32 mins ago*, *1 hr 12 mins ago*, *1 day 3 hrs ago*); after 24 hours it turns into a red pill with a ☹. (Windows' Fast Startup keeps the clock running through a shut down; only a restart resets it.) The modes are one pill-shaped switcher below. |
 | **Color block** | The top of the window fills with your status color, with the status in large text. The modes are four tiles below. |
 | **Fluent list** | A status card, with the modes as a list like Windows Settings, hotkeys on the right. |
 
@@ -43,7 +43,7 @@ Every style has the same parts:
 | --- | --- |
 | **Status** | What the lights are doing right now, e.g. *Busy*, *Teams: Available*, *On a call (Zoom)*, *Party Mode* or *Light not found*. |
 | **Active Devices** | A tile for each device, lit when plugged in and greyed out when not. See [Active Devices](#active-devices). |
-| **Info line** | While an override is on: how long until it goes back to Teams status, e.g. *Back to Teams status in 12:10*. Click **Back to Teams now** to go back early. Otherwise, a tip about the hotkeys. |
+| **Info line** | While an override is on: how long until it goes back to Teams status, in words, rounded up to the minute, e.g. *Back to Teams status in 12 mins*, *1 hr 5 mins*, or *less than a minute*. (The ring and the tray tooltip keep the exact minutes and seconds.) Click **Back to Teams now** to go back early. Otherwise, a tip about the hotkeys. |
 | **Busy (Alt+R)** (stop sign) | Sets the light red, then back to Follow Teams Status after the [override time](#override-timer). |
 | **Available (Alt+G)** (check mark) | Sets the light green, then back to Follow Teams Status after the override time. |
 | **On a call** (phone) | Flashes red and blue (switching once a second, unless you change it in [Light Control](#light-control)), then back to Follow Teams Status after the override time. Handy for a call the app can't detect, such as a desk phone. |
@@ -78,6 +78,7 @@ Each mode has a dot in its color, with a ring around the one that's on. The menu
 | **Follow Teams Status** | Light follows Teams. |
 | **Connect to Microsoft Teams** | Sign in so the app can read your Teams status (checked when connected; click again to disconnect). |
 | **Disable USB Light Integration** | When checked, the app turns your USB lights off and stops controlling them. Teams status, call detection and the Teams status message keep working. Handy on a PC without a busy light, or when another app runs the light. Click again to turn the lights back on. Remembered after a restart. The same setting as **Disable All Light Functions** in [Light Control](#light-control). |
+| **Disable Teams Integration** | When checked, the app leaves Microsoft Teams alone: it stops reading your Teams status, setting Busy during other calls and setting a status message, and puts back your own status. Your lights and call detection keep working, and your Teams sign-in is kept. Click again to turn it back on. Remembered after a restart. The same setting as **Disable Teams Integration** in [Settings > Microsoft Teams](#microsoft-teams). |
 | **Settings...** | Opens [Settings](#settings). |
 | **Setup checklist...** | Opens the [Setup Checklist](Setup-Checklist.md). |
 | **Check for updates** | Looks for a newer version now. |
@@ -145,6 +146,7 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 
 | Setting | What it does |
 | --- | --- |
+| **Disable Teams Integration** | Stops all syncing with Teams: reading your status, setting Busy during calls and the status message. The lights and call detection keep working, and your sign-in is kept. The options below are greyed out while it's on. The same setting as **Disable Teams Integration** in the tray menu. See [Teams Status](Teams-Status.md#turning-teams-off). |
 | **Connect** / **Disconnect** | Shows who you're connected as. **Organization's Teams app...** is for [organization setup](Setting-Up-Teams-for-Your-Organization.md). |
 | **Match my Teams status when I pick Busy, Available or On a call** | See [Teams Status](Teams-Status.md#teams-matches-what-you-pick). |
 | **Set my Teams status message while my lights are red** | On by default, showing *On a video call*. Pick another message, or **Custom message...** to type your own. See [Teams Status](Teams-Status.md#status-message-while-your-lights-are-red). |

@@ -323,7 +323,7 @@ namespace Krabbz.Blynclight
         MicApp callApp;
         // Reads Teams status and sets Teams to Busy during non-Teams calls; null when no Teams app is configured.
         TeamsPresence presence;
-        ToolStripMenuItem presenceItem, usbItem;
+        ToolStripMenuItem presenceItem, usbItem, teamsOffItem;
         readonly System.Threading.Timer teamsPoll;
         // Last Teams availability read while signed in (e.g. "Available"), or null.
         string teamsAvailability;
@@ -380,6 +380,14 @@ namespace Krabbz.Blynclight
             };
             menu.Items.Add(usbItem);
             menuRenderer.Glyph(usbItem, UsbGlyph);
+            // Ticked while the app leaves Microsoft Teams alone (the lights and call detection keep working).
+            teamsOffItem = new ToolStripMenuItem("Disable Teams Integration", null, delegate { SetTeamsDisabled(!AppSettings.TeamsDisabled); })
+            {
+                Checked = AppSettings.TeamsDisabled,
+                ToolTipText = "Stops reading your Teams status and setting Busy or a status message. The lights and call detection keep working.",
+            };
+            menu.Items.Add(teamsOffItem);
+            menuRenderer.Glyph(teamsOffItem, TeamsGlyph);
             menu.Items.Add(new ToolStripSeparator());
             AddItem(menu, "Settings...", SettingsGlyph, delegate { ShowSettings(); });
             AddItem(menu, "Setup checklist...", ChecklistGlyph, delegate { ShowSetup(); });
@@ -618,7 +626,7 @@ namespace Krabbz.Blynclight
             bool wasOverriding = light.OverrideActive;
             muteButton.OnCall = app != null;
             // Teams already shows its own calls as Busy; other apps need presence set.
-            if (presence != null)
+            if (presence != null && !AppSettings.TeamsDisabled)
             {
                 if (app != null && !app.IsTeams && AppSettings.TeamsBusyOnCalls) presence.CallStarted();
                 else presence.CallEnded();
@@ -937,6 +945,22 @@ namespace Krabbz.Blynclight
             }
         }
 
+        // The time left in words for the strip under the modes, rounded up: "15 mins", "1 hr 5 mins", "less than a minute".
+        // Null when no override timer is running. The ring and tooltip keep the exact digits (OverrideTimeLeft).
+        public string OverrideTimeLeftInWords
+        {
+            get
+            {
+                var at = light.ReturnToTeamsAt;
+                if (at == null || !AppSettings.OverrideTimesOut) return null;
+                var left = at.Value - DateTime.UtcNow;
+                if (left.TotalSeconds < 60) return "less than a minute";
+                int mins = (int)Math.Ceiling(left.TotalMinutes), hours = mins / 60, rest = mins % 60;
+                if (hours == 0) return mins + (mins == 1 ? " min" : " mins");
+                return hours + (hours == 1 ? " hr" : " hrs") + (rest > 0 ? " " + rest + (rest == 1 ? " min" : " mins") : "");
+            }
+        }
+
         // e.g. "Back to Teams status in 14:52", or null when no override timer is running.
         public string OverrideCountdown
         {
@@ -1044,7 +1068,7 @@ namespace Krabbz.Blynclight
         // Reads Teams presence and colors the light from it, when signed in and following Teams status.
         void PollTeams()
         {
-            if (presence == null || !presence.SignedIn || light.State != LightState.FollowTeams) return;
+            if (presence == null || !presence.SignedIn || light.State != LightState.FollowTeams || AppSettings.TeamsDisabled) return;
             string availability = presence.ReadAvailability();
             if (availability == null) return;
 
@@ -1095,6 +1119,7 @@ namespace Krabbz.Blynclight
         // (restarted so it repaints from current Teams/Calendar presence).
         void HandBackToTeams()
         {
+            if (AppSettings.TeamsDisabled) return;
             if (presence != null && presence.SignedIn)
             {
                 Program.Background("Teams status check", delegate { PollTeams(); });
@@ -1110,8 +1135,11 @@ namespace Krabbz.Blynclight
                 {
                     messages.BeginInvoke((Action)delegate
                     {
-                        tray.ShowBalloonTip(5000, Program.AppName,
-                            "Embrava Connect isn't installed, so nothing is showing your Teams status on the light.", ToolTipIcon.Warning);
+                        // Not signed in to Teams here, and no Embrava Connect to fall back on: say what to do.
+                        tray.ShowBalloonTip(5000, Program.AppName, presence == null
+                            ? "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Open Setup checklist from the tray menu to set it up."
+                            : "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Use Connect to Microsoft Teams in the tray menu.",
+                            ToolTipIcon.Warning);
                     });
                 }
                 catch (InvalidOperationException) { } // Window already gone during exit.
@@ -1143,6 +1171,13 @@ namespace Krabbz.Blynclight
         void UpdateTeamsMessage()
         {
             if (presence == null) return;
+            if (AppSettings.TeamsDisabled)
+            {
+                // Puts back the user's own Teams status message and status, then leaves Teams alone.
+                presence.ShowStatusMessage(null);
+                presence.ShowPresence(null);
+                return;
+            }
             bool picked = light.State == LightState.Red || light.State == LightState.CallFlash;
             bool red = picked || callApp != null;
             presence.ShowStatusMessage(red && AppSettings.TeamsStatusMessageOn ? AppSettings.TeamsStatusMessage : null);
@@ -1174,6 +1209,29 @@ namespace Krabbz.Blynclight
                 : "USB lights turned back on.", ToolTipIcon.Info);
         }
 
+        // Disable Teams Integration in the tray menu, also in Settings > Microsoft Teams. Your sign-in is kept.
+        public void SetTeamsDisabled(bool disable)
+        {
+            if (disable == AppSettings.TeamsDisabled) return;
+            AppSettings.TeamsDisabled = disable;
+            teamsOffItem.Checked = disable;
+            if (disable)
+            {
+                if (presence != null) presence.CallEnded(); // Clears the Busy this app set for a non-Teams call.
+                teamsAvailability = null;
+                light.SetTeamsColor(null);
+            }
+            else
+            {
+                calls.Recheck(); // Sets Busy again if a call is already in progress.
+                Program.Background("Teams status check", delegate { PollTeams(); });
+            }
+            Refresh();
+            ShowBalloon(disable
+                ? "Teams integration turned off. Your lights and call detection keep working."
+                : "Teams integration turned back on.", ToolTipIcon.Info);
+        }
+
         // No light plugged in, while the app is meant to be controlling lights.
         bool NoLight { get { return light.LightsEnabled && light.LightCount == 0; } }
 
@@ -1183,6 +1241,7 @@ namespace Krabbz.Blynclight
             {
                 if (NoLight) return "Light not found";
                 if (light.OverrideActive) return callApp == null ? "Testing the light" : "On a call (" + callApp.Name + ")";
+                if (light.State == LightState.FollowTeams && AppSettings.TeamsDisabled) return "Teams integration disabled";
                 if (light.State == LightState.FollowTeams && teamsAvailability != null) return "Teams: " + DescribeAvailability(teamsAvailability);
                 return LightState.Describe(State);
             }
