@@ -66,6 +66,17 @@ namespace Krabbz.Blynclight
         public static readonly string[] TeamsStatusMessageChoices =
             { "On a video call", "In a meeting", "On a phone call", "Heads down, please message me", "Back in a few minutes" };
         public const int TeamsStatusMessageMaxLength = 280;
+        // Added to the end of every status message sent to Teams, so people know not to expect a quick answer.
+        public const string TeamsStatusMessageSuffix = " - responses may be delayed";
+        // The message as Teams gets it: the chosen text plus the suffix, cut short if needed to fit Teams' limit.
+        public static string WithDelayNote(string message)
+        {
+            message = (message ?? "").Trim();
+            if (message.EndsWith(TeamsStatusMessageSuffix.Trim(), StringComparison.OrdinalIgnoreCase)) return message;
+            int room = TeamsStatusMessageMaxLength - TeamsStatusMessageSuffix.Length;
+            if (message.Length > room) message = message.Substring(0, room).TrimEnd();
+            return message + TeamsStatusMessageSuffix;
+        }
         public static bool TeamsStatusMessageOn { get { return Get("TeamsStatusMessageOn"); } set { Set("TeamsStatusMessageOn", value); } }
         // How the main window is laid out: one of WindowStyles. Orbit unless changed.
         public static string WindowStyle
