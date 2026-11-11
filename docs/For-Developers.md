@@ -22,6 +22,16 @@ Two MSIs go to `dist\`: `KrabbzDev-BusyLightz2.0-<version>.msi` (installs just f
 | `-Publish` | off | Also publish GitHub release `v<Version>` (the per-user MSI) and `v<Version>-allusers` (the all-users MSI) |
 | `-Notes` | none | Release notes as Markdown list items; the app shows them in its *Updated to version x* card |
 
+## Automatic releases
+
+Merging a pull request into `main` releases it by itself. The workflow `.github/workflows/release.yml` builds the installers, takes the next patch version after the newest release (2.33.1 becomes 2.33.2), publishes both releases, and uses the titles of the merged pull requests as the release notes, which the app shows after updating. Installed copies then update within hours. So the title of a pull request is what users read, and a change isn't merged until it's ready to go to everyone.
+
+- **Bigger version bumps:** put `[minor]` in the pull request title (2.33.1 becomes 2.34.0). For a major version, run the workflow by hand.
+- **Changes that only touch `docs/`, Markdown files or `.github/`** don't release.
+- **Stop one release:** put `[skip release]` in the pull request title.
+- **Stop them all:** on GitHub, go to Settings > Secrets and variables > Actions > Variables, and add a variable named `AUTO_RELEASE` with the value `false`. Delete it, or set it to anything else, to switch automatic releases back on.
+- A release only goes out if the build succeeds. If it fails, nothing is published and the run is marked red on the Actions page.
+
 ## Build and release from GitHub (no Windows PC needed)
 
 The workflow `.github/workflows/release.yml` does the same as `build.ps1`, on a Windows machine in the cloud.
