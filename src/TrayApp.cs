@@ -1180,7 +1180,7 @@ namespace Krabbz.Blynclight
             }
             bool picked = light.State == LightState.Red || light.State == LightState.CallFlash;
             bool red = picked || callApp != null;
-            presence.ShowStatusMessage(red && AppSettings.TeamsStatusMessageOn ? AppSettings.TeamsStatusMessage : null);
+            presence.ShowStatusMessage(red && AppSettings.TeamsStatusMessageOn ? AppSettings.WithDelayNote(AppSettings.TeamsStatusMessage) : null);
             string status = null;
             if (AppSettings.TeamsBusyWhenPicked)
             {
