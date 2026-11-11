@@ -45,8 +45,8 @@ namespace Krabbz.Blynclight
         }
         public static bool FlashOnCalls { get { return Get("FlashOnCalls"); } set { Set("FlashOnCalls", value); } }
         public static bool TeamsBusyOnCalls { get { return Get("TeamsBusyOnCalls"); } set { Set("TeamsBusyOnCalls", value); } }
-        // Show Do Not Disturb in Teams wherever the app would have shown Busy. Off unless changed.
-        public static bool TeamsDoNotDisturb { get { return Get("TeamsDoNotDisturb", false); } set { Set("TeamsDoNotDisturb", value); } }
+        // Show Do Not Disturb in Teams wherever the app would have shown Busy. On unless changed.
+        public static bool TeamsDoNotDisturb { get { return Get("TeamsDoNotDisturb"); } set { Set("TeamsDoNotDisturb", value); } }
         public static bool TeamsBusyWhenPicked { get { return Get("TeamsBusyWhenPicked"); } set { Set("TeamsBusyWhenPicked", value); } }
         public static bool StartWithWindows { get { return Get("StartWithWindows"); } set { Set("StartWithWindows", value); ApplyStartup(); } }
         public static bool OpenWindowAtSignIn { get { return Get("OpenWindowAtSignIn"); } set { Set("OpenWindowAtSignIn", value); ApplyStartup(); } }
