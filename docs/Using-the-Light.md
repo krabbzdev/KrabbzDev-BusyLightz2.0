@@ -148,6 +148,7 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 | --- | --- |
 | **Disable Teams Integration** | Stops all syncing with Teams: reading your status, setting Busy during calls and the status message. The lights and call detection keep working, and your sign-in is kept. The options below are greyed out while it's on. The same setting as **Disable Teams Integration** in the tray menu. See [Teams Status](Teams-Status.md#turning-teams-off). |
 | **Connect** / **Disconnect** | Shows who you're connected as. **Organization's Teams app...** is for [organization setup](Setting-Up-Teams-for-Your-Organization.md). |
+| **Use Do Not Disturb instead of Busy** | Off by default. Shows *Do not disturb* in Teams wherever the app would have shown *Busy*: when you pick Busy or On a call, and during calls in other apps. Do Not Disturb also silences Teams notifications, except from your priority contacts. See [Teams Status](Teams-Status.md#teams-matches-what-you-pick). |
 | **Match my Teams status when I pick Busy, Available or On a call** | See [Teams Status](Teams-Status.md#teams-matches-what-you-pick). |
 | **Set my Teams status message while my lights are red** | On by default, showing *On a video call*. Pick another message, or **Custom message...** to type your own. See [Teams Status](Teams-Status.md#status-message-while-your-lights-are-red). |
 

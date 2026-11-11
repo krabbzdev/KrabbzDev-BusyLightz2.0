@@ -43,6 +43,7 @@ While you're connected, when another app uses your microphone (a Cytracom phone 
 While you're connected, picking **Busy** or **On a call** (in the window, the tray menu or with Alt+R) also sets your Teams status to **Busy**, and picking **Available** (Alt+G) sets it to **Available**, just as if you'd picked them in Teams. Available wins even if a meeting on your calendar would otherwise show you as Busy, but not while the app sees you on a call. Going back to **Follow Teams Status**, or picking Party Mode or Disable Lights, puts Teams back to automatic. So does the [override timer](Using-the-Light.md#override-timer) running out.
 
 - On by default. Turn it off with **Match my Teams status when I pick Busy, Available or On a call** in [Settings](Using-the-Light.md#settings).
+- **Do Not Disturb instead of Busy:** tick **Use Do Not Disturb instead of Busy** in Settings > Microsoft Teams and the app sets *Do not disturb* wherever it would have set *Busy*: when you pick Busy or On a call, and during calls in other apps. It's off by default, because Do Not Disturb also silences Teams notifications, except from your priority contacts. Your own Teams calls still show *In a call*.
 - If the app or PC stops, Teams goes back to automatic on its own within an hour. The app renews the status every 30 minutes while you stay on it.
 - If you'd picked a status in Teams yourself (say, Do not disturb), it's reset to automatic afterwards.
 
