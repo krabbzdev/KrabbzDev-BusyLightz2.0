@@ -146,6 +146,9 @@ namespace Krabbz.Blynclight
             Box("Match my Teams status when I pick Busy, Available or On a call", AppSettings.TeamsBusyWhenPicked,
                 v => { AppSettings.TeamsBusyWhenPicked = v; tray.ApplySettings(); },
                 help: "When you pick Busy, Available or On a call in BusyLightz, your Teams status changes to match.");
+            Box("Use Do Not Disturb instead of Busy", AppSettings.TeamsDoNotDisturb,
+                v => { AppSettings.TeamsDoNotDisturb = v; tray.ApplySettings(); },
+                help: "On by default. Shows Do Not Disturb in Teams, instead of Busy, when you pick Busy or On a call and during calls in other apps. Untick it to show Busy again. Do Not Disturb also silences Teams notifications, except from your priority contacts.");
             var messageOn = Box("Set my Teams status message while my lights are red:",
                 AppSettings.TeamsStatusMessageOn, v => { AppSettings.TeamsStatusMessageOn = v; tray.ApplySettings(); },
                 help: "Shows a status message in Teams while your lights are red, so people know you're busy. It's cleared when your lights change back.");
