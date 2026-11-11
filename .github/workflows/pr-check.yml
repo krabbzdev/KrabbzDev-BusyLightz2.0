@@ -1,0 +1,44 @@
+# Compiles the app on a Windows machine in the cloud for every pull request into main, so a change that doesn't build
+# can't be merged. It builds only: nothing is published. See "Pull request check and auto-merge" in
+# docs/For-Developers.md for turning on auto-merge.
+name: Build check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+# A newer push to the same pull request replaces the run that's still going.
+concurrency:
+  group: build-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    name: Compile the app
+    # Pinned: this image has WiX 3 and .NET Framework 3.5, which WiX 3 needs.
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      # build.ps1 looks for WiX in tools\wix. The runner already has it installed; download it if that ever changes.
+      - name: Set up WiX 3.14
+        shell: powershell
+        run: |
+          $installed = "${env:ProgramFiles(x86)}\WiX Toolset v3.14\bin"
+          if (Test-Path "$installed\candle.exe") {
+              Copy-Item $installed tools\wix -Recurse
+          } else {
+              $zip = Join-Path $env:RUNNER_TEMP 'wix314-binaries.zip'
+              Invoke-WebRequest 'https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip' -OutFile $zip
+              Expand-Archive $zip -DestinationPath tools\wix
+          }
+          if (-not (Test-Path tools\wix\candle.exe)) { throw 'WiX 3.14 not found after setup.' }
+
+      # Compiles the app and builds both installers, the same as a release, but publishes nothing.
+      - name: Build
+        shell: powershell
+        run: .\build.ps1 -Version 0.0.1

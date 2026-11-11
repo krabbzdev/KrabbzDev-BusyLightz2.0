@@ -22,6 +22,17 @@ Two MSIs go to `dist\`: `KrabbzDev-BusyLightz2.0-<version>.msi` (installs just f
 | `-Publish` | off | Also publish GitHub release `v<Version>` (the per-user MSI) and `v<Version>-allusers` (the all-users MSI) |
 | `-Notes` | none | Release notes as Markdown list items; the app shows them in its *Updated to version x* card |
 
+## Pull request check and auto-merge
+
+Every pull request into `main` is compiled by the workflow `.github/workflows/pr-check.yml` (check name: **Compile the app**), on a Windows machine in the cloud. It takes about a minute and builds only; nothing is published. A pull request that doesn't compile shows a red cross.
+
+To have GitHub merge a pull request by itself once that check is green, switch on these two settings (repo admin only, once):
+
+1. **Settings > General**: tick **Allow auto-merge**.
+2. **Settings > Branches > Add branch ruleset** (or *Add classic branch protection rule*) for `main`: tick **Require status checks to pass** and add **Compile the app**.
+
+Then press **Enable auto-merge** on a pull request. It merges when the check passes, and never if it fails. Without the required check in step 2, auto-merge has nothing to wait for and merges at once. Merging doesn't release anything: publish from **Actions > Build and release > Run workflow** when you want to.
+
 ## Build and release from GitHub (no Windows PC needed)
 
 The workflow `.github/workflows/release.yml` does the same as `build.ps1`, on a Windows machine in the cloud.
