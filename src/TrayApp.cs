@@ -1187,9 +1187,10 @@ namespace Krabbz.Blynclight
                 if (picked) status = "Busy";
                 else if (light.State == LightState.Green && callApp == null) status = "Available";
             }
-            // Do Not Disturb takes the place of Busy: when you pick Busy or On a call, and during other apps' calls.
-            if (AppSettings.TeamsDoNotDisturb && (status == "Busy"
-                || (callApp != null && !callApp.IsTeams && AppSettings.TeamsBusyOnCalls && status != "Available")))
+            // Do Not Disturb takes the place of Busy: when you pick Busy or On a call, and during any call: Teams' own
+            // (which would otherwise show In a call) and other apps' (when "Show me as Busy during calls" is on).
+            bool inCall = callApp != null && (callApp.IsTeams || AppSettings.TeamsBusyOnCalls);
+            if (AppSettings.TeamsDoNotDisturb && (status == "Busy" || inCall))
                 status = "DoNotDisturb";
             presence.ShowPresence(status);
         }
