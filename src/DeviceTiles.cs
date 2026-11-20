@@ -28,7 +28,7 @@ namespace Krabbz.Blynclight
                 new GridDevice(blynclights > 1 ? blynclights + " Blynclights" : "Blynclight", blynclights > 0, r => DrawBlynclight(g, r, blynclights > 0 ? glow : Color.Gray)),
                 new GridDevice(luxafors > 1 ? luxafors + " Luxafors" : "Luxafor", luxafors > 0, r => DrawLuxafor(g, r, luxafors > 0 ? glow : Color.Gray)),
                 new GridDevice("MuteSync", ring.HasValue, r => DrawMuteSync(g, r, ring ?? Color.Gray)),
-                new GridDevice("K2 USBC Key", k2, r => DrawK2(g, r)),
+                new GridDevice("K2 Key", k2, r => DrawK2(g, r)),
                 // The Microsoft 365 connections: Teams (your status) and the calendar (meeting alerts and the schedule).
                 new GridDevice("Teams", teams, r => DrawTeams(g, r)) { Status = teamsText },
                 new GridDevice("Calendar", calendar, r => DrawCalendar(g, r)),
