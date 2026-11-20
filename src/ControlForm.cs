@@ -215,6 +215,9 @@ namespace Krabbz.Blynclight
         public Color DotColor = Color.Gray;
         public int Blynclights, Luxafors;
         public bool K2;
+        // The Microsoft 365 connections: Teams signed in (and on), and calendar access allowed.
+        public bool Teams, Calendar;
+        public string TeamsText;
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -222,7 +225,7 @@ namespace Krabbz.Blynclight
             var g = e.Graphics;
             Theme.FillRounded(g, new Rectangle(0, 0, Width - 1, Height - 1), 10, Theme.Card, Theme.Border);
             TextRenderer.DrawText(g, "Active Devices", Theme.Strong, new Point(14, 11), Theme.Text);
-            DeviceTiles.DrawGrid(g, new Rectangle(4, 40, Width - 8, DeviceTiles.GridHeight), Blynclights, Luxafors, K2, DotColor,
+            DeviceTiles.DrawGrid(g, new Rectangle(4, 40, Width - 8, DeviceTiles.GridHeight), Blynclights, Luxafors, K2, Teams, TeamsText, Calendar, DotColor,
                 Theme.Page, Theme.Border, Theme.Text, Theme.Muted);
         }
     }
@@ -1066,6 +1069,11 @@ namespace Krabbz.Blynclight
             devices.Blynclights = blynclights;
             devices.Luxafors = luxafors;
             devices.K2 = tray.K2Connected;
+            var teamsSignIn = tray.Presence;
+            bool signedIn = teamsSignIn != null && teamsSignIn.SignedIn;
+            devices.Teams = signedIn && !AppSettings.TeamsDisabled;
+            devices.TeamsText = !signedIn ? "Disconnected" : AppSettings.TeamsDisabled ? "Turned off" : "Connected";
+            devices.Calendar = signedIn && teamsSignIn.CalendarGranted;
             devices.DotColor = shown;
             devices.Invalidate();
             if (status != null)

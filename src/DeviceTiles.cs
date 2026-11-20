@@ -18,7 +18,7 @@ namespace Krabbz.Blynclight
         // with a green dot and "Connected"; the rest are greyed out with "Disconnected". Height is what it needs.
         public const int GridHeight = TileSize + 6 + 2 * LabelHeight;
 
-        public static void DrawGrid(Graphics g, Rectangle area, int blynclights, int luxafors, bool k2, Color glow,
+        public static void DrawGrid(Graphics g, Rectangle area, int blynclights, int luxafors, bool k2, bool teams, string teamsText, bool calendar, Color glow,
             Color tile, Color border, Color text, Color muted)
         {
             g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -29,6 +29,9 @@ namespace Krabbz.Blynclight
                 new GridDevice(luxafors > 1 ? luxafors + " Luxafors" : "Luxafor", luxafors > 0, r => DrawLuxafor(g, r, luxafors > 0 ? glow : Color.Gray)),
                 new GridDevice("Mutesync Button", ring.HasValue, r => DrawMuteSync(g, r, ring ?? Color.Gray)),
                 new GridDevice("K2 USBC Key", k2, r => DrawK2(g, r)),
+                // The Microsoft 365 connections: Teams (your status) and the calendar (meeting alerts and the schedule).
+                new GridDevice("Teams", teams, r => DrawTeams(g, r)) { Status = teamsText },
+                new GridDevice("Calendar", calendar, r => DrawCalendar(g, r)),
             };
             int slot = area.Width / devices.Length;
             for (int i = 0; i < devices.Length; i++)
@@ -53,7 +56,7 @@ namespace Krabbz.Blynclight
                 TextRenderer.DrawText(g, d.Name, Theme.Tiny, label, d.Connected ? text : muted,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.SingleLine);
                 label.Offset(0, LabelHeight);
-                TextRenderer.DrawText(g, d.Connected ? "Connected" : "Disconnected", Theme.Tiny, label,
+                TextRenderer.DrawText(g, d.Status ?? (d.Connected ? "Connected" : "Disconnected"), Theme.Tiny, label,
                     d.Connected ? Theme.Mix(ConnectedGreen, text, 0.25) : muted,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.Top | TextFormatFlags.SingleLine);
             }
@@ -64,7 +67,41 @@ namespace Krabbz.Blynclight
             public readonly string Name;
             public readonly bool Connected;
             public readonly Action<Rectangle> Draw;
+            // Words under the name instead of Connected or Disconnected, when there are better ones.
+            public string Status;
             public GridDevice(string name, bool connected, Action<Rectangle> draw) { Name = name; Connected = connected; Draw = draw; }
+        }
+
+        static readonly Font TeamsFont = new Font("Segoe UI", 13f, FontStyle.Bold);
+        static readonly Font DayFont = new Font("Segoe UI Semibold", 11f);
+
+        // Microsoft Teams: a purple tile with a T and a small figure at its corner.
+        static void DrawTeams(Graphics g, Rectangle r)
+        {
+            var body = new Rectangle(r.X + 1, r.Y + 3, r.Width - 2, r.Height - 6);
+            Theme.FillRounded(g, body, 8, Theme.Teams, Theme.Mix(Theme.Teams, Color.Black, 0.2));
+            using (var white = new SolidBrush(Color.FromArgb(235, 255, 255, 255)))
+            {
+                g.FillEllipse(white, body.Right - 11, body.Y + 3, 7, 7);
+                g.FillPie(white, body.Right - 13, body.Y + 11, 11, 12, 180, 180);
+            }
+            TextRenderer.DrawText(g, "T", TeamsFont, new Rectangle(body.X - 3, body.Y + 2, body.Width - 6, body.Height - 2), Color.White,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+        }
+
+        // The calendar: a page with a blue top and today's date.
+        static void DrawCalendar(Graphics g, Rectangle r)
+        {
+            var page = new Rectangle(r.X + 1, r.Y + 3, r.Width - 2, r.Height - 6);
+            Theme.FillRounded(g, page, 5, Color.White, Color.FromArgb(190, 194, 204));
+            using (var clip = Theme.Rounded(page, 5))
+            {
+                g.SetClip(clip);
+                using (var band = new SolidBrush(Color.FromArgb(0, 120, 212))) g.FillRectangle(band, page.X, page.Y, page.Width, 9);
+                g.ResetClip();
+            }
+            TextRenderer.DrawText(g, DateTime.Now.Day.ToString(), DayFont, new Rectangle(page.X, page.Y + 9, page.Width, page.Height - 10),
+                Color.FromArgb(40, 40, 46), TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
         }
 
         // K2 macro key: a clear base with two black keys side by side.

@@ -71,7 +71,7 @@ GitHub records a SHA-256 digest for each upload. The app, the background updater
 | `src/TrayMenu.cs` | Tray menu drawing (Windows 11 style) |
 | `src/MeetingAlerts.cs` | Meeting alerts: reads the calendar once a minute and shows the pop-up (`CalendarMeeting`, `MeetingAlerts`, `MeetingAlertForm`) |
 | `src/ControlForm.cs` | Main window, its three styles, and the shared colors and fonts (`Theme`) |
-| `src/DeviceTiles.cs` | The Active Devices tiles (lights, Mutesync Button, K2 USBC Key) and the beta sticker |
+| `src/DeviceTiles.cs` | The Active Devices tiles (lights, Mutesync Button, K2 USBC Key, Teams, Calendar) and the beta sticker |
 | `src/ModernControls.cs` | On/off switch and rounded buttons |
 | `src/SetupForm.cs` | Setup checklist (including the email step), Teams app dialog, ignore-apps dialog |
 | `src/SettingsForm.cs`, `src/AppSettings.cs` | Settings (its pages, including Light Control) and the stored settings (HKCU), including the sign-in startup entry |
