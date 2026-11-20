@@ -119,6 +119,19 @@ namespace Krabbz.Blynclight
             });
             red.CheckedChanged += delegate { flash.Enabled = red.Checked; };
             flash.Enabled = red.Checked;
+            // How long the mic has to be in use before it counts as a call.
+            var holdLabel = new Label { Text = "Count it as a call after the mic is in use for", AutoSize = true, Location = new Point(24, y + 4) };
+            Add(holdLabel);
+            Info(holdLabel, "Dictation and voice typing use the microphone for a few seconds at a time. Waiting a little before counting it as a call keeps your lights and Teams status from flipping each time. It applies to the lights, Teams status and the tray icon. Right away counts every use.");
+            var hold = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
+            foreach (int choice in AppSettings.CallMinSecondChoices)
+            {
+                hold.Items.Add(choice == 0 ? "Right away" : choice + " seconds");
+                if (choice == AppSettings.CallMinSeconds) hold.SelectedIndex = hold.Items.Count - 1;
+            }
+            hold.SelectedIndexChanged += delegate { AppSettings.CallMinSeconds = AppSettings.CallMinSecondChoices[hold.SelectedIndex]; };
+            Add(hold);
+            y += 30 + RowGap;
             Box("Show me as Busy in Teams during calls in other apps", AppSettings.TeamsBusyOnCalls,
                 v => { AppSettings.TeamsBusyOnCalls = v; tray.ApplySettings(); },
                 help: "Sets your Teams status to Busy while you're on a call in another app, like Zoom or a softphone, and back afterwards. Needs BusyLightz connected to Teams.");

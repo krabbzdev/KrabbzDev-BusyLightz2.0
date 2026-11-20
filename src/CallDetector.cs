@@ -44,7 +44,11 @@ namespace Krabbz.Blynclight
 
         readonly Timer timer;
         readonly Action<MicApp> callChanged;
+        // The app last reported as the call, or null for none.
         string currentId;
+        // An app that has the mic but hasn't held it long enough to count as a call yet, and since when.
+        string pendingId;
+        DateTime pendingSince;
 
         // callChanged runs on a background thread with the app when a call starts or switches apps, and null when
         // it ends. Taken here rather than as an event so a call already in progress at startup isn't missed.
@@ -67,9 +71,34 @@ namespace Krabbz.Blynclight
             catch (Exception) { return; } // Registry briefly unreadable; try again next poll.
 
             string id = app == null ? null : app.Id;
-            if (id == currentId) return;
-            currentId = id;
-            callChanged(app);
+            if (id == currentId) { pendingId = null; return; }
+            // The mic was let go: the call ended (or the brief use never counted as one).
+            if (id == null)
+            {
+                pendingId = null;
+                currentId = null;
+                callChanged(null);
+                return;
+            }
+            // Already on a call (or settings just changed): another app taking over counts at once.
+            int hold = AppSettings.CallMinSeconds;
+            if (currentId != null || hold <= 0)
+            {
+                pendingId = null;
+                currentId = id;
+                callChanged(app);
+                return;
+            }
+            // Not on a call yet: the mic has to stay in use for a while, so a short burst (dictation, a voice search)
+            // doesn't flip your lights and Teams status.
+            DateTime now = DateTime.UtcNow;
+            if (pendingId != id) { pendingId = id; pendingSince = now; }
+            if ((now - pendingSince).TotalSeconds >= hold)
+            {
+                pendingId = null;
+                currentId = id;
+                callChanged(app);
+            }
         }
 
         // The app that counts as being on a call, or null: one using the mic that isn't ignored.

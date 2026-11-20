@@ -22,6 +22,10 @@ An app is holding your microphone open. The window says which one: *On a call (A
 - If it's a call app you have open, close the call or the app.
 - If it's a tool that always keeps the mic open (noise cancelling, dictation, a recorder), add it to the [ignore list](Call-Detection.md#ignoring-apps).
 
+## The light takes a few seconds to go red on a call
+
+That's on purpose: an app has to hold the microphone for 10 seconds before it counts as a call, so dictation doesn't flip your lights and Teams status. Change the wait in **Settings > Calls > Count it as a call after the mic is in use for** (*Right away* counts every use).
+
 ## The light didn't go red on a call
 
 Start a call, then open **Settings > Test microphone...**. It shows live what Windows reports about the microphone, which is all the app can see. See [Test microphone](Call-Detection.md#test-microphone).

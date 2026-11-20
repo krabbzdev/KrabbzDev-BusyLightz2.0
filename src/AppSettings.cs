@@ -242,6 +242,26 @@ namespace Krabbz.Blynclight
         // Today's meetings in a panel attached to the right of the BusyLightz window while it's open. On unless changed.
         public static bool AgendaBesideWindow { get { return Get("AgendaBesideWindow"); } set { Set("AgendaBesideWindow", value); } }
         public static bool MeetingAlertSound { get { return Get("MeetingAlertSound"); } set { Set("MeetingAlertSound", value); } }
+        // How long an app has to hold the microphone before it counts as a call, so a short burst like dictation doesn't flip
+        // your lights and Teams status. 0 counts it right away.
+        public static readonly int[] CallMinSecondChoices = { 0, 5, 10, 15, 30 };
+        public const int DefaultCallMinSeconds = 10;
+        public static int CallMinSeconds
+        {
+            get
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
+                {
+                    object value = key == null ? null : key.GetValue("CallMinSeconds");
+                    return value is int && Array.IndexOf(CallMinSecondChoices, (int)value) >= 0 ? (int)value : DefaultCallMinSeconds;
+                }
+            }
+            set
+            {
+                using (var key = Registry.CurrentUser.CreateSubKey(SettingsKey))
+                    key.SetValue("CallMinSeconds", value, RegistryValueKind.DWord);
+            }
+        }
         // How many minutes before a meeting the alert shows.
         public static readonly int[] MeetingAlertMinuteChoices = { 1, 2, 5, 10, 15 };
         public const int DefaultMeetingAlertMinutes = 5;
