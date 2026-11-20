@@ -83,7 +83,7 @@ namespace Krabbz.Blynclight
         readonly Dictionary<IntPtr, bool> isK2 = new Dictionary<IntPtr, bool>();
         // Keys a K2-type device sends instead of clicks, by hardware ID (set in Remap Custom Keys), which device each raw input
         // handle is, and keystrokes seen in raw input but not yet matched to the one Windows acts on: key and when.
-        readonly Dictionary<string, int[]> keyMap = AppSettings.K2KeyMap();
+        readonly Dictionary<string, int[]> keyMap = LoadKeyMap();
         readonly Dictionary<IntPtr, string> idOf = new Dictionary<IntPtr, string>();
         readonly List<KeyValuePair<int, int>> unmatchedKeys = new List<KeyValuePair<int, int>>();
         IntPtr keyHook;
@@ -239,6 +239,16 @@ namespace Krabbz.Blynclight
             if (index < 0) return false;
             unmatched.RemoveAt(index);
             return true;
+        }
+
+        // Keys a K2-type device sends instead of clicks, by hardware ID: what was taught in Remap Custom Keys, plus a K2 that
+        // types letters (Z for its left button, X for its right) built in, so that version works with nothing set up. Keys
+        // taught for the K2's own ID replace the built-in ones.
+        static Dictionary<string, int[]> LoadKeyMap()
+        {
+            var map = AppSettings.K2KeyMap();
+            if (!map.ContainsKey(DeviceId)) map[DeviceId] = new[] { (int)Keys.Z, (int)Keys.X, 0 };
+            return map;
         }
 
         // Whether a raw input device name is a K2: the known hardware ID, or one added with Remap Custom Keys.
@@ -492,7 +502,7 @@ namespace Krabbz.Blynclight
 
             void ShowTaught()
             {
-                var map = AppSettings.K2KeyMap();
+                var map = LoadKeyMap();
                 if (map.Count == 0) { mapLabel.Text = "Taught so far: nothing yet"; return; }
                 var parts = new List<string>();
                 foreach (var pair in map)
@@ -627,8 +637,7 @@ namespace Krabbz.Blynclight
                 if (!IdPattern.IsMatch(row.Id)) { Say("That device has no hardware ID, so it can't be added."); return; }
                 if (row.Known && row.Key != 0)
                 {
-                    Say("That key is already recognized, but it sends a key (" + (Keys)row.Key + "), not a mouse click, so its presses are ignored. " +
-                        "Press its LEFT button and click Use as Left, then its RIGHT button and click Use as Right.");
+                    Say("That key is already recognized and sends a key (" + (Keys)row.Key + "), not a mouse click. A K2 that types Z and X works with nothing to set up: close this window and press the buttons. For other keys, click Use as Left and Use as Right.");
                     return;
                 }
                 AppSettings.AddK2Id(row.Id);
@@ -666,7 +675,7 @@ namespace Krabbz.Blynclight
                     return;
                 }
                 int[] keys;
-                if (!AppSettings.K2KeyMap().TryGetValue(devId, out keys)) return;
+                if (!LoadKeyMap().TryGetValue(devId, out keys)) return;
                 if (keys[0] != 0 && vkey == keys[0]) Say("Recognized: the LEFT button (" + (Keys)vkey + ").");
                 else if (keys[1] != 0 && vkey == keys[1]) Say("Recognized: the RIGHT button (" + (Keys)vkey + ").");
                 else if (keys[2] != 0 && vkey == keys[2]) Say("Recognized: BOTH buttons together (" + (Keys)vkey + ").");

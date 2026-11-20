@@ -63,6 +63,10 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 | **Busy (red)**, **Available (green)**, **On a call**, **Follow Teams Status**, **Party Mode** | Sets that mode, like the buttons in the window. |
 | **Open:** | Opens a program, file or web address you enter, e.g. `https://teams.microsoft.com`. |
 
+### A K2 that types letters (Z and X) works out of the box
+
+Some K2 keys are set up to type letters instead of clicking: **Z** for the left button and **X** for the right. BusyLightz knows that version: its two buttons run the actions you set for **Left button** and **Right button**, pressing both runs **Both together**, and the letters aren't typed into your documents (only keystrokes from the K2 itself are stopped, never your normal keyboard). There's nothing to set up.
+
 ### If your two-button key isn't found, or sends letters: Remap Custom Keys
 
 BusyLightz recognizes the K2 by its hardware ID (USB `VID_04D9&PID_A2D0`) and expects its buttons to be mouse clicks (or F13 and F14). Some two-button keys that look the same report a different ID, or are set up to type letters like **Z** and **X** instead. Then the page says *Not plugged in*, or the key is found but its presses do nothing.
