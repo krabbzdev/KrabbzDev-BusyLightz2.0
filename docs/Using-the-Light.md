@@ -52,6 +52,7 @@ Every style has the same parts:
 | **Follow Teams Status** (people) | The light shows your Microsoft Teams status. See [Teams Status](Teams-Status.md). |
 | **Party Mode** (small rainbow button, bottom left) | Cycles quickly through every color, four times a second, then back to Follow Teams Status after the override time. Handy for checking every light is working and matched. During a party the button reads **Stop the party**, which goes back to Follow Teams Status. |
 | **⚙ Settings** (top right) | Opens [Settings](#settings). |
+| **Show calendar** / **Hide calendar** (under Settings) | Shows or hides the [My Schedule Today](Meeting-Alerts.md#my-schedule-today-beside-the-window) panel beside the window. The panel's own **×** only hides it too; this brings it back. |
 | **Version and links** (beside Party Mode) | The version and when it was last updated, and under it **Check for updates**, **Project page** and **Help** (this guide) links. |
 
 The mode you picked is filled in with its color. The mode you pick is remembered, even after a restart, and is put back if you unplug and replug the light.
@@ -114,7 +115,7 @@ Party Mode's color changes don't notify. Turn notifications off in [Settings](#s
 
 Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Settings has a list of pages on the left, each with its own colored icon: **General**, **Calls**, **Microsoft Teams**, **Meeting Alerts**, **Mutesync Button**, **K2 USBC Key** and **Light Control**. **Meeting Alerts** is explained in [Meeting Alerts](Meeting-Alerts.md). Each page opens with a header saying what's on it. Each setting has an on/off switch in the page's color, and a small **ⓘ** beside it: hover over it, or click it, to see what the setting does. Changes take effect immediately.
 
-<img src="images/settings.png" alt="Settings on its General page: a page list with colored icons on the left, a General header, then switches for startup, the override timer, notifications, hotkeys and updates, each with an i for help, and a Learn more about this project here button" width="440">
+<img src="images/settings.png" alt="Settings on its General page: a page list with colored icons on the left, a General header, then switches for startup, the override timer, notifications, hotkeys and updates (with how often to check for them), each with an i for help, and a Learn more about this project here button" width="440">
 
 ### General
 
@@ -128,6 +129,7 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 | **Show a notification when the lights change** | The pop-ups described above. |
 | **Hotkeys: Alt+R / Alt+G** | Turn off if they clash with another program. |
 | **Install updates automatically** | When off, the app only updates when you click **Check and install** / **Check for updates**. Greyed out when BusyLightz is installed for everyone on the PC: its background updater installs updates. |
+| **How often to check for updates** | **Daily check** (the default) or **Weekly check**. See [Installing and Updating](Installing-and-Updating.md#updates). |
 | **Install for everyone** | Shown when BusyLightz is installed just for you. Installs it in `C:\Program Files\BusyLightz` for everyone on the PC (needs an admin). See [Installing and Updating](Installing-and-Updating.md#installing-for-everyone-on-a-pc-program-files). |
 | **Learn more about this project here** | Opens the project's page on GitHub. |
 
@@ -157,7 +159,7 @@ The mute button's on/off switch and ring colors, and what each K2 USBC Key butto
 
 | Item | What it does |
 | --- | --- |
-| **Version** (middle) | The version you're running and when it was last updated, e.g. *Version 2.31.0 · Last updated Nov 4, 2026*. |
+| **Version** (middle) | The version you're running and when it was last updated, e.g. *Version 2.49.0 · Last updated Nov 20, 2026*. |
 | **Buy me a coffee** (right) | Opens [KrabbzDev's Buy Me a Coffee page](https://buymeacoffee.com/krabbzdev), if you'd like to say thanks. Also in the tray menu. |
 | **Help** | Opens this guide. |
 | **Send feedback...** | Opens [Send feedback](#send-feedback). |

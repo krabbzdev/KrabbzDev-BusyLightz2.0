@@ -6,7 +6,7 @@ A small Windows tray app that controls USB busy lights directly over USB, so the
 
 **No busy light? That's fine.** You can still use BusyLightz without one: it sets your Microsoft Teams status to Do not disturb whenever you're on a call in any app that uses your microphone (Zoom, a phone app, a browser call and so on), then back when you hang up. Teams can't see those calls on its own, so BusyLightz tells it for you.
 
-<img src="docs/images/busylightz-window.png" alt="The main window in the Orbit style: a glowing green top with a ring reading Available, From Teams Status, inside two orbits; an Active Devices panel with Blynclight, Luxafor, Mutesync Button and K2 USBC Key tiles; and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
+<img src="docs/images/busylightz-window.png" alt="The main window in the Orbit style: a glowing green top with a ring reading Available, From Teams Status, inside two orbits; a Show calendar or Hide calendar link under Settings; an Active Devices panel with Blynclight, Luxafor, MuteSync, K2 Key, Teams and Calendar tiles; and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
 
 📖 **[User guide](docs/README.md)**: every feature and how to use it.
 
@@ -81,7 +81,7 @@ Connect once with a browser sign-in to your work account. No client secret is st
 
 A small pop-up shortly before each meeting in your Microsoft 365 calendar, so you don't miss one while you're heads down.
 
-<img src="docs/images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side: the date, then each meeting with its time, title and place, the one on now highlighted, finished ones dimmed, Join buttons on online meetings, and Open my calendar at the bottom" width="760">
+<img src="docs/images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side: the date, then each meeting with its time, title and place, the one on now highlighted and at the top (finished ones scroll out of sight), free time between meetings, Join buttons on online meetings, and Open my calendar at the bottom" width="760">
 
 - **The details:** the meeting's title, start and end time, place and organizer, with a video camera icon for online meetings and a calendar for the rest.
 - **My Schedule Today, beside the window:** open BusyLightz and a panel against its right side shows the day as a timeline, with the meeting on now highlighted, the free time between meetings, and Join buttons for online ones (in its own frame, with a × to hide it; it can also be turned off in Settings).
@@ -99,7 +99,7 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 
 - **Setup checklist** on first run, including setting up the Teams app for your organization.
 - **Light or Dark mode**, picked in Settings (Light is the default).
-- **Settings** (⚙ in the app or tray menu), in colorful pages: General, Calls, Microsoft Teams, Mutesync Button, K2 USBC Key and Light Control. Every setting has an ⓘ explaining it, colors are picked from dots, and the device pages show live pictures of your Mutesync Button, K2 and lights.
+- **Settings** (⚙ in the app or tray menu), in colorful pages: General, Calls, Microsoft Teams, Meeting Alerts, Transcripts, Mutesync Button, K2 USBC Key and Light Control. Every setting has an ⓘ explaining it, colors are picked from dots, and the device pages show live pictures of your Mutesync Button, K2 and lights.
 - **Notifications** when the lights change.
 - **Automatic, silent updates** from this repo's Releases, checked against GitHub's SHA-256 digest before installing, with a card afterwards listing what changed.
 - **Install just for you, or for everyone on the PC** in `C:\Program Files\BusyLightz`, with a background updater; IT can deploy it with an RMM script. See [Installing and Updating](docs/Installing-and-Updating.md).

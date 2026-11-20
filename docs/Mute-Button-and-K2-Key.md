@@ -40,6 +40,8 @@ Plugging in and unplugging the button, and every mute and unmute, are noted in t
 
 ## K2 USBC Key
 
+<img src="images/settings-k2.png" alt="Illustration of Settings on its K2 USBC Key page: a picture of the two-button key and Connected, a Use the K2 key switch, an action for the Left button, the Right button and Both together, a Test your buttons list of the last three presses, and a Remap Custom Keys button" width="440">
+
 The K2's two buttons each run an action, and so does pressing **both together**. Pressing both counts once: it doesn't also run the left or right action. (The Red Light version of the key has no *Both together*; see [below](#the-red-light-version-of-the-k2-works-out-of-the-box).)
 
 Out of the box the K2's buttons are a left and a right mouse click. BusyLightz catches those clicks before Windows acts on them, so a press only runs your action and doesn't click wherever the pointer is. Clicks from your real mouse aren't affected. While BusyLightz isn't running, the K2 clicks like a mouse again.
