@@ -390,13 +390,6 @@ namespace Krabbz.Blynclight
             K2Row("Right button", K2Key.Button.Right, "What happens when you press the K2 USBC Key's right button on its own.");
             K2Row("Both together", K2Key.Button.Both, "What happens when you press both buttons at the same time. It counts once, so it doesn't also run Left or Right. Not available on the Red Light version of the key.");
             y += 4;
-            var emailName = new Label { Text = "My email address", AutoSize = true, Location = new Point(24, y + 4) };
-            Add(emailName);
-            Info(emailName, "The address the \"Type my email address\" action types. The setup checklist asks for it too.");
-            var email = new TextBox { Bounds = new Rectangle(190, y, 290, 28), Text = AppSettings.MacroEmail };
-            email.TextChanged += delegate { AppSettings.MacroEmail = email.Text; };
-            Add(email);
-            y += 28 + RowGap + 4;
             GreyOutUnless(k2On, firstK2Control);
             Add(new Label
             {

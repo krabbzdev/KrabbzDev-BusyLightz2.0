@@ -84,7 +84,7 @@ The box at the bottom of the window shows **everything the key sends**, as it ar
 
 ### Your email address
 
-**My email address** is what *Type my email address* types. Until you set it, it's the example address `ChangeMe@ChangeMe.Com`. The [Setup Checklist](Setup-Checklist.md#7-your-email-address) asks for it, or change it any time in **Settings > K2 USBC Key**.
+What *Type my email address* types is set in the [Setup Checklist](Setup-Checklist.md#7-your-email-address). Until you set it, it's the example address `ChangeMe@ChangeMe.Com`.
 
 ### F13 and F14
 
