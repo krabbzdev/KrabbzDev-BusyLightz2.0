@@ -193,7 +193,7 @@ namespace Krabbz.Blynclight
         }
 
         // Keys a two-button key sends instead of mouse clicks, by hardware ID: "VID_xxxx&PID_yyyy=leftKey/rightKey;..." (virtual
-        // key numbers: left, right, and the key sent for both together; 0 for not set). Set with Use as Left, Right and Both in Find my key.
+        // key numbers: left, right, and the key sent for both together; 0 for not set). Set with Use as Left, Right and Both in Remap Custom Keys.
         public static string K2KeyMapText { get { return GetString("K2KeyMap") ?? ""; } set { SetString("K2KeyMap", value ?? ""); } }
 
         public static System.Collections.Generic.Dictionary<string, int[]> K2KeyMap()

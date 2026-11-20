@@ -391,7 +391,7 @@ namespace Krabbz.Blynclight
             // Test your buttons: the last few presses stay listed, so it's easy to see the K2 is working. The finder, for a
             // different version of the key, is on the same line.
             Add(new Label { Text = "Test your buttons", AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), Location = new Point(24, y + 4) });
-            var finder = new ModernButton { Text = "My key isn't found...", Bounds = new Rectangle(width - 24 - 190, y, 190, 30) };
+            var finder = new ModernButton { Text = "Remap Custom Keys", Bounds = new Rectangle(width - 24 - 190, y, 190, 30) };
             finder.Click += delegate
             {
                 if (k2Finder != null && !k2Finder.IsDisposed) { k2Finder.Activate(); return; }

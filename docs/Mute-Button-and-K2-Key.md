@@ -63,11 +63,11 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 | **Busy (red)**, **Available (green)**, **On a call**, **Follow Teams Status**, **Party Mode** | Sets that mode, like the buttons in the window. |
 | **Open:** | Opens a program, file or web address you enter, e.g. `https://teams.microsoft.com`. |
 
-### If your two-button key isn't found, or sends letters
+### If your two-button key isn't found, or sends letters: Remap Custom Keys
 
 BusyLightz recognizes the K2 by its hardware ID (USB `VID_04D9&PID_A2D0`) and expects its buttons to be mouse clicks (or F13 and F14). Some two-button keys that look the same report a different ID, or are set up to type letters like **Z** and **X** instead. Then the page says *Not plugged in*, or the key is found but its presses do nothing.
 
-1. Go to **Settings > K2 USBC Key** and click **My key isn't found...** (at the bottom of the page).
+1. Go to **Settings > K2 USBC Key** and click **Remap Custom Keys** (at the bottom of the page).
 2. Press the buttons on your key. Each device that sends a button press or a key appears in the list with its hardware ID and what it sent (*Left button*, *Right button*, or a key name like *Key Z*). Your normal mouse and keyboard show up too: ignore them.
 3. Select the row for your key, then:
    - **It sends mouse clicks** (*Left button* / *Right button*): click **Use this key**.

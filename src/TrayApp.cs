@@ -586,7 +586,7 @@ namespace Krabbz.Blynclight
             UpdateDisplay();
         }
 
-        // Keys added in Find my key (or forgotten): looks for a K2 again, and restarts listening so the change takes effect.
+        // Keys added in Remap Custom Keys (or forgotten): looks for a K2 again, and restarts listening so the change takes effect.
         public void K2IdsChanged()
         {
             if (k2Key != null) { k2Key.Dispose(); k2Key = null; }

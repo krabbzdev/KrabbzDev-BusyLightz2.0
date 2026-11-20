@@ -80,7 +80,7 @@ namespace Krabbz.Blynclight
         HookProc hookProc; // Kept so the delegate isn't collected while Windows still calls it.
         // Which raw input devices are a K2, by handle (looked up once each).
         readonly Dictionary<IntPtr, bool> isK2 = new Dictionary<IntPtr, bool>();
-        // Keys a K2-type device sends instead of clicks, by hardware ID (set in Find my key), which device each raw input
+        // Keys a K2-type device sends instead of clicks, by hardware ID (set in Remap Custom Keys), which device each raw input
         // handle is, and keystrokes seen in raw input but not yet matched to the one Windows acts on: key and when.
         readonly Dictionary<string, int[]> keyMap = AppSettings.K2KeyMap();
         readonly Dictionary<IntPtr, string> idOf = new Dictionary<IntPtr, string>();
@@ -240,7 +240,7 @@ namespace Krabbz.Blynclight
             return true;
         }
 
-        // Whether a raw input device name is a K2: the known hardware ID, or one added with Find my key.
+        // Whether a raw input device name is a K2: the known hardware ID, or one added with Remap Custom Keys.
         static bool IsK2Name(string name)
         {
             string upper = (name ?? "").ToUpperInvariant();
@@ -317,7 +317,7 @@ namespace Krabbz.Blynclight
                     // RAWKEYBOARD: MakeCode, Flags, Reserved, VKey.
                     ushort flags = (ushort)Marshal.ReadInt16(data, 2), vkey = (ushort)Marshal.ReadInt16(data, 6);
                     Button? button = vkey == (ushort)Keys.F13 ? Button.Left : vkey == (ushort)Keys.F14 ? Button.Right : (Button?)null;
-                    // A key set up in Find my key: its own two keys are Left and Right.
+                    // A key set up in Remap Custom Keys: its own two keys are Left and Right.
                     string deviceId = DeviceIdOf(h.Device);
                     int[] mapped;
                     if (deviceId != null && keyMap.TryGetValue(deviceId, out mapped))
@@ -359,7 +359,7 @@ namespace Krabbz.Blynclight
             ui.Post(delegate { if (Pressed != null) Pressed(pressed); }, null);
         }
 
-        // "Find my key": lists every device that sends a button press or a key while it's open, with its hardware ID and
+        // "Remap Custom Keys": lists every device that sends a button press or a key while it's open, with its hardware ID and
         // what it sent. The user's normal mouse and keyboard show up too; they pick their key's row. A key that sends mouse
         // clicks is added by its hardware ID; one that sends keys (letters, say) has its Left and Right keys taught here.
         // Raw input goes to one window at a time, so while this is open the K2 listener isn't getting it; closing restarts
@@ -388,7 +388,7 @@ namespace Krabbz.Blynclight
             public Finder(Action changed)
             {
                 this.changed = changed;
-                Text = "Find my key";
+                Text = "Remap Custom Keys";
                 FormBorderStyle = FormBorderStyle.FixedDialog;
                 MaximizeBox = false;
                 MinimizeBox = false;
