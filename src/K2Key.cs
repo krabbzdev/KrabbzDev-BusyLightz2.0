@@ -384,9 +384,9 @@ namespace Krabbz.Blynclight
             readonly ListView list = new ListView { View = View.Details, FullRowSelect = true, MultiSelect = false, HideSelection = false, GridLines = true };
             readonly Dictionary<string, ListViewItem> rows = new Dictionary<string, ListViewItem>();
             readonly ModernButton useKey = new ModernButton { Text = "Use this key", Accent = true, Enabled = false };
-            readonly ModernButton useLeft = new ModernButton { Text = "Use as Left", Enabled = false };
-            readonly ModernButton useRight = new ModernButton { Text = "Use as Right", Enabled = false };
-            readonly ModernButton useBoth = new ModernButton { Text = "Use as Both", Enabled = false };
+            readonly ModernButton useLeft = new ModernButton { Text = "Use as Left" };
+            readonly ModernButton useRight = new ModernButton { Text = "Use as Right" };
+            readonly ModernButton useBoth = new ModernButton { Text = "Use as Both" };
             readonly Label message = new Label { AutoSize = false };
             // Every signal the key sends, as it arrives: key presses and releases, clicks, and other kinds of reports.
             readonly TextBox activity = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Font = new Font("Consolas", 8.5f) };
@@ -471,8 +471,11 @@ namespace Krabbz.Blynclight
             }
 
             // Says what just happened, in the normal text color so it's noticed.
+            static readonly Font SayFont = new Font("Segoe UI Semibold", 10f);
+
             void Say(string text)
             {
+                message.Font = SayFont;
                 message.ForeColor = Theme.Text;
                 message.Text = text;
             }
@@ -486,9 +489,8 @@ namespace Krabbz.Blynclight
             {
                 var row = Selected();
                 useKey.Enabled = row != null;
-                useLeft.Enabled = row != null && row.Key != 0;
-                useRight.Enabled = row != null && row.Key != 0;
-                useBoth.Enabled = row != null && row.Key != 0;
+                // Always on: with no row selected, the next key any device sends is the one taught.
+                useLeft.Enabled = useRight.Enabled = useBoth.Enabled = true;
             }
 
             protected override void OnHandleCreated(EventArgs e)
@@ -591,6 +593,7 @@ namespace Krabbz.Blynclight
                 if (key != 0) ((FinderRow)row.Tag).Key = key;
                 row.SubItems[2].Text = what;
                 row.SubItems[3].Text = (int.Parse(row.SubItems[3].Text) + 1).ToString();
+                message.Font = Font;
                 message.ForeColor = Theme.Muted;
                 message.Text = "Last press: " + kind + " " + id + ", " + what + ".";
                 UpdateButtons();
@@ -616,20 +619,19 @@ namespace Krabbz.Blynclight
             // selected device sends becomes that button.
             void MapSelected(int slot)
             {
+                // The selected row's device, if one that sends keys is selected; otherwise the next key any device sends.
                 var row = Selected();
-                if (row == null) return;
-                if (row.Key == 0 || !IdPattern.IsMatch(row.Id)) { Say("Press a button on your key first, so this row shows the key it sends."); return; }
+                learnId = row != null && row.Key != 0 && IdPattern.IsMatch(row.Id) ? row.Id : null;
                 learnSlot = slot;
-                learnId = row.Id;
                 string[] buttons = { "LEFT", "RIGHT", "BOTH (together)" };
-                Say("Now press the key's " + buttons[slot] + " button once.");
+                Say("READY: now press the key's " + buttons[slot] + " button once" + (learnId == null ? "." : " (listening to " + learnId + ")."));
             }
 
             // A key went down on a device: it's taught as the button being learned, or (when it's one already taught) said to be
             // recognized, so you can see that it works without leaving this window.
             void HandleKey(string devId, int vkey)
             {
-                if (learnSlot >= 0 && devId == learnId)
+                if (learnSlot >= 0 && (learnId == null ? IdPattern.IsMatch(devId) : devId == learnId))
                 {
                     int slot = learnSlot;
                     learnSlot = -1;
@@ -639,7 +641,7 @@ namespace Krabbz.Blynclight
                     string next = slot == 0 ? " Now click Use as Right and press the key's RIGHT button."
                         : slot == 1 ? " Press each button again to check it: this window says what it recognized. If the key has its own key for both buttons together, click Use as Both and press both. Then close this window."
                         : " Press both buttons again to check, then close this window.";
-                    Say(names[slot] + " is now " + (Keys)vkey + "." + next);
+                    Say("SAVED: " + names[slot] + " is now " + (Keys)vkey + " on " + devId + "." + next);
                     return;
                 }
                 int[] keys;
