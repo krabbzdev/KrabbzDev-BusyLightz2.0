@@ -121,6 +121,37 @@ namespace Krabbz.Blynclight
             }
         }
 
+        // The scheduled task, run as SYSTEM, that installs updates for the all-users copy.
+        const string UpdaterTask = "BusyLightz Updater";
+
+        // Starts the background updater now, instead of waiting for its next run (every few hours). Starting a task
+        // that runs as SYSTEM needs an administrator, so Windows asks. False if that prompt was closed; throws if
+        // Windows couldn't start the task.
+        public static bool RunUpdaterNow()
+        {
+            var start = new ProcessStartInfo("schtasks.exe", "/run /tn \"" + UpdaterTask + "\"")
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = ProcessWindowStyle.Hidden,
+            };
+            try
+            {
+                using (var process = Process.Start(start))
+                {
+                    process.WaitForExit();
+                    if (process.ExitCode != 0)
+                        throw new InvalidOperationException("Windows couldn't start the BusyLightz Updater task (code " + process.ExitCode + ").");
+                }
+                return true;
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                if (ex.NativeErrorCode == 1223) return false; // The admin prompt was closed.
+                throw;
+            }
+        }
+
         static void RunHidden(string script)
         {
             Process.Start(new ProcessStartInfo("cmd.exe", "/c " + script)
