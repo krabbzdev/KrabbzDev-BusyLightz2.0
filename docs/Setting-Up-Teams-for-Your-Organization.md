@@ -4,7 +4,7 @@
 
 To read and set Teams status, the app signs users in with a **Microsoft Entra app registration** in your organization's Microsoft 365. An admin creates it once, and everyone in the organization uses it.
 
-- **Permissions:** one delegated Microsoft Graph permission, `Presence.ReadWrite`, plus the basic sign-in scopes (`openid`, `profile`, `offline_access`). Each user can only read and set their own presence.
+- **Permissions:** delegated Microsoft Graph permissions `Presence.ReadWrite` (Teams status), plus `Calendars.Read` for [Meeting Alerts](Meeting-Alerts.md), and the basic sign-in scopes (`openid`, `profile`, `offline_access`). Each user can only read and set their own presence, and read only their own calendar. `Calendars.Read` is optional: without it everything works except Meeting Alerts, and it's only asked for when a user turns Meeting Alerts on.
 - **No client secret or certificate.** The app is a public client that signs in through the user's browser.
 - **Check first:** if an app registration named **Krabbz9999 Blynclight** already exists in your tenant, use it. Don't create a second one. The script below finds and reuses an existing one automatically.
 
@@ -15,7 +15,7 @@ To read and set Teams status, the app signs users in with a **Microsoft Entra ap
    - **Name:** `Krabbz9999 Blynclight`
    - **Supported account types:** *Accounts in this organizational directory only* (single tenant)
    - **Redirect URI:** platform **Public client/native (mobile & desktop)**, value `http://localhost`
-3. **API permissions > Add a permission > Microsoft Graph > Delegated permissions > `Presence.ReadWrite`**. You can remove the default `User.Read`.
+3. **API permissions > Add a permission > Microsoft Graph > Delegated permissions > `Presence.ReadWrite`** and **`Calendars.Read`** (the second is for Meeting Alerts, and can be left out). You can remove the default `User.Read`.
 4. Click **Grant admin consent for (your organization)**.
 5. Under **Authentication**, leave **Allow public client flows** set to *No*. Don't create any secrets or certificates.
 6. On the app's **Overview** page, copy the **Application (client) ID** and **Directory (tenant) ID**.

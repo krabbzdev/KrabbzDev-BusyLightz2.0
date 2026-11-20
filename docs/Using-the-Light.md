@@ -114,7 +114,7 @@ Party Mode's color changes don't notify. Turn notifications off in [Settings](#s
 
 ## Settings
 
-Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Settings has a list of pages on the left, each with its own colored icon: **General**, **Calls**, **Microsoft Teams**, **Mutesync Button**, **K2 USBC Key** and **Light Control**. Each page opens with a header saying what's on it. Each setting has an on/off switch in the page's color, and a small **ⓘ** beside it: hover over it, or click it, to see what the setting does. Changes take effect immediately.
+Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Settings has a list of pages on the left, each with its own colored icon: **General**, **Calls**, **Microsoft Teams**, **Meeting Alerts**, **Mutesync Button**, **K2 USBC Key** and **Light Control**. **Meeting Alerts** is explained in [Meeting Alerts](Meeting-Alerts.md). Each page opens with a header saying what's on it. Each setting has an on/off switch in the page's color, and a small **ⓘ** beside it: hover over it, or click it, to see what the setting does. Changes take effect immediately.
 
 <img src="images/settings.png" alt="Settings on its General page: a page list with colored icons on the left, a General header, then switches for startup, the override timer, notifications, hotkeys and updates, each with an i for help, and a Learn more about this project here button" width="440">
 

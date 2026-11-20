@@ -325,6 +325,7 @@ namespace Krabbz.Blynclight
         TeamsPresence presence;
         ToolStripMenuItem presenceItem, usbItem, teamsOffItem;
         readonly System.Threading.Timer teamsPoll;
+        MeetingAlerts meetingAlerts;
         // Last Teams availability read while signed in (e.g. "Available"), or null.
         string teamsAvailability;
         bool embravaWarned;
@@ -456,6 +457,7 @@ namespace Krabbz.Blynclight
                 catch (InvalidOperationException) { } // Window already gone during exit.
             });
             teamsPoll = new System.Threading.Timer(delegate { Program.Guard("Teams status check", PollTeams); }, null, 0, TeamsPollMs);
+            meetingAlerts = new MeetingAlerts(() => presence, messages, () => callApp != null);
             Program.WatchForFreezes(messages);
             WatchInstall();
             if (Program.UpdateRepo != null)
@@ -557,6 +559,36 @@ namespace Krabbz.Blynclight
                 k2Key.Dispose();
                 k2Key = null;
             }
+        }
+
+        // Meeting alerts: whether BusyLightz may read the calendar, why it couldn't, and the buttons in Settings.
+        public string MeetingAlertProblem { get { return meetingAlerts == null ? null : meetingAlerts.Problem; } }
+
+        // Asks Microsoft, in the browser, to let BusyLightz read the user's own calendar (read-only) for meeting alerts.
+        public void GrantCalendarAccess()
+        {
+            var teams = presence;
+            if (teams == null) { ShowSetup(); return; }
+            if (!teams.SignedIn)
+            {
+                ShowBalloon("Connect to Microsoft Teams first, then allow calendar access.", ToolTipIcon.Info);
+                return;
+            }
+            Program.Background("Calendar access", delegate
+            {
+                try
+                {
+                    teams.GrantCalendarAccess();
+                    ShowBalloon("Calendar access allowed. You'll get an alert before your meetings.", ToolTipIcon.Info);
+                    meetingAlerts.CheckNow();
+                }
+                catch (Exception ex) { ShowBalloon("Couldn't allow calendar access: " + ex.Message, ToolTipIcon.Warning); }
+            });
+        }
+
+        public void ShowTestMeetingAlert()
+        {
+            meetingAlerts.ShowSample();
         }
 
         public void ConnectTeams()
@@ -1371,6 +1403,7 @@ namespace Krabbz.Blynclight
             deviceCheck.Dispose();
             if (k2Key != null) k2Key.Dispose();
             if (teamsPoll != null) teamsPoll.Dispose();
+            if (meetingAlerts != null) meetingAlerts.Dispose();
             if (presence != null) presence.Dispose(); // Clears Busy if a phone call is in progress.
             if (updateTimer != null) updateTimer.Dispose();
             showWait.Unregister(null);

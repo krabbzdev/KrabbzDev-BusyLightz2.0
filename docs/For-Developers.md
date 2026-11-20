@@ -69,6 +69,7 @@ GitHub records a SHA-256 digest for each upload. The app, the background updater
 | `src/LightController.cs` | Saved state, Party Mode cycling, call flashing, brightness and colors, call and Teams overrides, previews, replug detection. Every light write happens on its own thread |
 | `src/TrayApp.cs` | Program entry, logging and freeze watchdog, tray icon, hotkeys, notifications, wiring |
 | `src/TrayMenu.cs` | Tray menu drawing (Windows 11 style) |
+| `src/MeetingAlerts.cs` | Meeting alerts: reads the calendar once a minute and shows the pop-up (`CalendarMeeting`, `MeetingAlerts`, `MeetingAlertForm`) |
 | `src/ControlForm.cs` | Main window, its three styles, and the shared colors and fonts (`Theme`) |
 | `src/DeviceTiles.cs` | The Active Devices tiles (lights, Mutesync Button, K2 USBC Key) and the beta sticker |
 | `src/ModernControls.cs` | On/off switch and rounded buttons |
