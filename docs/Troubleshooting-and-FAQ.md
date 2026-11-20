@@ -40,7 +40,7 @@ Start a call, then open **Settings > Test microphone...**. It shows live what Wi
 
 ## "Not connected to Microsoft Teams" notification
 
-The app shows this when the light goes back to **Follow Teams Status** but there's no Teams sign-in and no Embrava Connect to show your status. Connect to Teams (tray menu > **Connect to Microsoft Teams**, or the [Setup Checklist](Setup-Checklist.md) if your organization's Teams app isn't set up yet). If you don't use Teams, tick **Disable Teams Integration** and it stops.
+The app shows this when the light goes back to **Follow Teams Status** but there's no Teams sign-in and no Embrava Connect to show your status. Connect to Teams (**Settings > Microsoft Teams > Connect**, or the [Setup Checklist](Setup-Checklist.md) if your organization's Teams app isn't set up yet). If you don't use Teams, switch **Sync with Microsoft Teams** off in Settings > Microsoft Teams and it stops.
 
 ## "Connect to Microsoft Teams" fails
 
