@@ -23,6 +23,9 @@ namespace Krabbz.Blynclight
         readonly Label teamsStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
         readonly Label muteButtonStatus = new Label { AutoSize = true, Font = new Font("Segoe UI", 9f) };
         readonly Label k2Status = new Label { AutoSize = true, Font = new Font("Segoe UI", 9f) };
+        // "Test your buttons" on the K2 page: the last few presses, newest first, and why none show when they can't.
+        readonly Label k2Test = new Label { AutoSize = false, Font = new Font("Segoe UI", 9.5f), BackColor = Color.Transparent };
+        readonly List<string> k2Presses = new List<string>();
         readonly Button connectButton = new ModernButton();
         readonly Label meetingStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
         readonly Button meetingButton = new ModernButton();
@@ -354,9 +357,17 @@ namespace Krabbz.Blynclight
         void K2Section()
         {
             Heading(null, null);
-            DevicePicture(k2Picture, k2Status, "Press a button on your K2 and it lights up here.");
+            DevicePicture(k2Picture, k2Status, "Press a button on your K2 and its key lights up here.");
             tray.K2Pressed += k2Picture.Flash;
-            FormClosed += delegate { tray.K2Pressed -= k2Picture.Flash; };
+            tray.K2Pressed += LogK2Press;
+            FormClosed += delegate { tray.K2Pressed -= k2Picture.Flash; tray.K2Pressed -= LogK2Press; };
+            // Test your buttons: every press is listed here and stays, so it's easy to see the K2 is working.
+            Add(new Label { Text = "Test your buttons", AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), Location = new Point(24, y) });
+            y += 26;
+            k2Test.Bounds = new Rectangle(24, y, width - 48, 104);
+            Add(k2Test);
+            UpdateK2Test();
+            y += 104 + RowGap;
             var k2On = UseSwitch("Use the K2 key", !AppSettings.K2Disabled,
                 v => { AppSettings.K2Disabled = !v; tray.ApplySettings(); },
                 "On: BusyLightz runs the actions you set for the K2's buttons. Turn it off and BusyLightz leaves the K2 alone: no actions run, and its buttons are ordinary left and right mouse clicks again.");
@@ -745,11 +756,33 @@ namespace Krabbz.Blynclight
             }
         }
 
+        // A K2 press: adds it to the test list with the action it runs.
+        void LogK2Press(K2Key.Button button)
+        {
+            string action = AppSettings.K2Action(button), label = action;
+            foreach (var choice in K2Actions.All) if (choice[0] == action) label = choice[1];
+            string name = button == K2Key.Button.Left ? "Left button" : button == K2Key.Button.Right ? "Right button" : "Both buttons";
+            k2Presses.Insert(0, DateTime.Now.ToLongTimeString() + "    " + name + "    \u2192    " + label);
+            if (k2Presses.Count > 5) k2Presses.RemoveAt(5);
+            UpdateK2Test();
+        }
+
+        // The test list, or what's needed before presses can show.
+        void UpdateK2Test()
+        {
+            if (k2Presses.Count > 0) k2Test.Text = string.Join("\r\n", k2Presses.ToArray());
+            else if (!tray.K2Connected) k2Test.Text = "The K2 isn't plugged in, so its presses can't show here. Plug it in and press a button.";
+            else if (AppSettings.K2Disabled) k2Test.Text = "Use the K2 key is off, so presses aren't picked up. Turn it on, then press a button to test.";
+            else k2Test.Text = "Press the left or right button on your K2, or both together. Each press is listed here with what it does.";
+            k2Test.ForeColor = k2Presses.Count > 0 ? Theme.Text : Theme.Muted;
+        }
+
         // e.g. "Connected on COM3", and whether a K2 is plugged in.
         void RefreshDevices()
         {
             muteButtonStatus.Text = tray.MuteButton.Status;
             k2Status.Text = tray.K2Connected ? "Connected" : "Not plugged in";
+            UpdateK2Test();
             if (k2Picture.Connected != tray.K2Connected) { k2Picture.Connected = tray.K2Connected; k2Picture.Invalidate(); }
         }
 
