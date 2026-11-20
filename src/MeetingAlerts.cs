@@ -145,7 +145,7 @@ namespace Krabbz.Blynclight
         // On the UI thread. key is null for the example alert, which can't be snoozed.
         void ShowAlert(CalendarMeeting meeting, string key)
         {
-            var form = new MeetingAlertForm(meeting, Headline(meeting), SnoozeMinutes);
+            var form = new MeetingAlertForm(meeting, delegate { return Headline(meeting); }, SnoozeMinutes);
             form.Snoozed += delegate
             {
                 if (key == null) return;
@@ -163,15 +163,26 @@ namespace Krabbz.Blynclight
             if (AppSettings.MeetingAlertSound && !onCall()) SystemSounds.Exclamation.Play();
         }
 
-        // The alert's first line, from the user's wording: {when} is "in 5 minutes" or "now", {subject} the title.
+        // The alert's first line, worked out afresh every second so it counts down like a stopwatch. From the user's
+        // wording: {when} is "in 4:32" (or "now"), {subject} the title. Once the meeting has started it counts up
+        // instead: "Meeting started 0:42 ago".
         static string Headline(CalendarMeeting meeting)
         {
-            int minutes = (int)Math.Ceiling((meeting.StartUtc - DateTime.UtcNow).TotalMinutes);
-            string when = minutes <= 0 ? "now" : "in " + minutes + (minutes == 1 ? " minute" : " minutes");
+            double seconds = Math.Ceiling((meeting.StartUtc - DateTime.UtcNow).TotalSeconds);
+            if (seconds <= -1) return "Meeting started " + Clock((int)-seconds) + " ago";
+            string when = seconds <= 0 ? "now" : "in " + Clock((int)seconds);
             string text = AppSettings.MeetingAlertText;
             if (string.IsNullOrWhiteSpace(text)) text = AppSettings.DefaultMeetingAlertText;
             string subject = string.IsNullOrWhiteSpace(meeting.Subject) ? "(no subject)" : meeting.Subject;
             return text.Replace("{when}", when).Replace("{subject}", subject);
+        }
+
+        // Minutes and seconds like a stopwatch: 4:32, 0:09, or 1:02:03 past an hour.
+        static string Clock(int totalSeconds)
+        {
+            int hours = totalSeconds / 3600, minutes = totalSeconds / 60 % 60, seconds = totalSeconds % 60;
+            if (hours > 0) return hours + ":" + minutes.ToString("00") + ":" + seconds.ToString("00");
+            return minutes + ":" + seconds.ToString("00");
         }
 
         // Stacks the open alerts up from the bottom right corner of the screen, newest at the bottom.
@@ -202,19 +213,26 @@ namespace Krabbz.Blynclight
     }
 
     // The pop-up for one meeting: what it is, when, where, with Join (online meetings), Snooze and Dismiss. It doesn't
-    // take focus from what the user is typing, and goes away by itself after a few minutes.
+    // take focus from what the user is typing. Its first line ticks every second, and it goes away by itself a few
+    // minutes after the meeting starts.
     class MeetingAlertForm : Form
     {
         public const int FormWidth = 380, FormHeight = 176, Gap = 10, Margin = 16;
-        const int AutoCloseMs = 5 * 60 * 1000;
+        // It closes this long after the meeting starts, and never sooner than this long after it appeared.
+        const int AfterStartMinutes = 5;
         const int WS_EX_NOACTIVATE = 0x08000000, WS_EX_TOOLWINDOW = 0x00000080;
 
-        readonly System.Windows.Forms.Timer autoClose = new System.Windows.Forms.Timer { Interval = AutoCloseMs };
+        readonly System.Windows.Forms.Timer tick = new System.Windows.Forms.Timer { Interval = 1000 };
 
         public event Action Snoozed;
 
-        public MeetingAlertForm(CalendarMeeting meeting, string headline, int snoozeMinutes)
+        // headline gives the first line; it's asked again every second.
+        public MeetingAlertForm(CalendarMeeting meeting, Func<string> headline, int snoozeMinutes)
         {
+            var shownAt = DateTime.UtcNow;
+            var startPlus = meeting.StartUtc.AddMinutes(AfterStartMinutes);
+            var closeAtUtc = startPlus > shownAt.AddMinutes(AfterStartMinutes) ? startPlus : shownAt.AddMinutes(AfterStartMinutes);
+
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             TopMost = true;
@@ -241,15 +259,16 @@ namespace Krabbz.Blynclight
             }
             int textWidth = FormWidth - textLeft - 16;
 
-            Controls.Add(new Label
+            var headlineLabel = new Label
             {
-                Text = headline,
+                Text = headline(),
                 Font = new Font("Segoe UI Semibold", 9.5f),
                 ForeColor = Theme.TeamsText,
                 AutoEllipsis = true,
                 BackColor = Color.Transparent,
                 Bounds = new Rectangle(textLeft, 12, textWidth, 22),
-            });
+            };
+            Controls.Add(headlineLabel);
             Controls.Add(new Label
             {
                 Text = string.IsNullOrWhiteSpace(meeting.Subject) ? "(no subject)" : meeting.Subject,
@@ -305,9 +324,13 @@ namespace Krabbz.Blynclight
             dismiss.Click += delegate { Close(); };
             Controls.Add(dismiss);
 
-            autoClose.Tick += delegate { Close(); };
-            Shown += delegate { autoClose.Start(); };
-            FormClosed += delegate { autoClose.Dispose(); };
+            tick.Tick += delegate
+            {
+                headlineLabel.Text = headline();
+                if (DateTime.UtcNow > closeAtUtc) Close();
+            };
+            Shown += delegate { tick.Start(); };
+            FormClosed += delegate { tick.Dispose(); };
         }
 
         // Opens the meeting link in the browser, which hands it to Teams. Only web links.

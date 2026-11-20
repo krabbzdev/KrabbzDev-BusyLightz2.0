@@ -69,10 +69,23 @@ If BusyLightz saves you a few interruptions, you can [buy me a coffee](https://b
 Connect once with a browser sign-in to your work account. No client secret is stored, and the sign-in is encrypted to your Windows account.
 
 - **Follow Teams status:** green Available, red Busy or In a call, purple Do not disturb, yellow Away, off when Offline (change the colors in Light Control).
-- **Teams matches what you pick:** picking Busy or On a call sets your Teams status to Busy, Available sets it to Available, and going back to Follow Teams Status returns it to normal.
-- **Busy in Teams during other calls:** during a Zoom, Cytracom or other non-Teams call, Teams shows you as *Busy, In a call*.
-- **Meeting alerts:** a small pop-up shortly before each meeting in your calendar, with its time, place and organizer, a **Join** button for online meetings, an optional sound, and wording you can change. Turned on in Settings; it only reads your calendar, never changes it. [Details](docs/Meeting-Alerts.md).
-- **Status message while your lights are red:** shows *On a video call* (the default), *In a meeting*, *On a phone call*, *Heads down, please message me*, *Back in a few minutes*, or your own message next to your name in Teams. Your earlier message comes back afterwards.
+- **Teams matches what you pick:** picking Busy or On a call sets your Teams status to **Do not disturb** (or Busy, if you untick *Use Do Not Disturb instead of Busy* in Settings), Available sets it to Available, and going back to Follow Teams Status returns it to normal.
+- **Do not disturb during calls:** during any call, a Zoom, Cytracom or Teams call alike, Teams shows you as *Do not disturb* instead of *In a call* (untick the same setting to show Busy).
+- **Status message while your lights are red:** shows *On a video call* (the default), *In a meeting*, *On a phone call*, *Heads down, please message me*, *Back in a few minutes*, or your own message next to your name in Teams. Every message ends with *- responses may be delayed*, so people know not to expect a quick answer. Your earlier message comes back afterwards.
+
+### Meeting alerts
+
+<img src="docs/images/meeting-alert.png" alt="Illustration of the meeting alert pop-up in Dark and Light mode: an icon, a live timer (Meeting starting in 4:32, or Meeting started 0:42 ago), the meeting's title, time, place and organizer, and Join, Snooze 2 min and Dismiss buttons" width="620">
+
+A small pop-up shortly before each meeting in your Microsoft 365 calendar, so you don't miss one while you're heads down.
+
+- **The details:** the meeting's title, start and end time, place and organizer, with a video camera icon for online meetings and a calendar for the rest.
+- **A live timer:** the first line ticks every second like a stopwatch (*Meeting starting in 4:32*), then counts up once the meeting has started (*Meeting started 0:42 ago*).
+- **Join, Snooze, Dismiss:** **Join** (online meetings) opens the meeting in Teams, **Snooze 2 min** brings the alert back, **Dismiss** closes it. It never takes the keyboard from what you're typing.
+- **Yours to change** in Settings > Meeting Alerts: on or off, how early (1 to 15 minutes), a sound (quiet during calls), and what the first line says.
+- **Read-only:** you allow calendar access once, in your browser. BusyLightz only reads the times, titles and links of your meetings, keeps none of it and can't change anything. After an update, a one-time notice points you to it.
+
+[More about Meeting Alerts](docs/Meeting-Alerts.md).
 
 ### Setup and updates
 
