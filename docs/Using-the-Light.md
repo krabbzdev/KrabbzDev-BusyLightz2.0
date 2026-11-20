@@ -17,7 +17,7 @@ BusyLightz also works with a **Mutesync Button** and a **K2 USBC Key** macro key
 
 ### Active Devices
 
-The window's **Active Devices** panel has a tile for every device BusyLightz works with: **Blynclight**, **Luxafor**, **Mutesync Button** and **K2 USBC Key**, plus your **Teams** and **Calendar** connections. A plugged-in device is drawn lit, with a green dot and *Connected*: lights glow in their current color, and the Mutesync Button tile glows in its ring's color. A device that isn't plugged in is greyed out and says *Disconnected*. Two or more of the same light show as e.g. *2 Luxafors*.
+The window's **Active Devices** panel has a tile for every device BusyLightz works with: **Blynclight**, **Luxafor**, **MuteSync** (the Mutesync Button) and **K2 USBC Key**, plus your **Teams** and **Calendar** connections. A plugged-in device is drawn lit, with a green dot and *Connected*: lights glow in their current color, and the MuteSync tile glows in its ring's color. A device that isn't plugged in is greyed out and says *Disconnected*. Two or more of the same light show as e.g. *2 Luxafors*.
 
 Two more tiles show your Microsoft 365 connections: **Teams** (purple, with a T) is lit and says *Connected* when you're signed in, *Disconnected* when you're not, and *Turned off* when **Sync with Microsoft Teams** is off; **Calendar** (a page showing today's date) is lit when you've allowed calendar access for [Meeting Alerts](Meeting-Alerts.md), and greyed out when you haven't.
 
