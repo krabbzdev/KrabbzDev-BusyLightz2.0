@@ -161,6 +161,47 @@ namespace Krabbz.Blynclight
 
         // Leaves USB lights alone, for Teams status and call detection only. Off unless changed.
         public static bool UsbLightsDisabled { get { return Get("UsbLightsDisabled", false); } set { Set("UsbLightsDisabled", value); } }
+        // Meeting alerts: a pop-up shortly before each calendar meeting (needs calendar access, allowed in Settings). On unless changed.
+        public static bool MeetingAlertsOn { get { return Get("MeetingAlertsOn"); } set { Set("MeetingAlertsOn", value); } }
+        public static bool MeetingAlertSound { get { return Get("MeetingAlertSound"); } set { Set("MeetingAlertSound", value); } }
+        // How many minutes before a meeting the alert shows.
+        public static readonly int[] MeetingAlertMinuteChoices = { 1, 2, 5, 10, 15 };
+        public const int DefaultMeetingAlertMinutes = 5;
+        public static int MeetingAlertMinutes
+        {
+            get
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
+                {
+                    object value = key == null ? null : key.GetValue("MeetingAlertMinutes");
+                    return value is int && Array.IndexOf(MeetingAlertMinuteChoices, (int)value) >= 0 ? (int)value : DefaultMeetingAlertMinutes;
+                }
+            }
+            set
+            {
+                using (var key = Registry.CurrentUser.CreateSubKey(SettingsKey))
+                    key.SetValue("MeetingAlertMinutes", value, RegistryValueKind.DWord);
+            }
+        }
+        // What the alert says on its first line; {when} becomes "in 5 minutes" or "now", {subject} the meeting's title.
+        public const string DefaultMeetingAlertText = "Meeting starting {when}";
+        public const int MeetingAlertTextMaxLength = 120;
+        public static string MeetingAlertText
+        {
+            get
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
+                {
+                    string value = key == null ? null : key.GetValue("MeetingAlertText") as string;
+                    return string.IsNullOrWhiteSpace(value) ? DefaultMeetingAlertText : value;
+                }
+            }
+            set
+            {
+                using (var key = Registry.CurrentUser.CreateSubKey(SettingsKey))
+                    key.SetValue("MeetingAlertText", value ?? "", RegistryValueKind.String);
+            }
+        }
         // Leaves Microsoft Teams alone: no status reading, no Busy during calls, no status message. Off unless changed.
         public static bool TeamsDisabled { get { return Get("TeamsDisabled", false); } set { Set("TeamsDisabled", value); } }
         // Use a plugged-in mutesync button to mute and unmute the mic (see MuteSyncButton).

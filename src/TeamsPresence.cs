@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -19,6 +20,8 @@ namespace Krabbz.Blynclight
     public class TeamsPresence : IDisposable
     {
         const string Scopes = "openid profile offline_access https://graph.microsoft.com/Presence.ReadWrite";
+        // Asked for separately, only when the user turns on Meeting Alerts, so the normal sign-in never needs it.
+        const string CalendarScope = "https://graph.microsoft.com/Calendars.Read";
         const string GraphUsers = "https://graph.microsoft.com/v1.0/users/";
         // Microsoft drops the Busy status on its own after this, so a crash or sleep never leaves it stuck.
         const string BusyExpiration = "PT5M";
@@ -48,6 +51,8 @@ namespace Krabbz.Blynclight
         string account;
         string accessToken;
         DateTime accessTokenExpires;
+        // True once the user has allowed reading their calendar (see GrantCalendarAccess).
+        bool calendarGranted;
         bool onCall;
         bool problemReported;
         readonly Timer messageTimer;
@@ -75,11 +80,30 @@ namespace Krabbz.Blynclight
 
         public bool SignedIn { get { lock (sync) return refreshToken != null; } }
         public string Account { get { lock (sync) return account; } }
+        public bool CalendarGranted { get { lock (sync) return calendarGranted; } }
+        string CurrentScopes { get { return CalendarGranted ? Scopes + " " + CalendarScope : Scopes; } }
 
         string Authority { get { return "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/"; } }
 
         // Opens the browser for Microsoft sign-in and blocks until it finishes. Throws with a readable message on failure.
         public void SignIn()
+        {
+            SignInWith(Scopes);
+            lock (sync) calendarGranted = false;
+            Save();
+        }
+
+        // Signs in again, this time also asking Microsoft to let BusyLightz read the user's calendar (for Meeting Alerts).
+        // Only the user's own calendar, read-only. Throws with a readable message if it isn't allowed.
+        public void GrantCalendarAccess()
+        {
+            SignInWith(Scopes + " " + CalendarScope);
+            lock (sync) calendarGranted = true;
+            Save();
+            problemReported = false;
+        }
+
+        void SignInWith(string scopes)
         {
             string verifier = Base64Url(RandomBytes(32));
             string challenge;
@@ -105,7 +129,7 @@ namespace Krabbz.Blynclight
                     "?client_id=" + Uri.EscapeDataString(clientId) +
                     "&response_type=code&response_mode=query" +
                     "&redirect_uri=" + Uri.EscapeDataString(redirectUri) +
-                    "&scope=" + Uri.EscapeDataString(Scopes) +
+                    "&scope=" + Uri.EscapeDataString(scopes) +
                     "&state=" + state +
                     "&code_challenge=" + challenge + "&code_challenge_method=S256" +
                     "&prompt=select_account");
@@ -121,7 +145,7 @@ namespace Krabbz.Blynclight
                     { "code", reply["code"] },
                     { "redirect_uri", redirectUri },
                     { "code_verifier", verifier },
-                });
+                }, scopes);
                 var claims = JwtPayload((string)tokens["id_token"]);
                 lock (sync)
                 {
@@ -147,7 +171,7 @@ namespace Krabbz.Blynclight
             if (wasOnCall) TryClear();
             TakeDownStatusMessage();
             TakeDownPresence();
-            lock (sync) { refreshToken = null; accessToken = null; userId = null; account = null; }
+            lock (sync) { refreshToken = null; accessToken = null; userId = null; account = null; calendarGranted = false; }
             try { File.Delete(tokenPath); } catch (IOException) { }
         }
 
@@ -432,11 +456,16 @@ namespace Krabbz.Blynclight
                 }
                 try
                 {
-                    StoreTokens(RequestTokens(new NameValueCollection
+                    try { StoreTokens(RequestTokens(RefreshForm(refresh), CurrentScopes)); }
+                    catch (TokenException calendarEx)
                     {
-                        { "grant_type", "refresh_token" },
-                        { "refresh_token", refresh },
-                    }));
+                        // Calendar access was taken back (or never took): carry on without it, so Teams status keeps working.
+                        if (!CalendarGranted) throw;
+                        Log("Calendar access is no longer allowed (" + calendarEx.Error + "); carrying on without it.");
+                        lock (sync) calendarGranted = false;
+                        Save();
+                        StoreTokens(RequestTokens(RefreshForm(refresh), Scopes));
+                    }
                 }
                 catch (TokenException ex)
                 {
@@ -471,6 +500,92 @@ namespace Krabbz.Blynclight
             }
         }
 
+        // The user's calendar events that overlap the time from fromUtc to toUtc, soonest first, from Microsoft Graph.
+        // Needs calendar access (GrantCalendarAccess). Throws with a readable message if it can't be read.
+        public List<CalendarMeeting> GetMeetings(DateTime fromUtc, DateTime toUtc)
+        {
+            if (!CalendarGranted) throw new InvalidOperationException("Calendar access isn't allowed yet.");
+            string token = AccessToken();
+            string url = "https://graph.microsoft.com/v1.0/me/calendarView" +
+                "?startDateTime=" + fromUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture) +
+                "&endDateTime=" + toUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture) +
+                "&$orderby=start/dateTime&$top=25" +
+                "&$select=id,subject,start,end,isAllDay,isCancelled,isOnlineMeeting,onlineMeeting,location,organizer,responseStatus";
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            string body;
+            try
+            {
+                using (var web = new GraphWebClient())
+                {
+                    web.Headers[HttpRequestHeader.Authorization] = "Bearer " + token;
+                    web.Headers["Prefer"] = "outlook.timezone=\"UTC\"";
+                    web.Encoding = Encoding.UTF8;
+                    body = web.DownloadString(url);
+                }
+            }
+            catch (WebException ex)
+            {
+                var response = ex.Response as HttpWebResponse;
+                if (response != null && (response.StatusCode == HttpStatusCode.Forbidden || response.StatusCode == HttpStatusCode.Unauthorized))
+                    throw new InvalidOperationException("Microsoft didn't allow reading your calendar. Use Allow access in Settings > Meeting Alerts.");
+                throw;
+            }
+
+            var meetings = new List<CalendarMeeting>();
+            var root = Json.DeserializeObject(body) as Dictionary<string, object>;
+            object values;
+            if (root == null || !root.TryGetValue("value", out values) || !(values is System.Collections.IEnumerable)) return meetings;
+            foreach (object item in (System.Collections.IEnumerable)values)
+            {
+                var e = item as Dictionary<string, object>;
+                if (e == null) continue;
+                var online = Child(e, "onlineMeeting");
+                var meeting = new CalendarMeeting
+                {
+                    Id = Text(e, "id"),
+                    Subject = Text(e, "subject"),
+                    StartUtc = GraphDate(Child(e, "start")),
+                    EndUtc = GraphDate(Child(e, "end")),
+                    IsAllDay = Flag(e, "isAllDay"),
+                    IsCancelled = Flag(e, "isCancelled"),
+                    Location = Text(Child(e, "location"), "displayName"),
+                    Organizer = Text(Child(Child(e, "organizer"), "emailAddress"), "name"),
+                    Response = Text(Child(e, "responseStatus"), "response"),
+                    JoinUrl = Flag(e, "isOnlineMeeting") ? Text(online, "joinUrl") : "",
+                };
+                if (meeting.StartUtc != DateTime.MinValue) meetings.Add(meeting);
+            }
+            return meetings;
+        }
+
+        static Dictionary<string, object> Child(Dictionary<string, object> parent, string key)
+        {
+            object value;
+            return parent != null && parent.TryGetValue(key, out value) ? value as Dictionary<string, object> : null;
+        }
+
+        static string Text(Dictionary<string, object> parent, string key)
+        {
+            object value;
+            return parent != null && parent.TryGetValue(key, out value) && value != null ? value.ToString() : "";
+        }
+
+        static bool Flag(Dictionary<string, object> parent, string key)
+        {
+            object value;
+            return parent != null && parent.TryGetValue(key, out value) && value is bool && (bool)value;
+        }
+
+        // Graph's {"dateTime": "2026-11-20T14:00:00.0000000", "timeZone": "UTC"}, asked for in UTC; MinValue if unreadable.
+        static DateTime GraphDate(Dictionary<string, object> value)
+        {
+            DateTime parsed;
+            string text = Text(value, "dateTime");
+            if (DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out parsed))
+                return parsed;
+            return DateTime.MinValue;
+        }
+
         Dictionary<string, object> ReadPresence()
         {
             string token = AccessToken();
@@ -485,10 +600,15 @@ namespace Krabbz.Blynclight
             }
         }
 
-        Dictionary<string, object> RequestTokens(NameValueCollection form)
+        static NameValueCollection RefreshForm(string refresh)
+        {
+            return new NameValueCollection { { "grant_type", "refresh_token" }, { "refresh_token", refresh } };
+        }
+
+        Dictionary<string, object> RequestTokens(NameValueCollection form, string scopes)
         {
             form["client_id"] = clientId;
-            form["scope"] = Scopes;
+            form["scope"] = scopes;
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             try
             {
@@ -531,7 +651,7 @@ namespace Krabbz.Blynclight
                 json = Json.Serialize(new Dictionary<string, object>
                 {
                     { "refresh_token", refreshToken }, { "oid", userId }, { "account", account },
-                    { "client_id", clientId }, { "tenant_id", tenantId },
+                    { "client_id", clientId }, { "tenant_id", tenantId }, { "calendar", calendarGranted },
                 });
             }
             Directory.CreateDirectory(Path.GetDirectoryName(tokenPath));
@@ -556,6 +676,8 @@ namespace Krabbz.Blynclight
                 refreshToken = saved["refresh_token"] as string;
                 userId = saved["oid"] as string;
                 account = saved["account"] as string;
+                object calendar;
+                calendarGranted = saved.TryGetValue("calendar", out calendar) && calendar is bool && (bool)calendar;
             }
             catch (Exception ex)
             {

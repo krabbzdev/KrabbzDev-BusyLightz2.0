@@ -16,7 +16,7 @@ namespace Krabbz.Blynclight
         // Tags the version line, shown in the softer text color.
         const string VersionLabel = "version";
         // Page icons: Segoe MDL2 Assets settings gear, phone, people, microphone and keyboard.
-        const string GeneralGlyph = "\uE713", CallsGlyph = "\uE717", TeamsGlyph = "\uE716", MuteSyncGlyph = "\uE720", K2Glyph = "\uE765", AboutGlyph = "\uE946", LightGlyph = "\uE82F";
+        const string GeneralGlyph = "\uE713", CallsGlyph = "\uE717", TeamsGlyph = "\uE716", MuteSyncGlyph = "\uE720", K2Glyph = "\uE765", AboutGlyph = "\uE946", LightGlyph = "\uE82F", MeetingGlyph = "\uE787";
 
         readonly TrayContext tray;
         readonly CheckBox startWithWindows, openWindow;
@@ -24,6 +24,8 @@ namespace Krabbz.Blynclight
         readonly Label muteButtonStatus = new Label { AutoSize = true, Font = new Font("Segoe UI", 9f) };
         readonly Label k2Status = new Label { AutoSize = true, Font = new Font("Segoe UI", 9f) };
         readonly Button connectButton = new ModernButton();
+        readonly Label meetingStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
+        readonly Button meetingButton = new ModernButton();
         readonly Timer refresh = new Timer { Interval = RefreshMs };
         readonly List<SettingsPage> pages = new List<SettingsPage>();
         readonly List<NavItem> navItems = new List<NavItem>();
@@ -158,6 +160,10 @@ namespace Krabbz.Blynclight
             GreyOutWhile(teamsOff, firstTeamsControl);
             EndPage();
 
+            StartPage("Meeting Alerts", MeetingGlyph, PageColors.Teams, "A pop-up shortly before each meeting, with its details and a Join button for online meetings.");
+            MeetingAlertsPage();
+            EndPage();
+
             StartPage("Mutesync Button", MuteSyncGlyph, PageColors.MuteSync, "Mute and unmute your mic with one press, with a ring that shows which.");
             // Pressing a mutesync button mutes or unmutes the mic; its ring shows red when muted, green when live.
             Heading(null, null);
@@ -212,8 +218,8 @@ namespace Krabbz.Blynclight
                 Theme.Apply(this);
                 ColorSurfaces();
             };
-            refresh.Tick += delegate { RefreshTeams(); RefreshDevices(); };
-            Shown += delegate { RefreshTeams(); refresh.Start(); };
+            refresh.Tick += delegate { RefreshTeams(); RefreshDevices(); RefreshMeetings(); };
+            Shown += delegate { RefreshTeams(); RefreshMeetings(); refresh.Start(); };
             FormClosed += delegate { refresh.Dispose(); };
         }
 
@@ -579,6 +585,102 @@ namespace Krabbz.Blynclight
         {
             using (var dialog = new TeamsAppDialog(tray)) dialog.ShowDialog(this);
             RefreshTeams();
+        }
+
+        // The Meeting Alerts page: allow calendar access, then the on/off, how early, sound and wording.
+        void MeetingAlertsPage()
+        {
+            Heading(null, null);
+            meetingStatus.Location = new Point(24, y + 6);
+            Add(meetingStatus);
+            meetingButton.Bounds = new Rectangle(350, y, 130, 32);
+            meetingButton.Click += delegate { tray.GrantCalendarAccess(); };
+            Add(meetingButton);
+            y += 44;
+
+            Box("Alert me before my meetings", AppSettings.MeetingAlertsOn, v => AppSettings.MeetingAlertsOn = v,
+                help: "Shows a small window shortly before each meeting in your calendar, with its time, place and organizer, and a Join button when it's an online meeting. Declined and cancelled meetings and all-day events are skipped.");
+
+            var leadLabel = new Label { Text = "Alert me this long before", AutoSize = true, Location = new Point(24, y + 4) };
+            Add(leadLabel);
+            Info(leadLabel, "How long before a meeting starts the alert shows. Snooze brings it back after 2 minutes.");
+            var lead = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
+            foreach (int choice in AppSettings.MeetingAlertMinuteChoices)
+            {
+                lead.Items.Add(choice == 1 ? "1 minute" : choice + " minutes");
+                if (choice == AppSettings.MeetingAlertMinutes) lead.SelectedIndex = lead.Items.Count - 1;
+            }
+            lead.SelectedIndexChanged += delegate
+            {
+                AppSettings.MeetingAlertMinutes = AppSettings.MeetingAlertMinuteChoices[lead.SelectedIndex];
+            };
+            Add(lead);
+            y += 30 + RowGap;
+
+            Box("Play a sound", AppSettings.MeetingAlertSound, v => AppSettings.MeetingAlertSound = v,
+                help: "A short sound with the alert. It stays quiet while you're on a call, so it doesn't play over the people you're talking to.");
+
+            var wordsLabel = new Label { Text = "What the alert says", AutoSize = true, Location = new Point(24, y + 4) };
+            Add(wordsLabel);
+            Info(wordsLabel, "The alert's first line. {when} becomes \"in 5 minutes\" (or \"now\") and {subject} becomes the meeting's title.");
+            var reset = new ModernButton { Text = "Reset", Bounds = new Rectangle(402, y - 1, 78, 30) };
+            Add(reset);
+            y += 34;
+            var words = new TextBox
+            {
+                Bounds = new Rectangle(24, y, 456, 28),
+                MaxLength = AppSettings.MeetingAlertTextMaxLength,
+                Text = AppSettings.MeetingAlertText,
+            };
+            // Saved as you type; an empty box keeps the last wording until something is typed.
+            words.TextChanged += delegate { if (words.Text.Trim().Length > 0) AppSettings.MeetingAlertText = words.Text.Trim(); };
+            reset.Click += delegate
+            {
+                words.Text = AppSettings.DefaultMeetingAlertText;
+                AppSettings.MeetingAlertText = AppSettings.DefaultMeetingAlertText;
+            };
+            Add(words);
+            y += 36;
+            Add(new Label
+            {
+                Text = "Use {when} for the time, like \"in 5 minutes\", and {subject} for the meeting's title.",
+                AutoSize = true,
+                MaximumSize = new Size(width - 24 - 24 - 24, 0),
+                Font = new Font("Segoe UI", 9f),
+                Location = new Point(24, y),
+                Tag = VersionLabel,
+            });
+            y += 28 + RowGap;
+
+            var test = new ModernButton { Text = "Show a test alert", Bounds = new Rectangle(24, y, 180, 34) };
+            test.Click += delegate { tray.ShowTestMeetingAlert(); };
+            Add(test);
+            y += 34 + RowGap;
+        }
+
+        // Whether BusyLightz may read the calendar yet, and why not if something's wrong.
+        void RefreshMeetings()
+        {
+            var presence = tray.Presence;
+            string problem = tray.MeetingAlertProblem;
+            if (presence == null || !presence.SignedIn)
+            {
+                meetingStatus.Text = "Connect to Microsoft Teams first (on the Microsoft Teams page).";
+                meetingButton.Text = "Allow access...";
+                meetingButton.Enabled = false;
+                return;
+            }
+            meetingButton.Enabled = true;
+            if (!presence.CalendarGranted)
+            {
+                meetingStatus.Text = "Not allowed yet. BusyLightz only reads the times, titles and links of your meetings, and keeps none of it.";
+                meetingButton.Text = "Allow access...";
+            }
+            else
+            {
+                meetingStatus.Text = problem == null ? "Calendar access is allowed." : "Calendar access is allowed, but: " + problem;
+                meetingButton.Text = "Allow again...";
+            }
         }
 
         // e.g. "Connected on COM3", and whether a K2 is plugged in.

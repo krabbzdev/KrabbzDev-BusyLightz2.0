@@ -71,6 +71,7 @@ Connect once with a browser sign-in to your work account. No client secret is st
 - **Follow Teams status:** green Available, red Busy or In a call, purple Do not disturb, yellow Away, off when Offline (change the colors in Light Control).
 - **Teams matches what you pick:** picking Busy or On a call sets your Teams status to Busy, Available sets it to Available, and going back to Follow Teams Status returns it to normal.
 - **Busy in Teams during other calls:** during a Zoom, Cytracom or other non-Teams call, Teams shows you as *Busy, In a call*.
+- **Meeting alerts:** a small pop-up shortly before each meeting in your calendar, with its time, place and organizer, a **Join** button for online meetings, an optional sound, and wording you can change. Turned on in Settings; it only reads your calendar, never changes it. [Details](docs/Meeting-Alerts.md).
 - **Status message while your lights are red:** shows *On a video call* (the default), *In a meeting*, *On a phone call*, *Heads down, please message me*, *Back in a few minutes*, or your own message next to your name in Teams. Your earlier message comes back afterwards.
 
 ### Setup and updates
@@ -105,6 +106,7 @@ Windows doesn't let installers pin apps to the Start menu. Pin it yourself (righ
 | [Installing and Updating](docs/Installing-and-Updating.md) | Download, install, automatic updates, uninstall, deploying to many PCs |
 | [Using the Light](docs/Using-the-Light.md) | Supported lights, the window, override timer, tray menu, hotkeys, notifications, Settings, Send feedback |
 | [Teams Status](docs/Teams-Status.md) | Connecting to Teams, what each color means, Busy in Teams, status messages |
+| [Meeting Alerts](docs/Meeting-Alerts.md) | A pop-up before each meeting, with the details and a Join button, and its settings |
 | [Call Detection](docs/Call-Detection.md) | How the lights know you're on a call, ignoring apps |
 | [Setup Checklist](docs/Setup-Checklist.md) | Every step of the checklist explained |
 | [Setting Up Teams for Your Organization](docs/Setting-Up-Teams-for-Your-Organization.md) | One-time steps for an IT admin |

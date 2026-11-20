@@ -4,8 +4,9 @@
 
 .DESCRIPTION
   - Single-tenant public client, redirect URI http://localhost, no secret or certificate.
-  - One Microsoft Graph delegated permission, Presence.ReadWrite (plus the openid, profile and
-    offline_access sign-in scopes), with admin consent for the organization.
+  - Two Microsoft Graph delegated permissions, Presence.ReadWrite (Teams status) and Calendars.Read (Meeting
+    Alerts, read-only, only the user's own calendar), plus the openid, profile and offline_access sign-in
+    scopes, with admin consent for the organization.
   Safe to run again: an existing "Krabbz9999 Blynclight" registration is reused and brought up to date.
   Needs the Microsoft.Graph.Authentication, .Applications and .Identity.SignIns modules, and an admin
   sign-in (Global Administrator or Cloud Application Administrator) in the browser.
@@ -21,7 +22,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $graphAppId = '00000003-0000-0000-c000-000000000000' # Microsoft Graph
-$scopes = 'openid', 'profile', 'offline_access', 'Presence.ReadWrite'
+$scopes = 'openid', 'profile', 'offline_access', 'Presence.ReadWrite', 'Calendars.Read'
 
 Import-Module Microsoft.Graph.Authentication, Microsoft.Graph.Applications, Microsoft.Graph.Identity.SignIns
 Write-Host 'Opening Microsoft sign-in. Use an account that can manage app registrations and grant consent.'
