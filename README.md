@@ -82,7 +82,7 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 <img src="docs/images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side: the date, then each meeting with its time, title and place, the one on now highlighted, finished ones dimmed, Join buttons on online meetings, and Open my calendar at the bottom" width="760">
 
 - **The details:** the meeting's title, start and end time, place and organizer, with a video camera icon for online meetings and a calendar for the rest.
-- **My Schedule Today, beside the window:** open BusyLightz and a panel against its right side shows the day as a timeline, with the meeting on now highlighted, the free time between meetings, and Join buttons for online ones (it can be turned off in Settings).
+- **My Schedule Today, beside the window:** open BusyLightz and a panel against its right side shows the day as a timeline, with the meeting on now highlighted, the free time between meetings, and Join buttons for online ones (in its own frame, with a × to hide it; it can also be turned off in Settings).
 - **Today's meetings:** **Today's meetings** in the tray menu opens a small window with the day's calendar: time, title and place, the meeting on now highlighted, and a **Join** button on online ones.
 - **A live timer:** the first line ticks every second like a stopwatch (*Meeting starting in 4:32*), and the alert closes by itself when the meeting starts (if it only appears late, it counts up: *Meeting started 0:42 ago*).
 - **Join, Snooze, Dismiss:** **Join** (online meetings) opens the meeting in Teams, **Snooze 2 min** brings the alert back, **Dismiss** closes it. It never takes the keyboard from what you're typing.

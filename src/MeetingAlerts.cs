@@ -792,6 +792,8 @@ namespace Krabbz.Blynclight
         void AddTitleBar()
         {
             titleBar.Bounds = new Rectangle(Frame, Frame, FormWidth, TitleHeight);
+            var closeRect = new Rectangle(FormWidth - 46, 0, 46, TitleHeight - 1);
+            bool overClose = false;
             titleBar.Paint += (sender, e) =>
             {
                 var g = e.Graphics;
@@ -799,8 +801,30 @@ namespace Krabbz.Blynclight
                 g.Clear(BarColor);
                 using (var red = new SolidBrush(Color.FromArgb(232, 17, 35))) g.FillPie(red, 12, 9, 14, 14, 90, 180);
                 using (var blue = new SolidBrush(Color.FromArgb(0, 120, 212))) g.FillPie(blue, 12, 9, 14, 14, 270, 180);
-                AgendaDraw.Left(g, Program.AppName, SmallFont, Theme.Text, new Rectangle(36, 0, FormWidth - 48, TitleHeight));
-                using (var pen = new Pen(Theme.Border)) g.DrawLine(pen, 0, TitleHeight - 1, FormWidth, TitleHeight - 1);
+                AgendaDraw.Left(g, Program.AppName, SmallFont, Theme.Text, new Rectangle(36, 0, FormWidth - 90, TitleHeight));
+                // The close button, red under the pointer like Windows' own.
+                if (overClose) using (var hot = new SolidBrush(Color.FromArgb(232, 17, 35))) g.FillRectangle(hot, closeRect);
+                using (var pen = new Pen(overClose ? Color.White : Theme.Text, 1.2f))
+                {
+                    int cx = closeRect.X + closeRect.Width / 2, cy = closeRect.Y + closeRect.Height / 2;
+                    g.DrawLine(pen, cx - 5, cy - 5, cx + 5, cy + 5);
+                    g.DrawLine(pen, cx - 5, cy + 5, cx + 5, cy - 5);
+                }
+                using (var line = new Pen(Theme.Border)) g.DrawLine(line, 0, TitleHeight - 1, FormWidth, TitleHeight - 1);
+            };
+            titleBar.MouseMove += (sender, e) =>
+            {
+                bool inside = closeRect.Contains(e.Location);
+                if (inside != overClose) { overClose = inside; titleBar.Invalidate(); }
+            };
+            titleBar.MouseLeave += delegate { if (overClose) { overClose = false; titleBar.Invalidate(); } };
+            // Closing it hides the panel and turns "Show today's meetings beside the window" off, so it stays away until
+            // that's switched back on in Settings > Meeting Alerts.
+            titleBar.MouseClick += (sender, e) =>
+            {
+                if (!closeRect.Contains(e.Location)) return;
+                AppSettings.AgendaBesideWindow = false;
+                Hide();
             };
             Controls.Add(titleBar);
         }
