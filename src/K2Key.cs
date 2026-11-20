@@ -186,8 +186,8 @@ namespace Krabbz.Blynclight
                 int message = wParam.ToInt32();
                 if (message == WM_KEYDOWN || message == WM_KEYUP || message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)
                 {
-                    int vkey = GenericKey(Marshal.ReadInt32(lParam));
-                    if (IsMappedKey(vkey) || IsModifier(vkey))
+                    int vkey = Marshal.ReadInt32(lParam);
+                    if (IsMappedKey(vkey))
                     {
                         try
                         {
@@ -201,19 +201,6 @@ namespace Krabbz.Blynclight
             }
             return CallNextHookEx(keyHook, code, wParam, lParam);
         }
-
-        // The left and right Ctrl, Shift and Alt keys as the one key the raw input reports.
-        static int GenericKey(int vkey)
-        {
-            if (vkey == 160 || vkey == 161) return 16;
-            if (vkey == 162 || vkey == 163) return 17;
-            if (vkey == 164 || vkey == 165) return 18;
-            return vkey;
-        }
-
-        // The K2 that types sends its letter with Ctrl+Alt held (Ctrl+Alt+Z, Ctrl+Alt+X): those are cancelled with it, or
-        // the typing would land as shortcuts.
-        static bool IsModifier(int vkey) { return vkey == 16 || vkey == 17 || vkey == 18; }
 
         bool IsMappedKey(int vkey)
         {
@@ -349,8 +336,7 @@ namespace Krabbz.Blynclight
                         if (mapped[0] != 0 && vkey == mapped[0]) button = Button.Left;
                         else if (mapped[1] != 0 && vkey == mapped[1]) button = Button.Right;
                         bool bothKey = mapped[2] != 0 && vkey == mapped[2];
-                        if (button != null || bothKey || IsModifier(GenericKey(vkey)))
-                            unmatchedKeys.Add(new KeyValuePair<int, int>(GenericKey(vkey), Environment.TickCount));
+                        if (button != null || bothKey) unmatchedKeys.Add(new KeyValuePair<int, int>(vkey, Environment.TickCount));
                         if (bothKey)
                         {
                             // A key the device sends for both buttons at once: one Both press, when it's let go (held keys repeat).
@@ -810,6 +796,25 @@ namespace Krabbz.Blynclight
         static extern uint SendInput(uint count, INPUT[] inputs, int size);
         const uint INPUT_KEYBOARD = 1, KEYEVENTF_KEYUP = 0x2, KEYEVENTF_UNICODE = 0x4;
 
+        [DllImport("user32.dll")]
+        static extern short GetAsyncKeyState(int vKey);
+
+        // The Red Light K2 holds Ctrl and Alt while it sends its letter, and lets go a few milliseconds after the press is
+        // seen. Typed while they're still down, the text would arrive as shortcuts, so wait (at most half a second) for
+        // Ctrl, Alt, Shift and Windows to be up first. Nothing is cancelled or changed: they're only looked at.
+        static void WaitForModifiersUp()
+        {
+            int[] keys = { 0x10, 0x11, 0x12, 0x5B, 0x5C };
+            for (int i = 0; i < 25; i++)
+            {
+                bool down = false;
+                foreach (int key in keys) if ((GetAsyncKeyState(key) & 0x8000) != 0) down = true;
+                if (!down) break;
+                System.Threading.Thread.Sleep(20);
+            }
+            System.Threading.Thread.Sleep(30);
+        }
+
         // Types text into whatever has the keyboard focus, as if typed.
         static void TypeText(string text)
         {
@@ -818,8 +823,7 @@ namespace Krabbz.Blynclight
                 Program.LogEvent("K2 key: nothing to type");
                 return;
             }
-            // Let the key's own release be cancelled first (the Z/X key sends its letter's key-up at this moment).
-            System.Threading.Thread.Sleep(60);
+            WaitForModifiersUp();
             var inputs = new List<INPUT>();
             foreach (char c in text.Replace("\r\n", "\r").Replace('\n', '\r'))
             {
