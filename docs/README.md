@@ -4,6 +4,8 @@
 
 A small Windows app that controls USB busy lights, so the people around you can see at a glance whether you're free, busy or on a call. Plug in any mix of **Embrava Blynclight** and **Luxafor Flag** lights, as many of each as you like, and they all show the same color at the same time. It replaces both the Embrava Connect app and Luxafor's own app.
 
+**No busy light? That's fine.** You can still use BusyLightz without one: it sets your Microsoft Teams status to Do not disturb whenever you're on a call in any app that uses your microphone (Zoom, a phone app, a browser call and so on), then back when you hang up. Teams can't see those calls on its own, so BusyLightz tells it for you. See [Teams Status](Teams-Status.md).
+
 > **This app is still in BETA.** If something doesn't work the way this guide describes, see [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md).
 
 ## Why I made this
