@@ -39,7 +39,7 @@ This is on by default for new installs. If it shows **Turn on**, click it to swi
 On unless you switch off *Turn lights red when my mic is in use* in Settings. **Test microphone...** shows live which apps Windows reports using the microphone, and has **Ignore apps...** for apps whose microphone use shouldn't turn the light red. The step shows **!** if Windows is blocking apps from the microphone. See [Call Detection](Call-Detection.md).
 
 ### 7. Your email address
-The address the [K2 USBC Key](Mute-Button-and-K2-Key.md#your-email-address) types when you press both its buttons (on the version of the key that clicks; the version that types Z and X has no *Both together*). Type it in the box and click **Save**. Until you save one, the step shows **!** and the key types the example address `ChangeMe@ChangeMe.Com`. You can change it later in **Settings > K2 USBC Key**.
+The address the [K2 USBC Key](Mute-Button-and-K2-Key.md#your-email-address) types when you press both its buttons (on the version of the key that clicks; the Red Light version has no *Both together*). Type it in the box and click **Save**. Until you save one, the step shows **!** and the key types the example address `ChangeMe@ChangeMe.Com`. You can change it later in **Settings > K2 USBC Key**.
 
 ### Bottom buttons
 - **Test the light**: shows the call colors (flashing red and blue, or steady red) for 3 seconds so you can see the light respond.

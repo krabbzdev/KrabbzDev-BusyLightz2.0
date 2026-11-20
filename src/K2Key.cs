@@ -186,8 +186,8 @@ namespace Krabbz.Blynclight
                 int message = wParam.ToInt32();
                 if (message == WM_KEYDOWN || message == WM_KEYUP || message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)
                 {
-                    int vkey = Marshal.ReadInt32(lParam);
-                    if (IsMappedKey(vkey))
+                    int vkey = GenericKey(Marshal.ReadInt32(lParam));
+                    if (IsMappedKey(vkey) || IsModifier(vkey))
                     {
                         try
                         {
@@ -201,6 +201,19 @@ namespace Krabbz.Blynclight
             }
             return CallNextHookEx(keyHook, code, wParam, lParam);
         }
+
+        // The left and right Ctrl, Shift and Alt keys as the one key the raw input reports.
+        static int GenericKey(int vkey)
+        {
+            if (vkey == 160 || vkey == 161) return 16;
+            if (vkey == 162 || vkey == 163) return 17;
+            if (vkey == 164 || vkey == 165) return 18;
+            return vkey;
+        }
+
+        // The K2 that types sends its letter with Ctrl+Alt held (Ctrl+Alt+Z, Ctrl+Alt+X): those are cancelled with it, or
+        // the typing would land as shortcuts.
+        static bool IsModifier(int vkey) { return vkey == 16 || vkey == 17 || vkey == 18; }
 
         bool IsMappedKey(int vkey)
         {
@@ -336,7 +349,8 @@ namespace Krabbz.Blynclight
                         if (mapped[0] != 0 && vkey == mapped[0]) button = Button.Left;
                         else if (mapped[1] != 0 && vkey == mapped[1]) button = Button.Right;
                         bool bothKey = mapped[2] != 0 && vkey == mapped[2];
-                        if (button != null || bothKey) unmatchedKeys.Add(new KeyValuePair<int, int>(vkey, Environment.TickCount));
+                        if (button != null || bothKey || IsModifier(GenericKey(vkey)))
+                            unmatchedKeys.Add(new KeyValuePair<int, int>(GenericKey(vkey), Environment.TickCount));
                         if (bothKey)
                         {
                             // A key the device sends for both buttons at once: one Both press, when it's let go (held keys repeat).
@@ -637,7 +651,7 @@ namespace Krabbz.Blynclight
                 if (!IdPattern.IsMatch(row.Id)) { Say("That device has no hardware ID, so it can't be added."); return; }
                 if (row.Known && row.Key != 0)
                 {
-                    Say("That key is already recognized and sends a key (" + (Keys)row.Key + "), not a mouse click. A K2 that types Z and X works with nothing to set up: close this window and press the buttons. For other keys, click Use as Left and Use as Right.");
+                    Say("That key is already recognized and sends a key (" + (Keys)row.Key + "), not a mouse click. The Red Light version of the K2 works with nothing to set up: close this window and press the buttons. For other keys, click Use as Left and Use as Right.");
                     return;
                 }
                 AppSettings.AddK2Id(row.Id);

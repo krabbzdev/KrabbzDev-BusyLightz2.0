@@ -40,7 +40,7 @@ Plugging in and unplugging the button, and every mute and unmute, are noted in t
 
 ## K2 USBC Key
 
-The K2's two buttons each run an action, and so does pressing **both together**. Pressing both counts once: it doesn't also run the left or right action. (The version of the key that types Z and X has no *Both together*; see [below](#a-k2-that-types-letters-z-and-x-works-out-of-the-box).)
+The K2's two buttons each run an action, and so does pressing **both together**. Pressing both counts once: it doesn't also run the left or right action. (The Red Light version of the key has no *Both together*; see [below](#the-red-light-version-of-the-k2-works-out-of-the-box).)
 
 Out of the box the K2's buttons are a left and a right mouse click. BusyLightz catches those clicks before Windows acts on them, so a press only runs your action and doesn't click wherever the pointer is. Clicks from your real mouse aren't affected. While BusyLightz isn't running, the K2 clicks like a mouse again.
 
@@ -63,9 +63,9 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 | **Busy (red)**, **Available (green)**, **On a call**, **Follow Teams Status**, **Party Mode** | Sets that mode, like the buttons in the window. |
 | **Open:** | Opens a program, file or web address you enter, e.g. `https://teams.microsoft.com`. |
 
-### A K2 that types letters (Z and X) works out of the box
+### The Red Light version of the K2 works out of the box
 
-Some K2 keys are set up to type letters instead of clicking: **Z** for the left button and **X** for the right. BusyLightz knows that version: its two buttons run the actions you set for **Left button** and **Right button**, and the letters aren't typed into your documents (only keystrokes from the K2 itself are stopped, never your normal keyboard). There's nothing to set up. **Known limit:** on this version, pressing both buttons together doesn't run **Both together** (that action works on the version that clicks). Use Left and Right.
+The **Red Light version** of the K2 types a shortcut instead of clicking: **Ctrl+Alt+Z** for the left button and **Ctrl+Alt+X** for the right. BusyLightz knows that version: its two buttons run the actions you set for **Left button** and **Right button**, and the shortcut isn't sent to your programs (only keystrokes from the K2 itself are stopped, never your normal keyboard). There's nothing to set up. **Known limit:** on the Red Light version, pressing both buttons together doesn't run **Both together** (that action works on the version that clicks). Use Left and Right.
 
 ### If your two-button key isn't found, or sends letters: Remap Custom Keys
 

@@ -388,7 +388,7 @@ namespace Krabbz.Blynclight
             int firstK2Control = page.Controls.Count;
             K2Row("Left button", K2Key.Button.Left, "What happens when you press the K2 USBC Key's left button on its own.");
             K2Row("Right button", K2Key.Button.Right, "What happens when you press the K2 USBC Key's right button on its own.");
-            K2Row("Both together", K2Key.Button.Both, "What happens when you press both buttons at the same time. It counts once, so it doesn't also run Left or Right. Not available on the version of the key that types Z and X.");
+            K2Row("Both together", K2Key.Button.Both, "What happens when you press both buttons at the same time. It counts once, so it doesn't also run Left or Right. Not available on the Red Light version of the key.");
             y += 4;
             var emailName = new Label { Text = "My email address", AutoSize = true, Location = new Point(24, y + 4) };
             Add(emailName);
@@ -401,7 +401,7 @@ namespace Krabbz.Blynclight
             Add(new Label
             {
                 Text = "No K2 software needed: out of the box its buttons are mouse clicks, and BusyLightz cancels those clicks so a press " +
-                       "only runs your action (your real mouse isn't affected). The version that types Z and X has no Both together.",
+                       "only runs your action (your real mouse isn't affected). The Red Light version has no Both together.",
                 AutoSize = true,
                 MaximumSize = new Size(width - 48, 0),
                 Font = new Font("Segoe UI", 8.5f),
