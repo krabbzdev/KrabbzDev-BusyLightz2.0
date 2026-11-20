@@ -70,12 +70,19 @@
     <CustomAction Id="SetCreateUpdaterTask" Property="CreateUpdaterTask"
                   Value="&quot;[System64Folder]schtasks.exe&quot; /Create /F /TN &quot;BusyLightz Updater&quot; /XML &quot;[#UpdaterTaskXml]&quot;" />
     <CustomAction Id="CreateUpdaterTask" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Impersonate="no" Return="check" />
+    <!-- Let any signed-in user start the task (read and execute only), so "Update now" doesn't need an admin prompt.
+         It only ever installs the newest release from GitHub, checked against its SHA-256, so starting it is harmless. -->
+    <CustomAction Id="SetUpdaterTaskAccess" Property="UpdaterTaskAccess"
+                  Value="&quot;[System64Folder]WindowsPowerShell\v1.0\powershell.exe&quot; -NoProfile -ExecutionPolicy Bypass -Command &quot;$s = New-Object -ComObject Schedule.Service; $s.Connect(); $s.GetFolder('\').GetTask('BusyLightz Updater').SetSecurityDescriptor('D:(A;;FA;;;SY)(A;;FA;;;BA)(A;;FRFX;;;AU)', 0)&quot;" />
+    <CustomAction Id="UpdaterTaskAccess" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Impersonate="no" Return="ignore" />
     <CustomAction Id="SetDeleteUpdaterTask" Property="DeleteUpdaterTask"
                   Value="&quot;[System64Folder]schtasks.exe&quot; /Delete /F /TN &quot;BusyLightz Updater&quot;" />
     <CustomAction Id="DeleteUpdaterTask" BinaryKey="WixCA" DllEntry="WixQuietExec64" Execute="deferred" Impersonate="no" Return="ignore" />
     <InstallExecuteSequence>
       <Custom Action="SetCreateUpdaterTask" Before="CreateUpdaterTask">NOT REMOVE="ALL"</Custom>
       <Custom Action="CreateUpdaterTask" After="InstallFiles">NOT REMOVE="ALL"</Custom>
+      <Custom Action="SetUpdaterTaskAccess" Before="UpdaterTaskAccess">NOT REMOVE="ALL"</Custom>
+      <Custom Action="UpdaterTaskAccess" After="CreateUpdaterTask">NOT REMOVE="ALL"</Custom>
       <Custom Action="SetDeleteUpdaterTask" Before="DeleteUpdaterTask">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
       <Custom Action="DeleteUpdaterTask" Before="RemoveFiles">REMOVE="ALL" AND NOT UPGRADINGPRODUCTCODE</Custom>
     </InstallExecuteSequence>
