@@ -163,6 +163,8 @@ namespace Krabbz.Blynclight
         public static bool UsbLightsDisabled { get { return Get("UsbLightsDisabled", false); } set { Set("UsbLightsDisabled", value); } }
         // Meeting alerts: a pop-up shortly before each calendar meeting (needs calendar access, allowed in Settings). On unless changed.
         public static bool MeetingAlertsOn { get { return Get("MeetingAlertsOn"); } set { Set("MeetingAlertsOn", value); } }
+        // The meeting alert shows the plain icon instead of a picture. Off unless changed.
+        public static bool AlertPictureOff { get { return Get("AlertPictureOff", false); } set { Set("AlertPictureOff", value); } }
         // Set once the one-time "New: Meeting Alerts" notice has been shown (or isn't needed), so it never comes back.
         public static bool MeetingAlertsIntroShown { get { return Get("MeetingAlertsIntroShown", false); } set { Set("MeetingAlertsIntroShown", value); } }
         // Today's meetings in a panel attached to the right of the BusyLightz window while it's open. On unless changed.

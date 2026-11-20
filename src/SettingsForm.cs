@@ -634,9 +634,10 @@ namespace Krabbz.Blynclight
             // The user's own picture, shown on the alert where the icon would be.
             var pictureLabel = new Label { Text = "Picture on the alert", AutoSize = true, Location = new Point(24, y + 6) };
             Add(pictureLabel);
-            Info(pictureLabel, "Shows your own picture on the alert instead of the video camera icon. It's squared off from the middle, so a picture with the subject in the center works best. A small copy is kept on this PC only; the original isn't touched.");
-            var pictureRemove = new ModernButton { Text = "Remove", Bounds = new Rectangle(402, y, 78, 32), Enabled = AlertPicture.Exists };
-            var pictureChoose = new ModernButton { Text = "Choose picture...", Bounds = new Rectangle(262, y, 132, 32) };
+            Info(pictureLabel, "A picture on the alert where the video camera icon would be. Choose picture... uses your own (squared off from the middle, so keep the subject in the center; a small copy is kept on this PC only), Default goes back to the picture that comes with BusyLightz, and None shows just the icon.");
+            var pictureChoose = new ModernButton { Text = "Choose picture...", Bounds = new Rectangle(196, y, 130, 32) };
+            var pictureDefault = new ModernButton { Text = "Default", Bounds = new Rectangle(332, y, 70, 32) };
+            var pictureNone = new ModernButton { Text = "None", Bounds = new Rectangle(408, y, 72, 32) };
             pictureChoose.Click += delegate
             {
                 using (var dialog = new OpenFileDialog
@@ -649,7 +650,7 @@ namespace Krabbz.Blynclight
                     try
                     {
                         AlertPicture.Set(dialog.FileName);
-                        pictureRemove.Enabled = true;
+                        AppSettings.AlertPictureOff = false;
                         tray.ShowTestMeetingAlert();
                     }
                     catch (Exception ex)
@@ -659,13 +660,20 @@ namespace Krabbz.Blynclight
                     }
                 }
             };
-            pictureRemove.Click += delegate
+            pictureDefault.Click += delegate
             {
                 AlertPicture.Clear();
-                pictureRemove.Enabled = false;
+                AppSettings.AlertPictureOff = false;
+                tray.ShowTestMeetingAlert();
+            };
+            pictureNone.Click += delegate
+            {
+                AppSettings.AlertPictureOff = true;
+                tray.ShowTestMeetingAlert();
             };
             Add(pictureChoose);
-            Add(pictureRemove);
+            Add(pictureDefault);
+            Add(pictureNone);
             y += 32 + RowGap;
 
             var wordsLabel = new Label { Text = "What the alert says", AutoSize = true, Location = new Point(24, y + 4) };

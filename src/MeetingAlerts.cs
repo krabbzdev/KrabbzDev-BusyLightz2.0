@@ -213,8 +213,8 @@ namespace Krabbz.Blynclight
         }
     }
 
-    // The picture the user picked to show beside their meeting alerts (Settings > Meeting Alerts). A scaled-down copy is
-    // kept in the app's data folder, so moving or deleting the original doesn't matter, and nothing is sent anywhere.
+    // The picture shown on meeting alerts: the one that comes with the app, or one the user picked (Settings > Meeting
+    // Alerts). A scaled-down copy of their own is kept in the app's data folder, so moving or deleting the original doesn't matter, and nothing is sent anywhere.
     public static class AlertPicture
     {
         const int MaxSide = 400;
@@ -228,16 +228,26 @@ namespace Krabbz.Blynclight
             }
         }
 
-        public static bool Exists { get { return System.IO.File.Exists(FilePath); } }
+        // Whether the user has picked a picture of their own (rather than the one that comes with the app).
+        public static bool HasCustom { get { return System.IO.File.Exists(FilePath); } }
 
-        // The saved picture, or null if there isn't one (or it can't be read). The caller disposes it.
+        // The picture to show: the user's own, or else the one built into the app. Null if they chose the plain icon
+        // instead, or it can't be read. The caller disposes it.
         public static Bitmap Load()
         {
             try
             {
-                if (!Exists) return null;
-                using (var stream = new System.IO.FileStream(FilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read))
-                using (var image = Image.FromStream(stream)) return new Bitmap(image);
+                if (AppSettings.AlertPictureOff) return null;
+                if (HasCustom)
+                {
+                    using (var stream = new System.IO.FileStream(FilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read))
+                    using (var image = Image.FromStream(stream)) return new Bitmap(image);
+                }
+                using (var stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("alert-default.png"))
+                {
+                    if (stream == null) return null;
+                    using (var image = Image.FromStream(stream)) return new Bitmap(image);
+                }
             }
             catch (Exception ex)
             {
@@ -269,7 +279,7 @@ namespace Krabbz.Blynclight
 
         public static void Clear()
         {
-            try { if (Exists) System.IO.File.Delete(FilePath); }
+            try { if (HasCustom) System.IO.File.Delete(FilePath); }
             catch (Exception ex) { Program.LogError("Removing the meeting alert picture", ex); }
         }
     }

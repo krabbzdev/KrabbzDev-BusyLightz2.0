@@ -97,7 +97,7 @@ using System.Reflection;
 
 Write-Host 'Compiling tray app...'
 # The exe keeps its original file name: installed copies relaunch themselves by exe path after updating.
-Invoke-Tool $csc @('/nologo', '/optimize+', '/target:winexe', "/win32icon:$icon",
+Invoke-Tool $csc @('/nologo', '/optimize+', '/target:winexe', "/win32icon:$icon", "/resource:$assets\alert-default.png,alert-default.png",
     "/out:$build\Krabbz9999 Blynclight App Control.exe",
     '/reference:System.Core.dll', '/reference:System.Drawing.dll', '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll', '/reference:System.Web.dll', '/reference:System.Security.dll', '/reference:System.Management.dll',
     "$src\BlyncCore.cs", "$src\LightController.cs", "$src\TrayApp.cs", "$src\ControlForm.cs", "$src\Updater.cs", "$src\CallDetector.cs", "$src\EmbravaConnect.cs", "$src\TeamsPresence.cs", "$src\SetupForm.cs", "$src\TeamsAppConfig.cs", "$src\AppSettings.cs", "$src\SettingsForm.cs", "$src\CrashReport.cs", "$src\MicTestForm.cs", "$src\AudioSessions.cs", "$src\TrayMenu.cs", "$src\ModernControls.cs", "$src\AllUsers.cs", "$src\DeviceTiles.cs", "$src\MuteSyncButton.cs", "$src\K2Key.cs", "$src\FeedbackForm.cs", "$src\MeetingAlerts.cs", "$build\AssemblyInfo.cs")
