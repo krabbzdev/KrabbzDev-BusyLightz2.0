@@ -163,6 +163,8 @@ namespace Krabbz.Blynclight
         public static bool UsbLightsDisabled { get { return Get("UsbLightsDisabled", false); } set { Set("UsbLightsDisabled", value); } }
         // Meeting alerts: a pop-up shortly before each calendar meeting (needs calendar access, allowed in Settings). On unless changed.
         public static bool MeetingAlertsOn { get { return Get("MeetingAlertsOn"); } set { Set("MeetingAlertsOn", value); } }
+        // Set once the one-time "New: Meeting Alerts" notice has been shown (or isn't needed), so it never comes back.
+        public static bool MeetingAlertsIntroShown { get { return Get("MeetingAlertsIntroShown", false); } set { Set("MeetingAlertsIntroShown", value); } }
         public static bool MeetingAlertSound { get { return Get("MeetingAlertSound"); } set { Set("MeetingAlertSound", value); } }
         // How many minutes before a meeting the alert shows.
         public static readonly int[] MeetingAlertMinuteChoices = { 1, 2, 5, 10, 15 };

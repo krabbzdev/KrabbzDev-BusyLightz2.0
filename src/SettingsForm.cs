@@ -26,6 +26,7 @@ namespace Krabbz.Blynclight
         readonly Button connectButton = new ModernButton();
         readonly Label meetingStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
         readonly Button meetingButton = new ModernButton();
+        int meetingAlertsPage;
         readonly Timer refresh = new Timer { Interval = RefreshMs };
         readonly List<SettingsPage> pages = new List<SettingsPage>();
         readonly List<NavItem> navItems = new List<NavItem>();
@@ -160,6 +161,7 @@ namespace Krabbz.Blynclight
             GreyOutWhile(teamsOff, firstTeamsControl);
             EndPage();
 
+            meetingAlertsPage = pages.Count;
             StartPage("Meeting Alerts", MeetingGlyph, PageColors.Teams, "A pop-up shortly before each meeting, with its details and a Join button for online meetings.");
             MeetingAlertsPage();
             EndPage();
@@ -656,6 +658,12 @@ namespace Krabbz.Blynclight
             test.Click += delegate { tray.ShowTestMeetingAlert(); };
             Add(test);
             y += 34 + RowGap;
+        }
+
+        // Opens the Meeting Alerts page (from the "New: Meeting Alerts" notice).
+        public void ShowMeetingAlerts()
+        {
+            ShowPage(meetingAlertsPage);
         }
 
         // Whether BusyLightz may read the calendar yet, and why not if something's wrong.
