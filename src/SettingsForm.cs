@@ -809,15 +809,15 @@ namespace Krabbz.Blynclight
             transcriptStatus.Location = new Point(24, y + 4);
             Add(transcriptStatus);
             y += 64;
-            transcriptButton.Bounds = new Rectangle(24, y, 150, 34);
+            transcriptButton.Bounds = new Rectangle(24, y, 120, 34);
             transcriptButton.Click += delegate { tray.GrantTranscriptAccess(); };
             Add(transcriptButton);
-            var folderButton = new ModernButton { Text = "Open transcripts folder", Bounds = new Rectangle(182, y, 200, 34) };
+            var folderButton = new ModernButton { Text = "Open transcripts folder", Bounds = new Rectangle(152, y, 184, 34) };
             folderButton.Click += delegate { tray.OpenTranscriptsFolder(); };
             Add(folderButton);
             // An administrator approves once for the organization, signing in as themselves; nothing here changes whose
             // account BusyLightz is connected as.
-            var adminButton = new ModernButton { Text = "Admin approval...", Bounds = new Rectangle(390, y, 130, 34) };
+            var adminButton = new ModernButton { Text = "Admin approval...", Bounds = new Rectangle(344, y, 136, 34) };
             adminButton.Click += delegate { tray.ApproveAsAdmin(); };
             Add(adminButton);
             y += 34 + RowGap;
