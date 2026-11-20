@@ -50,7 +50,7 @@ Out of the box the K2's buttons are a left and a right mouse click. BusyLightz c
 
 Pick an action for **Left button**, **Right button** and **Both together** in **Settings > K2 USBC Key**. At the top of that page, a picture of the K2 lights up the key you press on the real one (both keys for Both together), so you can check it's working.
 
-**Test your buttons:** under the picture, a list shows your last five presses, newest first, each with the time, which button (*Left button*, *Right button* or *Both buttons*) and the action it runs. The list stays put, so you can press a button, look away and come back. If it says the K2 isn't plugged in, or that **Use the K2 key** is off, presses can't be picked up until that's fixed.
+**Test your buttons:** at the bottom of that page, a list shows your last five presses, newest first, each with the time, which button (*Left button*, *Right button* or *Both buttons*) and the action it runs. The list stays put, so you can press a button, look away and come back. If it says the K2 isn't plugged in, or that **Use the K2 key** is off, presses can't be picked up until that's fixed.
 
 | Action | What it does |
 | --- | --- |

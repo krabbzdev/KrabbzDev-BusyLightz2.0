@@ -362,24 +362,6 @@ namespace Krabbz.Blynclight
             tray.K2Pressed += k2Picture.Flash;
             tray.K2Pressed += LogK2Press;
             FormClosed += delegate { tray.K2Pressed -= k2Picture.Flash; tray.K2Pressed -= LogK2Press; };
-            // Test your buttons: every press is listed here and stays, so it's easy to see the K2 is working.
-            Add(new Label { Text = "Test your buttons", AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), Location = new Point(24, y) });
-            y += 26;
-            k2Test.Bounds = new Rectangle(24, y, width - 48, 104);
-            Add(k2Test);
-            UpdateK2Test();
-            y += 104 + RowGap;
-            var finder = new ModernButton { Text = "My key isn't found...", Bounds = new Rectangle(24, y, 200, 34) };
-            finder.Click += delegate
-            {
-                if (k2Finder != null && !k2Finder.IsDisposed) { k2Finder.Activate(); return; }
-                k2Finder = new K2Key.Finder(tray.K2IdsChanged);
-                k2Finder.Show(this);
-            };
-            Add(finder);
-            var finderNote = new Label { Text = "Using a different two-button key? Find its hardware ID here.", AutoSize = true, Font = new Font("Segoe UI", 9f), Location = new Point(236, y + 9), Tag = VersionLabel };
-            Add(finderNote);
-            y += 34 + RowGap;
             var k2On = UseSwitch("Use the K2 key", !AppSettings.K2Disabled,
                 v => { AppSettings.K2Disabled = !v; tray.ApplySettings(); },
                 "On: BusyLightz runs the actions you set for the K2's buttons. Turn it off and BusyLightz leaves the K2 alone: no actions run, and its buttons are ordinary left and right mouse clicks again.");
@@ -417,6 +399,24 @@ namespace Krabbz.Blynclight
                 Tag = VersionLabel,
             });
             y += 26;
+            // Test your buttons: every press is listed here and stays, so it's easy to see the K2 is working.
+            Add(new Label { Text = "Test your buttons", AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), Location = new Point(24, y) });
+            y += 26;
+            k2Test.Bounds = new Rectangle(24, y, width - 48, 104);
+            Add(k2Test);
+            UpdateK2Test();
+            y += 104 + RowGap;
+            var finder = new ModernButton { Text = "My key isn't found...", Bounds = new Rectangle(24, y, 200, 34) };
+            finder.Click += delegate
+            {
+                if (k2Finder != null && !k2Finder.IsDisposed) { k2Finder.Activate(); return; }
+                k2Finder = new K2Key.Finder(tray.K2IdsChanged);
+                k2Finder.Show(this);
+            };
+            Add(finder);
+            var finderNote = new Label { Text = "Using a different two-button key? Find its hardware ID here.", AutoSize = true, Font = new Font("Segoe UI", 9f), Location = new Point(236, y + 9), Tag = VersionLabel };
+            Add(finderNote);
+            y += 34 + RowGap;
         }
 
         // A K2 button's action, and a box for the text it needs (greyed out for actions that need none).
