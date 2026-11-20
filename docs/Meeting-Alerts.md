@@ -55,6 +55,8 @@ Declined and cancelled meetings and all-day events are skipped. Meetings that al
 
 All on the **Meeting Alerts** page of Settings:
 
+<img src="images/settings-meeting-alerts.png" alt="Illustration of Settings on its Meeting Alerts page: calendar access allowed, switches showing ON, the lead time, a Picture on the alert row with Choose picture, Default and None buttons, the wording box and a Show a test alert button" width="420">
+
 | Setting | What it does |
 | --- | --- |
 | **Alert me before my meetings** | The on/off switch. |
