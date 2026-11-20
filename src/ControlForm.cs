@@ -219,7 +219,7 @@ namespace Krabbz.Blynclight
         public bool Teams, Calendar;
         public string TeamsText;
         // A greyed-out Teams or Calendar tile connects when clicked.
-        public event Action TeamsClicked, CalendarClicked;
+        public event Action TeamsClicked, CalendarClicked, CalendarOpenClicked;
         const int TeamsSlot = 4, CalendarSlot = 5;
 
         Rectangle Grid { get { return new Rectangle(4, 40, Width - 8, DeviceTiles.GridHeight); } }
@@ -228,7 +228,7 @@ namespace Krabbz.Blynclight
         int ClickableAt(Point p)
         {
             if (!Teams && DeviceTiles.SlotBounds(Grid, TeamsSlot).Contains(p)) return 1;
-            if (!Calendar && DeviceTiles.SlotBounds(Grid, CalendarSlot).Contains(p)) return 2;
+            if (DeviceTiles.SlotBounds(Grid, CalendarSlot).Contains(p)) return Calendar ? 3 : 2;
             return 0;
         }
 
@@ -244,6 +244,7 @@ namespace Krabbz.Blynclight
             int which = ClickableAt(e.Location);
             if (which == 1 && TeamsClicked != null) TeamsClicked();
             else if (which == 2 && CalendarClicked != null) CalendarClicked();
+            else if (which == 3 && CalendarOpenClicked != null) CalendarOpenClicked();
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -923,7 +924,9 @@ namespace Krabbz.Blynclight
                 if (teams != null && teams.SignedIn) tray.GrantCalendarAccess();
                 else tray.ReauthTeams();
             };
-            deviceHint.SetToolTip(devices, "A greyed-out Teams or Calendar tile connects when you click it.");
+            // A connected Calendar tile brings back today's meetings if they were hidden with the panel's ×.
+            devices.CalendarOpenClicked += delegate { tray.ShowDock(); };
+            deviceHint.SetToolTip(devices, "A greyed-out Teams or Calendar tile connects when you click it. Click Calendar when connected to show today's meetings.");
             Controls.Add(devices);
             y = devices.Bottom + 8;
 

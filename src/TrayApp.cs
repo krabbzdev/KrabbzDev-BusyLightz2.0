@@ -765,6 +765,8 @@ namespace Krabbz.Blynclight
         // Today's meetings, in a small window by the tray icon: from the tray menu.
         public void ShowAgenda()
         {
+            // With the panel beside the window switched on but hidden by its ×, this brings it back instead.
+            if (AppSettings.AgendaBesideWindow && dockDismissed) { ShowDock(); return; }
             if (agendaForm != null && !agendaForm.IsDisposed)
             {
                 agendaForm.Close();
@@ -1017,7 +1019,7 @@ namespace Krabbz.Blynclight
 
         void PlaceDock(ControlForm window)
         {
-            bool want = AppSettings.AgendaBesideWindow && window != null && !window.IsDisposed && window.Visible
+            bool want = AppSettings.AgendaBesideWindow && !dockDismissed && window != null && !window.IsDisposed && window.Visible
                 && window.WindowState == FormWindowState.Normal;
             bool have = dockedAgenda != null && !dockedAgenda.IsDisposed;
             if (!want)
@@ -1025,14 +1027,31 @@ namespace Krabbz.Blynclight
                 if (have && dockedAgenda.Visible) dockedAgenda.Hide();
                 return;
             }
-            if (!have) dockedAgenda = new AgendaForm(() => presence, ShowMeetingAlertsSettings, ShowWindow, true);
+            if (!have)
+            {
+                dockedAgenda = new AgendaForm(() => presence, ShowMeetingAlertsSettings, ShowWindow, true);
+                dockedAgenda.Dismissed += delegate { dockDismissed = true; };
+            }
             dockedAgenda.DockTo(window.Bounds);
             if (!dockedAgenda.Visible) dockedAgenda.Show(window);
         }
 
+        // True after the user clicks the panel's ×, until they bring it back.
+        bool dockDismissed;
+
         // From Settings, when "Show today's meetings beside the window" is switched.
         public void UpdateDock()
         {
+            dockDismissed = false;
+            PlaceDock(form);
+        }
+
+        // From the Calendar tile on the main window: brings back the panel hidden with its ×, or opens today's
+        // meetings by the tray icon when the panel beside the window is switched off.
+        public void ShowDock()
+        {
+            if (!AppSettings.AgendaBesideWindow) { ShowAgenda(); return; }
+            dockDismissed = false;
             PlaceDock(form);
         }
 

@@ -667,6 +667,9 @@ namespace Krabbz.Blynclight
     // presses Esc; the panel beside the window stays.
     class AgendaForm : Form
     {
+        // Raised when the user clicks the × (the panel hides itself).
+        public event Action Dismissed;
+
         const int FormWidth = 400, BrandHeight = 60, BandHeight = 146;
         const int FooterHeight = 56, MaxHeight = 700, EdgeGap = 12, Pad = 12;
         // The outline around the whole window, and the title bar across the top of the panel beside the BusyLightz window.
@@ -826,13 +829,13 @@ namespace Krabbz.Blynclight
                 if (inside != overClose) { overClose = inside; titleBar.Invalidate(); }
             };
             titleBar.MouseLeave += delegate { if (overClose) { overClose = false; titleBar.Invalidate(); } };
-            // Closing it hides the panel and turns "Show today's meetings beside the window" off, so it stays away until
-            // that's switched back on in Settings > Meeting Alerts.
+            // The × only hides the panel (the setting stays on). It comes back from the Calendar tile on the main window,
+            // the tray menu's "Today's meetings", or the next time BusyLightz starts.
             titleBar.MouseClick += (sender, e) =>
             {
                 if (!closeRect.Contains(e.Location)) return;
-                AppSettings.AgendaBesideWindow = false;
                 Hide();
+                if (Dismissed != null) Dismissed();
             };
             Controls.Add(titleBar);
         }
