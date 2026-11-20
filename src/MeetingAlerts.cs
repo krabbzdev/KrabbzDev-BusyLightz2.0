@@ -558,6 +558,16 @@ namespace Krabbz.Blynclight
             return location;
         }
 
+        [System.Runtime.InteropServices.DllImport("uxtheme.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+        static extern int SetWindowTheme(IntPtr hwnd, string subAppName, string subIdList);
+
+        // Dark scrollbars on a control (Windows 10 and later); left as they are if Windows won't.
+        public static void DarkScrollbars(Control control)
+        {
+            try { SetWindowTheme(control.Handle, "DarkMode_Explorer", null); }
+            catch (Exception) { }
+        }
+
         public static string Subject(CalendarMeeting meeting)
         {
             return string.IsNullOrWhiteSpace(meeting.Subject) ? "(no subject)" : meeting.Subject;
@@ -651,6 +661,8 @@ namespace Krabbz.Blynclight
     {
         const int FormWidth = 400, BrandHeight = 60, BandHeight = 146;
         const int FooterHeight = 56, MaxHeight = 700, EdgeGap = 12, Pad = 12;
+        // The outline around the whole window, and the title bar across the top of the panel beside the BusyLightz window.
+        const int Frame = 1, TitleHeight = 32, OuterWidth = FormWidth + 2 * Frame;
         static readonly Font BrandFont = new Font("Segoe UI Semibold", 13f);
         static readonly Font HintFont = new Font("Segoe UI", 8.5f);
         static readonly Font ArrowFont = new Font("Segoe UI", 18f);
@@ -679,6 +691,7 @@ namespace Krabbz.Blynclight
         readonly Action openProgram;
         readonly Panel list = new Panel { AutoScroll = true };
         readonly Surface header = new Surface();
+        readonly Surface titleBar = new Surface();
         readonly Surface footer = new Surface();
         // Docked: the panel beside the BusyLightz window, rather than the one opened from the tray icon.
         readonly bool docked;
@@ -694,8 +707,8 @@ namespace Krabbz.Blynclight
         public AgendaForm(Func<TeamsPresence> getPresence, Action openMeetingSettings, Action openProgram, bool docked = false)
         {
             this.docked = docked;
-            int headerTop = docked ? 0 : BrandHeight;
-            top = headerTop + BandHeight;
+            int headerTop = docked ? TitleHeight : BrandHeight;
+            top = Frame + headerTop + BandHeight;
             this.getPresence = getPresence;
             this.openMeetingSettings = openMeetingSettings;
             this.openProgram = openProgram;
@@ -707,11 +720,14 @@ namespace Krabbz.Blynclight
             BackColor = Theme.Page;
             Font = new Font("Segoe UI", 10);
 
-            if (!docked) AddBrandBand();
+            if (docked) AddTitleBar();
+            else AddBrandBand();
             AddHeader(headerTop);
 
             list.BackColor = Theme.Page;
             Controls.Add(list);
+            // The scrollbar matches the window in Dark mode, instead of a bright white one.
+            list.HandleCreated += delegate { if (AppSettings.DarkMode) AgendaDraw.DarkScrollbars(list); };
             AddFooter();
 
             ShowMessage("Loading...");
@@ -748,7 +764,7 @@ namespace Krabbz.Blynclight
         // it opens the BusyLightz window.
         void AddBrandBand()
         {
-            var brand = new Panel { Bounds = new Rectangle(0, 0, FormWidth, BrandHeight), BackColor = Theme.TeamsTint, Cursor = Cursors.Hand };
+            var brand = new Panel { Bounds = new Rectangle(Frame, Frame, FormWidth, BrandHeight), BackColor = Theme.TeamsTint, Cursor = Cursors.Hand };
             bool over = false;
             brand.MouseEnter += delegate { over = true; brand.Invalidate(); };
             brand.MouseLeave += delegate { over = false; brand.Invalidate(); };
@@ -771,10 +787,31 @@ namespace Krabbz.Blynclight
             Controls.Add(brand);
         }
 
+        // The title bar across the top of the panel beside the window, like the BusyLightz window's own: the app's
+        // red and blue icon and its name.
+        void AddTitleBar()
+        {
+            titleBar.Bounds = new Rectangle(Frame, Frame, FormWidth, TitleHeight);
+            titleBar.Paint += (sender, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(BarColor);
+                using (var red = new SolidBrush(Color.FromArgb(232, 17, 35))) g.FillPie(red, 12, 9, 14, 14, 90, 180);
+                using (var blue = new SolidBrush(Color.FromArgb(0, 120, 212))) g.FillPie(blue, 12, 9, 14, 14, 270, 180);
+                AgendaDraw.Left(g, Program.AppName, SmallFont, Theme.Text, new Rectangle(36, 0, FormWidth - 48, TitleHeight));
+                using (var pen = new Pen(Theme.Border)) g.DrawLine(pen, 0, TitleHeight - 1, FormWidth, TitleHeight - 1);
+            };
+            Controls.Add(titleBar);
+        }
+
+        // The title bar's and bottom bar's color: a little off the page, as the main window's are.
+        static Color BarColor { get { return AppSettings.DarkMode ? Color.FromArgb(38, 38, 42) : Color.FromArgb(240, 240, 244); } }
+
         // The header: a gradient with the title, the date, a refresh button, the day's timeline and a summary line.
         void AddHeader(int y)
         {
-            header.Bounds = new Rectangle(0, y, FormWidth, BandHeight);
+            header.Bounds = new Rectangle(Frame, Frame + y, FormWidth, BandHeight);
             header.Paint += (sender, e) => PaintHeader(e.Graphics);
             header.MouseMove += (sender, e) => { header.Cursor = RefreshRect.Contains(e.Location) ? Cursors.Hand : Cursors.Default; };
             header.MouseClick += (sender, e) => { if (RefreshRect.Contains(e.Location)) Load(); };
@@ -885,21 +922,23 @@ namespace Krabbz.Blynclight
         void AddFooter()
         {
             footer.Size = new Size(FormWidth, FooterHeight);
-            footer.BackColor = Theme.Page;
+            footer.Left = Frame;
+            footer.BackColor = BarColor;
             var pill = new Rectangle((FormWidth - 200) / 2, 11, 200, 34);
             Color ink = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams;
             footer.Paint += (sender, e) =>
             {
                 var g = e.Graphics;
                 g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(BarColor);
+                using (var line = new Pen(Theme.Border)) g.DrawLine(line, 0, 0, FormWidth, 0);
                 var rect = new Rectangle(pill.X, pill.Y, pill.Width - 1, pill.Height - 1);
                 using (var path = AgendaDraw.Round(rect, 17f))
                 {
                     if (footerOver) using (var wash = new SolidBrush(Color.FromArgb(30, Theme.Teams))) g.FillPath(wash, path);
                     using (var pen = new Pen(ink, 1.5f)) g.DrawPath(pen, path);
                 }
-                AgendaDraw.Center(g, Theme.Icons == null ? "Open my calendar" : "Open my calendar  ",
-                    Theme.Icons == null ? MiniFont : MiniFont, ink, pill);
+                AgendaDraw.Center(g, "Open my calendar  \u2197", MiniFont, ink, pill);
             };
             footer.MouseMove += (sender, e) =>
             {
@@ -929,8 +968,8 @@ namespace Krabbz.Blynclight
         {
             var area = Screen.FromRectangle(window).WorkingArea;
             int x = window.Right;
-            if (x + FormWidth > area.Right) x = window.Left - FormWidth >= area.Left ? window.Left - FormWidth : area.Right - FormWidth;
-            Bounds = new Rectangle(x, window.Top, FormWidth, window.Height);
+            if (x + OuterWidth > area.Right) x = window.Left - OuterWidth >= area.Left ? window.Left - OuterWidth : area.Right - OuterWidth;
+            Bounds = new Rectangle(x, window.Top, OuterWidth, window.Height);
             FitToList(contentHeight);
         }
 
@@ -1219,15 +1258,15 @@ namespace Krabbz.Blynclight
             if (docked)
             {
                 // Fills the height of the BusyLightz window, and scrolls when there's more than fits.
-                int room = Math.Max(0, Height - top - FooterHeight);
-                list.Bounds = new Rectangle(0, top, FormWidth, room);
+                int room = Math.Max(0, Height - top - FooterHeight - Frame);
+                list.Bounds = new Rectangle(Frame, top, FormWidth, room);
                 footer.Top = top + room;
                 return;
             }
-            int listHeight = Math.Min(listContentHeight, MaxHeight - top - FooterHeight);
-            list.Bounds = new Rectangle(0, top, FormWidth, listHeight);
+            int listHeight = Math.Min(listContentHeight, MaxHeight - top - FooterHeight - Frame);
+            list.Bounds = new Rectangle(Frame, top, FormWidth, listHeight);
             footer.Top = top + listHeight;
-            ClientSize = new Size(FormWidth, top + listHeight + FooterHeight);
+            ClientSize = new Size(OuterWidth, top + listHeight + FooterHeight + Frame);
             var area = Screen.PrimaryScreen.WorkingArea;
             Location = new Point(area.Right - Width - EdgeGap, area.Bottom - Height - EdgeGap);
         }
@@ -1238,7 +1277,7 @@ namespace Krabbz.Blynclight
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+            using (var pen = new Pen(Theme.BorderHover)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
         }
     }
 }
