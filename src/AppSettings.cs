@@ -163,6 +163,20 @@ namespace Krabbz.Blynclight
         public static bool UsbLightsDisabled { get { return Get("UsbLightsDisabled", false); } set { Set("UsbLightsDisabled", value); } }
         // Meeting alerts: a pop-up shortly before each calendar meeting (needs calendar access, allowed in Settings). On unless changed.
         public static bool MeetingAlertsOn { get { return Get("MeetingAlertsOn"); } set { Set("MeetingAlertsOn", value); } }
+        // When the user was last reminded, in a notice, that Meeting Alerts still needs calendar access. A reminder comes
+        // at most once a week, and only while alerts are on and calendar access isn't allowed.
+        const int ReminderDays = 7;
+        public static bool MeetingAlertsReminderDue
+        {
+            get
+            {
+                DateTime last;
+                string saved = GetString("MeetingAlertsReminded");
+                if (string.IsNullOrEmpty(saved) || !DateTime.TryParse(saved, null, System.Globalization.DateTimeStyles.RoundtripKind, out last)) return true;
+                return DateTime.UtcNow - last.ToUniversalTime() >= TimeSpan.FromDays(ReminderDays);
+            }
+        }
+        public static void MarkMeetingAlertsReminded() { SetString("MeetingAlertsReminded", DateTime.UtcNow.ToString("o")); }
         // The meeting alert shows the plain icon instead of a picture. Off unless changed.
         public static bool AlertPictureOff { get { return Get("AlertPictureOff", false); } set { Set("AlertPictureOff", value); } }
         // Set once the one-time "New: Meeting Alerts" notice has been shown (or isn't needed), so it never comes back.

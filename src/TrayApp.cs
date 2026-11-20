@@ -481,23 +481,32 @@ namespace Krabbz.Blynclight
         // What clicking the notification just shown does, if anything.
         Action balloonAction;
 
-        // A while after the "Updated to version" card, a one-time notice about Meeting Alerts that opens its page in
-        // Settings. Not shown when calendar access is already allowed, alerts are off, or no Teams app is set up.
+        // A while after start-up, a notice about Meeting Alerts that opens its page in Settings: "New: Meeting Alerts" once
+        // after an update, then a reminder at most once a week for as long as calendar access still isn't allowed. Not
+        // shown when calendar access is already allowed, alerts are off, or no Teams app is set up.
         void ScheduleMeetingAlertsIntro(bool existingInstall)
         {
-            if (AppSettings.MeetingAlertsIntroShown) return;
-            if (!existingInstall) { AppSettings.MeetingAlertsIntroShown = true; return; }
+            if (!existingInstall && !AppSettings.MeetingAlertsIntroShown)
+            {
+                // A brand new install is walked through setup instead; its first reminder comes a week later.
+                AppSettings.MeetingAlertsIntroShown = true;
+                AppSettings.MarkMeetingAlertsReminded();
+                return;
+            }
             var wait = new System.Windows.Forms.Timer { Interval = 25000 };
             wait.Tick += delegate
             {
                 wait.Dispose();
                 var teams = presence;
                 if (teams == null || !AppSettings.MeetingAlertsOn) return; // Try again at the next start.
+                if (teams.CalendarGranted) { AppSettings.MeetingAlertsIntroShown = true; return; }
+                bool intro = !AppSettings.MeetingAlertsIntroShown;
+                if (!intro && !AppSettings.MeetingAlertsReminderDue) return;
                 AppSettings.MeetingAlertsIntroShown = true;
-                if (teams.CalendarGranted) return;
+                AppSettings.MarkMeetingAlertsReminded();
                 balloonLink = null;
                 balloonAction = ShowMeetingAlertsSettings;
-                tray.ShowBalloonTip(15000, "New: Meeting Alerts",
+                tray.ShowBalloonTip(15000, intro ? "New: Meeting Alerts" : "Meeting Alerts needs your calendar",
                     teams.SignedIn
                         ? "Get a pop-up before each meeting, with a Join button. Click here to connect your calendar."
                         : "Get a pop-up before each meeting, with a Join button. Click here to see how to set it up.",
