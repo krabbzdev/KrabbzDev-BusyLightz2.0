@@ -80,7 +80,7 @@ Connect once with a browser sign-in to your work account. No client secret is st
 A small pop-up shortly before each meeting in your Microsoft 365 calendar, so you don't miss one while you're heads down.
 
 - **The details:** the meeting's title, start and end time, place and organizer, with a video camera icon for online meetings and a calendar for the rest.
-- **Today's meetings:** click the tray icon (or **Today's meetings** in the tray menu) for a small window with the day's calendar: time, title and place, the meeting on now highlighted, and a **Join** button on online ones. Double-click still opens the window.
+- **Today's meetings:** **Today's meetings** in the tray menu opens a small window with the day's calendar: time, title and place, the meeting on now highlighted, and a **Join** button on online ones.
 - **A live timer:** the first line ticks every second like a stopwatch (*Meeting starting in 4:32*), then counts up once the meeting has started (*Meeting started 0:42 ago*).
 - **Join, Snooze, Dismiss:** **Join** (online meetings) opens the meeting in Teams, **Snooze 2 min** brings the alert back, **Dismiss** closes it. It never takes the keyboard from what you're typing.
 - **Yours to change** in Settings > Meeting Alerts: on or off, how early (1 to 15 minutes), a sound (quiet during calls), and what the first line says.

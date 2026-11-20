@@ -329,7 +329,8 @@ namespace Krabbz.Blynclight
         MeetingAlerts meetingAlerts;
         AgendaForm agendaForm;
         DateTime agendaClosedUtc;
-        readonly System.Windows.Forms.Timer clickTimer = new System.Windows.Forms.Timer { Interval = SystemInformation.DoubleClickTime };
+        // After a double-click opens the window, the click that ends it mustn't open the menu too.
+        DateTime menuSuppressedUntil;
         // Last Teams availability read while signed in (e.g. "Available"), or null.
         string teamsAvailability;
         bool embravaWarned;
@@ -392,20 +393,15 @@ namespace Krabbz.Blynclight
 
             tray = new NotifyIcon();
             tray.ContextMenuStrip = menu;
-            // One click shows today's meetings; a double-click opens the window, so the single click waits to see if a
-            // second one follows.
-            clickTimer.Tick += delegate
-            {
-                clickTimer.Stop();
-                ShowAgenda();
-            };
+            // A normal (left) click opens the menu, the same as a right-click; a double-click opens the window.
             tray.MouseClick += (sender, e) =>
             {
-                if (e.Button == MouseButtons.Left && AppSettings.AgendaOnClick && !clickTimer.Enabled) clickTimer.Start();
+                if (e.Button == MouseButtons.Left && DateTime.UtcNow >= menuSuppressedUntil) ShowTrayMenu();
             };
             tray.DoubleClick += delegate
             {
-                clickTimer.Stop();
+                menuSuppressedUntil = DateTime.UtcNow.AddMilliseconds(SystemInformation.DoubleClickTime);
+                tray.ContextMenuStrip.Close(); // The first click of the double-click opened it.
                 ShowWindow();
             };
             tray.Visible = true;
@@ -626,7 +622,21 @@ namespace Krabbz.Blynclight
             });
         }
 
-        // Today's meetings, in a small window by the tray icon: from a click on the tray icon, or the tray menu.
+        // Opens the tray menu where the pointer is, as a right-click does. NotifyIcon only does that itself for the right
+        // button, so a left click asks it to the same way its own right-click handling does.
+        void ShowTrayMenu()
+        {
+            try
+            {
+                typeof(NotifyIcon).GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(tray, null);
+            }
+            catch (Exception)
+            {
+                tray.ContextMenuStrip.Show(Cursor.Position);
+            }
+        }
+
+        // Today's meetings, in a small window by the tray icon: from the tray menu.
         public void ShowAgenda()
         {
             if (agendaForm != null && !agendaForm.IsDisposed)
