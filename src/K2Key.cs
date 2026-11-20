@@ -435,10 +435,9 @@ namespace Krabbz.Blynclight
             // The list as text, to paste into an email.
             void CopyDetails()
             {
-                var text = new StringBuilder("BusyLightz key finder
-");
+                var text = new StringBuilder("BusyLightz key finder" + Environment.NewLine);
                 foreach (ListViewItem row in list.Items)
-                    text.AppendLine(row.SubItems[0].Text + "	" + row.SubItems[1].Text + "	" + row.SubItems[2].Text + "	" + row.SubItems[3].Text + "	" + row.SubItems[4].Text);
+                    text.AppendLine(row.SubItems[0].Text + "\t" + row.SubItems[1].Text + "\t" + row.SubItems[2].Text + "\t" + row.SubItems[3].Text + "\t" + row.SubItems[4].Text);
                 try { Clipboard.SetText(text.ToString()); message.Text = "Copied. Paste it into an email or message."; }
                 catch (Exception) { message.Text = "Couldn't copy to the clipboard."; }
             }
