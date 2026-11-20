@@ -54,8 +54,7 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 
 | Action | What it does |
 | --- | --- |
-| **Do nothing** | Nothing. |
-| **Type my email address** | Types your email address (below) wherever you're typing. **The default for Both together.** |
+| **Do nothing** | Nothing. **The default for Both together.** |
 | **Type text:** | Types the text you enter in the box beside it. |
 | **Press keys:** | Presses a shortcut you enter, e.g. `Ctrl+Shift+M` (Teams' mute) or `Win+D`. |
 | **Mute / unmute my mic** | Mutes or unmutes your microphone in Windows, like the Mutesync Button. **The default for Left button.** |
@@ -81,10 +80,6 @@ BusyLightz recognizes the K2 by its hardware ID (USB `VID_04D9&PID_A2D0`) and ex
 The box at the bottom of the window shows **everything the key sends**, as it arrives: each key going down and up (with its key number), mouse clicks, and other kinds of reports such as media keys. If a button doesn't work, press it a few times, click **Copy details**, and send it with the key's make and model: it shows exactly what that button does.
 
 **Copy details** puts the list on the clipboard to paste into an email, and **Forget added keys** forgets every key you added or taught, going back to recognizing only the original K2.
-
-### Your email address
-
-What *Type my email address* types is set in the [Setup Checklist](Setup-Checklist.md#7-your-email-address). Until you set it, it's the example address `ChangeMe@ChangeMe.Com`.
 
 ### F13 and F14
 

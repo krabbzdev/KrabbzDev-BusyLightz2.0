@@ -112,7 +112,7 @@ Turn them off in **Settings** (⚙ in the window, or tray menu > **Settings...**
 
 - Check **Settings > K2 USBC Key** says *Connected*, and that each button has an action other than **Do nothing**.
 - While BusyLightz isn't running, the K2's buttons are ordinary left and right mouse clicks. Once BusyLightz is running, its clicks are cancelled.
-- *Type my email address* and *Type text* type into whatever has the keyboard focus. Click into the box you want first.
+- *Type text* types into whatever has the keyboard focus. Click into the box you want first.
 
 ## My two-button key says "Not plugged in"
 

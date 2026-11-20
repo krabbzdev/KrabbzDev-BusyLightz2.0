@@ -374,7 +374,7 @@ namespace Krabbz.Blynclight
             y += picker.Height + RowGap;
         }
 
-        // The K2 macro key: an action for each button and for both together, and the email address it can type.
+        // The K2 macro key: an action for each button and for both together.
         void K2Section()
         {
             Heading(null, null);
@@ -441,7 +441,7 @@ namespace Krabbz.Blynclight
                 value.TabStop = needs;
                 value.ForeColor = needs ? Theme.Text : Theme.Muted;
                 // A hint in the empty box for what goes there; the email action shows the address it types.
-                value.Text = needs ? AppSettings.K2Value(button) : action == "TypeEmail" ? AppSettings.MacroEmail : "";
+                value.Text = needs ? AppSettings.K2Value(button) : "";
                 SetCue(value, K2Actions.Hint(action));
             };
             picker.SelectedIndexChanged += delegate

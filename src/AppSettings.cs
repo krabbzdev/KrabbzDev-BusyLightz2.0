@@ -392,8 +392,15 @@ namespace Krabbz.Blynclight
         internal static string K2Action(K2Key.Button button)
         {
             string saved = GetString("K2" + button + "Action");
+            // "Type my email address" was taken out: it becomes "Type text:" with the address that was saved for it.
+            if (saved == "TypeEmail")
+            {
+                SetString("K2" + button + "Action", "TypeText");
+                SetString("K2" + button + "Value", MacroEmailSet ? MacroEmail : "");
+                return "TypeText";
+            }
             foreach (var action in K2Actions.All) if (action[0] == saved) return saved;
-            return button == K2Key.Button.Left ? "Mute" : button == K2Key.Button.Right ? "BusyAvailable" : "TypeEmail";
+            return button == K2Key.Button.Left ? "Mute" : button == K2Key.Button.Right ? "BusyAvailable" : "None";
         }
         internal static void SetK2Action(K2Key.Button button, string action) { SetString("K2" + button + "Action", action); }
         internal static string K2Value(K2Key.Button button) { return GetString("K2" + button + "Value") ?? ""; }

@@ -35,7 +35,7 @@ A small Windows app that controls USB busy lights, so the people around you can 
 - **Party Mode:** cycles quickly through every color, to check every light is working.
 - **Light Control:** set the brightness, how fast calls flash, and the color for each status. See [Light Control](Using-the-Light.md#light-control).
 - **Mutesync Button:** press it to mute or unmute your mic in every app; its ring shows red when muted and green when live. No MuteMe app needed. See [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md).
-- **K2 USBC Key macros:** each of its two buttons, and both together, runs an action you pick, like typing your email address, pressing a shortcut, muting your mic or switching Busy and Available. No K2 software needed.
+- **K2 USBC Key macros:** each of its two buttons, and both together, runs an action you pick, like typing a line of text, pressing a shortcut, muting your mic or switching Busy and Available. No K2 software needed.
 - **Active Devices:** the window shows every light and button, lit when plugged in and greyed out when not, plus whether you're connected to Microsoft Teams and your calendar.
 - **Switches you can read at a glance:** every switch in Settings shows **ON** or **OFF**. To leave something alone, turn it off: **Control my USB lights**, **Sync with Microsoft Teams**, **Use the Mutesync button** and **Use the K2 key**.
 - **Send feedback:** send an idea or report a problem from the tray menu or Settings, as an issue on GitHub.

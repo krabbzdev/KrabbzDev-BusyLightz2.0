@@ -735,7 +735,6 @@ namespace Krabbz.Blynclight
         public static readonly string[][] All =
         {
             new[] { "None", "Do nothing" },
-            new[] { "TypeEmail", "Type my email address" },
             new[] { "TypeText", "Type text:" },
             new[] { "Keys", "Press keys:" },
             new[] { "Mute", "Mute / unmute my mic" },
@@ -765,7 +764,6 @@ namespace Krabbz.Blynclight
             Program.LogEvent("K2 key " + button.ToString().ToLowerInvariant() + " pressed: " + action);
             switch (action)
             {
-                case "TypeEmail": TypeText(AppSettings.MacroEmail); break;
                 case "TypeText": TypeText(value); break;
                 case "Keys": PressKeys(value); break;
                 case "Mute":
