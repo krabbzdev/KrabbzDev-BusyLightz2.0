@@ -122,6 +122,8 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 
 <sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
+[Privacy](PRIVACY.md): what it reads, keeps and connects to. [Security](SECURITY.md): how to report a problem and how updates are checked.
+
 ## Install
 
 Run the downloaded `KrabbzDev-BusyLightz2.0.msi`. It installs just for you, with no admin prompt, and starts with Windows. The **Setup checklist** walks you through the rest. The installer isn't code-signed yet, so Windows may show an "unknown publisher" warning: click **More info > Run anyway**.
