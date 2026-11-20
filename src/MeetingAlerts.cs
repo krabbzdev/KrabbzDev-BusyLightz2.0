@@ -752,7 +752,7 @@ namespace Krabbz.Blynclight
                 again.Tick += delegate { if (Visible) Load(); };
                 VisibleChanged += delegate
                 {
-                    if (Visible) { Load(); again.Start(); }
+                    if (Visible) { scrolledToNext = false; Load(); again.Start(); }
                     else again.Stop();
                 };
                 FormClosed += delegate { again.Dispose(); };
@@ -1065,8 +1065,13 @@ namespace Krabbz.Blynclight
             FitToList(height);
         }
 
+        // Whether the list has been scrolled past the finished meetings yet; reset each time the panel is shown, so it
+        // opens on the meeting on now or the next one. After that, a refresh keeps wherever the user has scrolled to.
+        bool scrolledToNext;
+
         void Fill(List<CalendarMeeting> meetings)
         {
+            int keepScroll = -list.AutoScrollPosition.Y;
             ClearList();
             var today = DateTime.Today;
             var shown = new List<CalendarMeeting>();
@@ -1097,10 +1102,12 @@ namespace Krabbz.Blynclight
             int y = Pad;
             DateTime busyUntil = DateTime.MinValue;
             bool anyTimed = false;
+            int nextY = -1; // Where the meeting on now, or the next one, starts (with its free time above it).
             foreach (var meeting in shown)
             {
                 bool ended = !meeting.IsAllDay && meeting.EndUtc <= now;
                 bool current = !meeting.IsAllDay && meeting.StartUtc <= now && now < meeting.EndUtc;
+                if (nextY < 0 && !meeting.IsAllDay && !ended) nextY = y;
                 // Free time before this meeting, from the later of the last one's end and now.
                 if (!meeting.IsAllDay && anyTimed && meeting.StartUtc > now)
                 {
@@ -1126,6 +1133,11 @@ namespace Krabbz.Blynclight
                 }
             }
             FitToList(y + 4);
+            // The finished meetings scroll out of sight at the top, so the list opens on the one on now or the next one.
+            int target = scrolledToNext ? keepScroll : (nextY > Pad ? nextY - Pad : 0);
+            scrolledToNext = true;
+            if (target > 0 && IsHandleCreated)
+                BeginInvoke(new Action(() => { if (!list.IsDisposed) list.AutoScrollPosition = new Point(0, target); }));
         }
 
         // A finished meeting: small and dimmed, with a check.
