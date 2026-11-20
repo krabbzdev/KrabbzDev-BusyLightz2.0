@@ -177,6 +177,30 @@ namespace Krabbz.Blynclight
             }
         }
         public static void MarkMeetingAlertsReminded() { SetString("MeetingAlertsReminded", DateTime.UtcNow.ToString("o")); }
+        // Hardware IDs (VID_xxxx&PID_xxxx, comma separated) of other two-button keys to treat as a K2, added with Find my
+        // key on the K2 page.
+        public static string K2ExtraIds { get { return GetString("K2ExtraIds") ?? ""; } set { SetString("K2ExtraIds", value ?? ""); } }
+
+        public static System.Collections.Generic.List<string> K2ExtraIdList()
+        {
+            var ids = new System.Collections.Generic.List<string>();
+            foreach (string part in K2ExtraIds.Split(','))
+            {
+                string id = part.Trim().ToUpperInvariant();
+                if (id.Length > 0 && !ids.Contains(id)) ids.Add(id);
+            }
+            return ids;
+        }
+
+        public static void AddK2Id(string id)
+        {
+            var ids = K2ExtraIdList();
+            id = id.Trim().ToUpperInvariant();
+            if (id.Length == 0 || ids.Contains(id)) return;
+            ids.Add(id);
+            K2ExtraIds = string.Join(",", ids.ToArray());
+        }
+
         // The meeting alert shows the plain icon instead of a picture. Off unless changed.
         public static bool AlertPictureOff { get { return Get("AlertPictureOff", false); } set { Set("AlertPictureOff", value); } }
         // Set once the one-time "New: Meeting Alerts" notice has been shown (or isn't needed), so it never comes back.

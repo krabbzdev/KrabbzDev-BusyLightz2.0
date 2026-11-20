@@ -110,6 +110,10 @@ Turn them off in **Settings** (⚙ in the window, or tray menu > **Settings...**
 - While BusyLightz isn't running, the K2's buttons are ordinary left and right mouse clicks. Once BusyLightz is running, its clicks are cancelled.
 - *Type my email address* and *Type text* type into whatever has the keyboard focus. Click into the box you want first.
 
+## My two-button key says "Not plugged in"
+
+You may have a different version of the key, with a different hardware ID. In **Settings > K2 USBC Key**, click **My key isn't found...**, press the key's buttons, pick its row and click **Use this key**. Steps: [If your two-button key isn't found](Mute-Button-and-K2-Key.md#if-your-two-button-key-isnt-found).
+
 ## How do I send an idea or report a problem?
 
 Use **Send feedback...** in the tray menu or at the bottom of Settings. It opens a filled-in issue on the project's GitHub page, for you to submit. See [Send feedback](Using-the-Light.md#send-feedback).

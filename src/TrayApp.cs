@@ -586,6 +586,15 @@ namespace Krabbz.Blynclight
             UpdateDisplay();
         }
 
+        // Keys added in Find my key (or forgotten): looks for a K2 again, and restarts listening so the change takes effect.
+        public void K2IdsChanged()
+        {
+            if (k2Key != null) { k2Key.Dispose(); k2Key = null; }
+            K2Connected = K2Key.Present();
+            UpdateK2Listener();
+            UpdateDisplay();
+        }
+
         // Starts or stops listening to the K2 to match whether one is plugged in and its functions are on.
         void UpdateK2Listener()
         {

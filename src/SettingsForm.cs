@@ -26,6 +26,7 @@ namespace Krabbz.Blynclight
         // "Test your buttons" on the K2 page: the last few presses, newest first, and why none show when they can't.
         readonly Label k2Test = new Label { AutoSize = false, Font = new Font("Segoe UI", 9.5f), BackColor = Color.Transparent };
         readonly List<string> k2Presses = new List<string>();
+        K2Key.Finder k2Finder;
         readonly Button connectButton = new ModernButton();
         readonly Label meetingStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
         readonly Button meetingButton = new ModernButton();
@@ -368,6 +369,17 @@ namespace Krabbz.Blynclight
             Add(k2Test);
             UpdateK2Test();
             y += 104 + RowGap;
+            var finder = new ModernButton { Text = "My key isn't found...", Bounds = new Rectangle(24, y, 200, 34) };
+            finder.Click += delegate
+            {
+                if (k2Finder != null && !k2Finder.IsDisposed) { k2Finder.Activate(); return; }
+                k2Finder = new K2Key.Finder(tray.K2IdsChanged);
+                k2Finder.Show(this);
+            };
+            Add(finder);
+            var finderNote = new Label { Text = "Using a different two-button key? Find its hardware ID here.", AutoSize = true, Font = new Font("Segoe UI", 9f), Location = new Point(236, y + 9), Tag = VersionLabel };
+            Add(finderNote);
+            y += 34 + RowGap;
             var k2On = UseSwitch("Use the K2 key", !AppSettings.K2Disabled,
                 v => { AppSettings.K2Disabled = !v; tray.ApplySettings(); },
                 "On: BusyLightz runs the actions you set for the K2's buttons. Turn it off and BusyLightz leaves the K2 alone: no actions run, and its buttons are ordinary left and right mouse clicks again.");

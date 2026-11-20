@@ -63,6 +63,17 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 | **Busy (red)**, **Available (green)**, **On a call**, **Follow Teams Status**, **Party Mode** | Sets that mode, like the buttons in the window. |
 | **Open:** | Opens a program, file or web address you enter, e.g. `https://teams.microsoft.com`. |
 
+### If your two-button key isn't found
+
+BusyLightz recognizes the K2 by its hardware ID (USB `VID_04D9&PID_A2D0`). Some two-button keys that look the same report a different ID, so the page says *Not plugged in* even though the key is.
+
+1. Go to **Settings > K2 USBC Key** and click **My key isn't found...**.
+2. Press the buttons on your key. Each device that sends a button press or a key appears in the list with its hardware ID and what it sent (*Left button*, *Right button*, or a key name). Your normal mouse and keyboard show up too: ignore them.
+3. Select the row that appeared when you pressed your key and click **Use this key**.
+4. Close the window and press a button. **Test your buttons** on the same page should list it, and the K2 tile in the window lights up.
+
+**Copy details** puts the list on the clipboard to paste into an email, and **Forget added keys** goes back to recognizing only the original K2. A key that sends ordinary letters or numbers instead of mouse clicks (or F13 and F14) can't be used yet: copy the details and send them with the key's make and model.
+
 ### Your email address
 
 **My email address** is what *Type my email address* types. Until you set it, it's the example address `YourEmailHere@spacex.com`. The [Setup Checklist](Setup-Checklist.md#7-your-email-address) asks for it, or change it any time in **Settings > K2 USBC Key**.

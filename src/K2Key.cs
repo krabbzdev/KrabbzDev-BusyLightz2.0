@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -169,6 +171,15 @@ namespace Krabbz.Blynclight
             return true;
         }
 
+        // Whether a raw input device name is a K2: the known hardware ID, or one added with Find my key.
+        static bool IsK2Name(string name)
+        {
+            string upper = (name ?? "").ToUpperInvariant();
+            if (upper.Contains(DeviceId)) return true;
+            foreach (string id in AppSettings.K2ExtraIdList()) if (upper.Contains(id)) return true;
+            return false;
+        }
+
         // Whether a K2 is plugged in now. Cheap enough to call every few seconds.
         public static bool Present()
         {
@@ -180,7 +191,7 @@ namespace Krabbz.Blynclight
                 var list = new RAWINPUTDEVICELIST[count];
                 if (GetRawInputDeviceList(list, ref count, size) == uint.MaxValue) return false;
                 foreach (var device in list)
-                    if (NameOf(device.Device).ToUpperInvariant().Contains(DeviceId)) return true;
+                    if (IsK2Name(NameOf(device.Device))) return true;
             }
             catch (Exception) { }
             return false;
@@ -202,7 +213,7 @@ namespace Krabbz.Blynclight
             bool k2;
             if (!isK2.TryGetValue(device, out k2))
             {
-                k2 = NameOf(device).ToUpperInvariant().Contains(DeviceId);
+                k2 = IsK2Name(NameOf(device));
                 isK2[device] = k2;
             }
             return k2;
@@ -261,6 +272,176 @@ namespace Krabbz.Blynclight
             bothSeen = false;
             if (Disabled) return;
             ui.Post(delegate { if (Pressed != null) Pressed(pressed); }, null);
+        }
+
+        // "Find my key": lists every device that sends a button press or a key while it's open, with its hardware ID and
+        // what it sent, so a two-button key with a different hardware ID can be added. The user's normal mouse and keyboard
+        // show up too; they pick their key's row. Raw input goes to one window at a time, so while this is open the K2
+        // listener isn't getting it; closing (and adding a key) restarts that through changed.
+        public sealed class Finder : Form
+        {
+            static readonly Regex IdPattern = new Regex("VID_[0-9A-F]{4}&PID_[0-9A-F]{4}", RegexOptions.Compiled);
+            readonly ListView list = new ListView { View = View.Details, FullRowSelect = true, MultiSelect = false, HideSelection = false, GridLines = true };
+            readonly Dictionary<string, ListViewItem> rows = new Dictionary<string, ListViewItem>();
+            readonly ModernButton use = new ModernButton { Text = "Use this key", Accent = true, Enabled = false };
+            readonly Label message = new Label { AutoSize = false };
+            readonly Action changed;
+
+            public Finder(Action changed)
+            {
+                this.changed = changed;
+                Text = "Find my key";
+                FormBorderStyle = FormBorderStyle.FixedDialog;
+                MaximizeBox = false;
+                MinimizeBox = false;
+                StartPosition = FormStartPosition.CenterParent;
+                ClientSize = new Size(560, 448);
+                BackColor = Theme.Page;
+                ForeColor = Theme.Text;
+                Font = new Font("Segoe UI", 9.5f);
+
+                Controls.Add(new Label
+                {
+                    Text = "Press the buttons on your two-button key now. Every device that sends a button press or a key shows up below " +
+                           "with its hardware ID and what it sent. Your normal mouse and keyboard show up too: ignore those, pick the row " +
+                           "that appeared when you pressed your key, then click Use this key.",
+                    Bounds = new Rectangle(16, 12, 528, 72),
+                });
+                list.Bounds = new Rectangle(16, 92, 528, 244);
+                list.BackColor = Theme.Card;
+                list.ForeColor = Theme.Text;
+                list.Columns.Add("Device", 80);
+                list.Columns.Add("Hardware ID", 150);
+                list.Columns.Add("Last sent", 130);
+                list.Columns.Add("Presses", 60);
+                list.Columns.Add("", 90);
+                list.SelectedIndexChanged += delegate { use.Enabled = list.SelectedItems.Count > 0; };
+                Controls.Add(list);
+
+                use.Bounds = new Rectangle(16, 348, 130, 34);
+                use.Click += delegate { UseSelected(); };
+                Controls.Add(use);
+                var copy = new ModernButton { Text = "Copy details", Bounds = new Rectangle(154, 348, 120, 34) };
+                copy.Click += delegate { CopyDetails(); };
+                Controls.Add(copy);
+                var forget = new ModernButton { Text = "Forget added keys", Bounds = new Rectangle(282, 348, 150, 34) };
+                forget.Click += delegate
+                {
+                    AppSettings.K2ExtraIds = "";
+                    changed();
+                    message.Text = "Keys you added have been forgotten. Only the original K2 is recognized now.";
+                };
+                Controls.Add(forget);
+                var close = new ModernButton { Text = "Close", Bounds = new Rectangle(440, 348, 104, 34) };
+                close.Click += delegate { Close(); };
+                Controls.Add(close);
+                message.Bounds = new Rectangle(16, 392, 528, 44);
+                message.ForeColor = Theme.Muted;
+                message.Text = "Nothing yet. Press a button on your key.";
+                Controls.Add(message);
+
+                FormClosed += delegate { changed(); };
+            }
+
+            protected override void OnHandleCreated(EventArgs e)
+            {
+                base.OnHandleCreated(e);
+                var devices = new[]
+                {
+                    new RAWINPUTDEVICE { UsagePage = 1, Usage = 2, Flags = RIDEV_INPUTSINK, Target = Handle },
+                    new RAWINPUTDEVICE { UsagePage = 1, Usage = 6, Flags = RIDEV_INPUTSINK, Target = Handle },
+                };
+                RegisterRawInputDevices(devices, (uint)devices.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE)));
+            }
+
+            protected override void WndProc(ref Message m)
+            {
+                if (m.Msg == WM_INPUT)
+                {
+                    IntPtr input = m.LParam;
+                    Program.Guard("Key finder", () => OnInput(input));
+                }
+                base.WndProc(ref m);
+            }
+
+            void OnInput(IntPtr input)
+            {
+                uint size = 0, header = (uint)Marshal.SizeOf(typeof(RAWINPUTHEADER));
+                GetRawInputData(input, RID_INPUT, IntPtr.Zero, ref size, header);
+                if (size == 0) return;
+                IntPtr buffer = Marshal.AllocHGlobal((int)size);
+                try
+                {
+                    if (GetRawInputData(input, RID_INPUT, buffer, ref size, header) != size) return;
+                    var h = (RAWINPUTHEADER)Marshal.PtrToStructure(buffer, typeof(RAWINPUTHEADER));
+                    if (h.Device == IntPtr.Zero) return;
+                    var data = IntPtr.Add(buffer, (int)header);
+                    string what = null;
+                    if (h.Type == RIM_TYPEMOUSE)
+                    {
+                        ushort flags = (ushort)Marshal.ReadInt16(data, 4);
+                        if ((flags & LeftDown) != 0) what = "Left button";
+                        else if ((flags & RightDown) != 0) what = "Right button";
+                        else if ((flags & 0x10) != 0) what = "Middle button";
+                    }
+                    else if (h.Type == RIM_TYPEKEYBOARD)
+                    {
+                        ushort flags = (ushort)Marshal.ReadInt16(data, 2), vkey = (ushort)Marshal.ReadInt16(data, 6);
+                        if ((flags & KeyBreak) == 0) what = "Key " + (Keys)vkey;
+                    }
+                    if (what == null) return;
+                    Record(h.Type == RIM_TYPEMOUSE ? "Mouse" : "Keyboard", NameOf(h.Device), what);
+                }
+                finally { Marshal.FreeHGlobal(buffer); }
+            }
+
+            // Adds a press to the list: a row for each device and kind of input, counting its presses.
+            void Record(string kind, string path, string what)
+            {
+                var match = IdPattern.Match((path ?? "").ToUpperInvariant());
+                string id = match.Success ? match.Value : "(no ID)";
+                string key = id + "|" + kind;
+                ListViewItem row;
+                if (!rows.TryGetValue(key, out row))
+                {
+                    row = new ListViewItem(kind) { Tag = id };
+                    row.SubItems.Add(id);
+                    row.SubItems.Add(what);
+                    row.SubItems.Add("0");
+                    row.SubItems.Add(IsK2Name(path) ? "Known K2" : "");
+                    rows[key] = row;
+                    list.Items.Add(row);
+                }
+                row.SubItems[2].Text = what;
+                row.SubItems[3].Text = (int.Parse(row.SubItems[3].Text) + 1).ToString();
+                message.Text = "Last press: " + kind + " " + id + ", " + what + ".";
+            }
+
+            void UseSelected()
+            {
+                if (list.SelectedItems.Count == 0) return;
+                string id = (string)list.SelectedItems[0].Tag;
+                if (!IdPattern.IsMatch(id))
+                {
+                    message.Text = "That device has no hardware ID, so it can't be added.";
+                    return;
+                }
+                AppSettings.AddK2Id(id);
+                changed();
+                message.Text = "Added " + id + ". Press a button on the key: on the K2 page of Settings, Test your buttons should list it. " +
+                               "If it doesn't, copy the details and send them with the key's make and model.";
+            }
+
+            // The list as text, to paste into an email.
+            void CopyDetails()
+            {
+                var text = new StringBuilder("BusyLightz key finder
+");
+                foreach (ListViewItem row in list.Items)
+                    text.AppendLine(row.SubItems[0].Text + "	" + row.SubItems[1].Text + "	" + row.SubItems[2].Text + "	" + row.SubItems[3].Text + "	" + row.SubItems[4].Text);
+                try { Clipboard.SetText(text.ToString()); message.Text = "Copied. Paste it into an email or message."; }
+                catch (Exception) { message.Text = "Couldn't copy to the clipboard."; }
+            }
         }
 
         // The hidden window raw input is sent to.
