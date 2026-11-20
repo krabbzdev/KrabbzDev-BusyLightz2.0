@@ -65,7 +65,7 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 
 ### A K2 that types letters (Z and X) works out of the box
 
-Some K2 keys are set up to type letters instead of clicking: **Z** for the left button and **X** for the right. BusyLightz knows that version: its two buttons run the actions you set for **Left button** and **Right button**, pressing both runs **Both together**, and the letters aren't typed into your documents (only keystrokes from the K2 itself are stopped, never your normal keyboard). There's nothing to set up.
+Some K2 keys are set up to type letters instead of clicking: **Z** for the left button and **X** for the right. BusyLightz knows that version: its two buttons run the actions you set for **Left button** and **Right button**, and the letters aren't typed into your documents (only keystrokes from the K2 itself are stopped, never your normal keyboard). There's nothing to set up. **Known limit:** on this version, pressing both buttons together doesn't run **Both together** (that action works on the version that clicks). Use Left and Right.
 
 ### If your two-button key isn't found, or sends letters: Remap Custom Keys
 
