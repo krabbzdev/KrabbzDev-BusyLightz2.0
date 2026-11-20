@@ -663,6 +663,17 @@ namespace Krabbz.Blynclight
         public string MeetingAlertProblem { get { return meetingAlerts == null ? null : meetingAlerts.Problem; } }
 
         // Asks Microsoft, in the browser, to let BusyLightz read the user's own calendar (read-only) for meeting alerts.
+        // True while a calendar or transcript sign-in is open in the browser: its reply goes to one listener on one port, so a
+        // second sign-in started meanwhile would leave the first browser tab pointing at a port that's closed.
+        volatile bool grantOpen;
+
+        bool GrantAlreadyOpen()
+        {
+            if (!grantOpen) return false;
+            ShowBalloon("A Microsoft sign-in is already open in your browser. Finish that one (it waits 5 minutes).", ToolTipIcon.Info);
+            return true;
+        }
+
         public void GrantCalendarAccess()
         {
             var teams = presence;
@@ -672,6 +683,8 @@ namespace Krabbz.Blynclight
                 ShowBalloon("Connect to Microsoft Teams first (Settings > Microsoft Teams), then allow calendar access.", ToolTipIcon.Info);
                 return;
             }
+            if (GrantAlreadyOpen()) return;
+            grantOpen = true;
             Program.Background("Calendar access", delegate
             {
                 try
@@ -681,6 +694,7 @@ namespace Krabbz.Blynclight
                     meetingAlerts.CheckNow();
                 }
                 catch (Exception ex) { ShowBalloon("Couldn't allow calendar access: " + ex.Message, ToolTipIcon.Warning); }
+                finally { grantOpen = false; }
             });
         }
 
@@ -703,6 +717,8 @@ namespace Krabbz.Blynclight
                 ShowBalloon("Connect to Microsoft Teams first (Settings > Microsoft Teams), then allow transcript access.", ToolTipIcon.Info);
                 return;
             }
+            if (GrantAlreadyOpen()) return;
+            grantOpen = true;
             Program.Background("Transcript access", delegate
             {
                 try
@@ -712,6 +728,7 @@ namespace Krabbz.Blynclight
                     transcripts.CheckNow();
                 }
                 catch (Exception ex) { ShowBalloon("Couldn't allow transcript access: " + ex.Message, ToolTipIcon.Warning); }
+                finally { grantOpen = false; }
             });
         }
 
