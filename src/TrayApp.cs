@@ -1030,7 +1030,7 @@ namespace Krabbz.Blynclight
             if (!have)
             {
                 dockedAgenda = new AgendaForm(() => presence, ShowMeetingAlertsSettings, ShowWindow, true);
-                dockedAgenda.Dismissed += delegate { dockDismissed = true; };
+                dockedAgenda.Dismissed += delegate { dockDismissed = true; RaiseDockChanged(); };
             }
             dockedAgenda.DockTo(window.Bounds);
             if (!dockedAgenda.Visible) dockedAgenda.Show(window);
@@ -1039,11 +1039,32 @@ namespace Krabbz.Blynclight
         // True after the user clicks the panel's ×, until they bring it back.
         bool dockDismissed;
 
+        // Raised when the panel beside the window is shown or hidden, so the window's Show / Hide calendar button follows.
+        public event Action DockChanged;
+        void RaiseDockChanged() { if (DockChanged != null) DockChanged(); }
+
+        // Whether the panel is meant to be showing beside the window.
+        public bool DockShown { get { return AppSettings.AgendaBesideWindow && !dockDismissed; } }
+
+        // The window's Show / Hide calendar button. Showing also turns "Show today's meetings beside the window" back on.
+        public void ToggleDock()
+        {
+            if (DockShown) dockDismissed = true;
+            else
+            {
+                AppSettings.AgendaBesideWindow = true;
+                dockDismissed = false;
+            }
+            PlaceDock(form);
+            RaiseDockChanged();
+        }
+
         // From Settings, when "Show today's meetings beside the window" is switched.
         public void UpdateDock()
         {
             dockDismissed = false;
             PlaceDock(form);
+            RaiseDockChanged();
         }
 
         // From the Calendar tile on the main window: brings back the panel hidden with its ×, or opens today's
@@ -1053,6 +1074,7 @@ namespace Krabbz.Blynclight
             if (!AppSettings.AgendaBesideWindow) { ShowAgenda(); return; }
             dockDismissed = false;
             PlaceDock(form);
+            RaiseDockChanged();
         }
 
         // Downloads and installs a newer release in the background. Only a manual check reports "up to date" or errors.

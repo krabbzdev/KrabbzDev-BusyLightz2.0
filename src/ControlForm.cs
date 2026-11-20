@@ -470,8 +470,9 @@ namespace Krabbz.Blynclight
         // How much of an override's time is left, 0 to 1; a full ring when there's no countdown.
         public float Progress = 1;
         public bool OverrideOn;
-        public event Action SettingsClicked;
-        Rectangle settingsBounds;
+        public event Action SettingsClicked, CalendarToggleClicked;
+        public bool CalendarShown;
+        Rectangle settingsBounds, calendarBounds;
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -492,6 +493,11 @@ namespace Krabbz.Blynclight
             var size = TextRenderer.MeasureText(g, SettingsText, Theme.Small);
             settingsBounds = new Rectangle(Width - Pad - size.Width, 10, size.Width, size.Height + 8);
             TextRenderer.DrawText(g, SettingsText, Theme.Small, settingsBounds, text, TextFormatFlags.VerticalCenter);
+            // Under Settings: shows or hides the schedule panel beside the window.
+            string calendarText = CalendarShown ? "Hide calendar" : "Show calendar";
+            var calendarSize = TextRenderer.MeasureText(g, calendarText, Theme.Small);
+            calendarBounds = new Rectangle(Width - Pad - calendarSize.Width, 30, calendarSize.Width, calendarSize.Height + 6);
+            TextRenderer.DrawText(g, calendarText, Theme.Small, calendarBounds, soft, TextFormatFlags.VerticalCenter);
 
             // Centered at the top while the user's own pick is overriding Teams status.
             if (OverrideOn)
@@ -657,13 +663,14 @@ namespace Krabbz.Blynclight
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            Cursor = settingsBounds.Contains(e.Location) ? Cursors.Hand : Cursors.Default;
+            Cursor = settingsBounds.Contains(e.Location) || calendarBounds.Contains(e.Location) ? Cursors.Hand : Cursors.Default;
             base.OnMouseMove(e);
         }
 
         protected override void OnMouseClick(MouseEventArgs e)
         {
             if (settingsBounds.Contains(e.Location) && SettingsClicked != null) SettingsClicked();
+            else if (calendarBounds.Contains(e.Location) && CalendarToggleClicked != null) CalendarToggleClicked();
             base.OnMouseClick(e);
         }
     }
@@ -752,8 +759,9 @@ namespace Krabbz.Blynclight
         public Color DotColor = Color.Gray;
         public string Status = "", Countdown;
         public int Blynclights, Luxafors;
-        public event Action SettingsClicked;
-        Rectangle settingsBounds;
+        public event Action SettingsClicked, CalendarToggleClicked;
+        public bool CalendarShown;
+        Rectangle settingsBounds, calendarBounds;
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -768,6 +776,11 @@ namespace Krabbz.Blynclight
             var size = TextRenderer.MeasureText(g, SettingsText, Theme.Small);
             settingsBounds = new Rectangle(Width - Pad - size.Width, 8, size.Width, size.Height + 8);
             TextRenderer.DrawText(g, SettingsText, Theme.Small, settingsBounds, text, TextFormatFlags.VerticalCenter);
+            // Under Settings: shows or hides the schedule panel beside the window.
+            string calendarText = CalendarShown ? "Hide calendar" : "Show calendar";
+            var calendarSize = TextRenderer.MeasureText(g, calendarText, Theme.Small);
+            calendarBounds = new Rectangle(Width - Pad - calendarSize.Width, 28, calendarSize.Width, calendarSize.Height + 6);
+            TextRenderer.DrawText(g, calendarText, Theme.Small, calendarBounds, soft, TextFormatFlags.VerticalCenter);
 
             // The beta sticker on the right; device tiles are in the Active Devices panel.
             const int tiles = 0;
@@ -783,13 +796,14 @@ namespace Krabbz.Blynclight
 
         protected override void OnMouseMove(MouseEventArgs e)
         {
-            Cursor = settingsBounds.Contains(e.Location) ? Cursors.Hand : Cursors.Default;
+            Cursor = settingsBounds.Contains(e.Location) || calendarBounds.Contains(e.Location) ? Cursors.Hand : Cursors.Default;
             base.OnMouseMove(e);
         }
 
         protected override void OnMouseClick(MouseEventArgs e)
         {
             if (settingsBounds.Contains(e.Location) && SettingsClicked != null) SettingsClicked();
+            else if (calendarBounds.Contains(e.Location) && CalendarToggleClicked != null) CalendarToggleClicked();
             base.OnMouseClick(e);
         }
     }
@@ -867,6 +881,7 @@ namespace Krabbz.Blynclight
         PillSwitcher pills;
         ColorBlock block;
         ModeList list;
+        Button calendarButton; // Fluent list style's Show / Hide calendar button.
         readonly DevicePanel devices;
         readonly ToolTip deviceHint = new ToolTip();
 
@@ -890,6 +905,7 @@ namespace Krabbz.Blynclight
                 // Tall enough for the light tiles with the beta sticker under them.
                 block = new ColorBlock { Bounds = new Rectangle(0, 0, WindowWidth, 146) };
                 block.SettingsClicked += delegate { tray.ShowSettings(); };
+                block.CalendarToggleClicked += delegate { tray.ToggleDock(); };
                 Controls.Add(block);
                 y = block.Bottom + 12;
             }
@@ -897,6 +913,7 @@ namespace Krabbz.Blynclight
             {
                 ring = new OrbitRing { Bounds = new Rectangle(0, 0, WindowWidth, 296) };
                 ring.SettingsClicked += delegate { tray.ShowSettings(); };
+                ring.CalendarToggleClicked += delegate { tray.ToggleDock(); };
                 Controls.Add(ring);
                 y = ring.Bottom + 12;
             }
@@ -962,15 +979,26 @@ namespace Krabbz.Blynclight
 
             // The window follows the tray's color, including On a call's flashing (see TrayContext.UpdateDisplay).
             tray.DisplayChanged += RefreshDisplay;
+            tray.DockChanged += UpdateCalendarToggle;
+            UpdateCalendarToggle();
             RefreshDisplay();
             HandleCreated += delegate { Theme.TitleBar(this); };
+        }
+
+        // The Show / Hide calendar button (or link) under Settings follows whether the schedule panel is showing.
+        void UpdateCalendarToggle()
+        {
+            bool shown = tray.DockShown;
+            if (block != null) { block.CalendarShown = shown; block.Invalidate(); }
+            if (ring != null) { ring.CalendarShown = shown; ring.Invalidate(); }
+            if (calendarButton != null) calendarButton.Text = shown ? "Hide calendar" : "Show calendar";
         }
 
         // Name, and Settings on the right (Fluent list; the other styles draw their own). Returns its bottom.
         int AddHeader()
         {
             var back = Theme.Card;
-            var header = new Panel { Bounds = new Rectangle(0, 0, WindowWidth, 52), BackColor = back };
+            var header = new Panel { Bounds = new Rectangle(0, 0, WindowWidth, 82), BackColor = back };
             header.Paint += (sender, e) =>
             {
                 using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, header.Height - 1, header.Width, header.Height - 1);
@@ -992,6 +1020,20 @@ namespace Krabbz.Blynclight
             settings.FlatAppearance.MouseOverBackColor = Theme.Page;
             settings.Click += delegate { tray.ShowSettings(); };
             header.Controls.Add(settings);
+            calendarButton = new Button
+            {
+                Text = "Show calendar",
+                FlatStyle = FlatStyle.Flat,
+                BackColor = back,
+                ForeColor = Theme.Text,
+                Font = Theme.Small,
+                Cursor = Cursors.Hand,
+                Bounds = new Rectangle(WindowWidth - Pad - 120, 46, 120, 28),
+            };
+            calendarButton.FlatAppearance.BorderColor = Theme.Border;
+            calendarButton.FlatAppearance.MouseOverBackColor = Theme.Page;
+            calendarButton.Click += delegate { tray.ToggleDock(); };
+            header.Controls.Add(calendarButton);
             Controls.Add(header);
             return header.Bottom;
         }
@@ -1081,7 +1123,7 @@ namespace Krabbz.Blynclight
         // Switching style or Light/Dark mode replaces the window, so stop listening once it's gone.
         protected override void Dispose(bool disposing)
         {
-            if (disposing) tray.DisplayChanged -= RefreshDisplay;
+            if (disposing) { tray.DisplayChanged -= RefreshDisplay; tray.DockChanged -= UpdateCalendarToggle; }
             base.Dispose(disposing);
         }
 
@@ -1196,6 +1238,7 @@ namespace Krabbz.Blynclight
                 return;
             }
             tray.DisplayChanged -= RefreshDisplay;
+            tray.DockChanged -= UpdateCalendarToggle;
             base.OnFormClosing(e);
         }
     }
