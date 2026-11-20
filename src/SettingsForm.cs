@@ -631,6 +631,43 @@ namespace Krabbz.Blynclight
             Box("Play a sound", AppSettings.MeetingAlertSound, v => AppSettings.MeetingAlertSound = v,
                 help: "A short sound with the alert. It stays quiet while you're on a call, so it doesn't play over the people you're talking to.");
 
+            // The user's own picture, shown on the alert where the icon would be.
+            var pictureLabel = new Label { Text = "Picture on the alert", AutoSize = true, Location = new Point(24, y + 6) };
+            Add(pictureLabel);
+            Info(pictureLabel, "Shows your own picture on the alert instead of the video camera icon. It's squared off from the middle, so a picture with the subject in the center works best. A small copy is kept on this PC only; the original isn't touched.");
+            var pictureRemove = new ModernButton { Text = "Remove", Bounds = new Rectangle(402, y, 78, 32), Enabled = AlertPicture.Exists };
+            var pictureChoose = new ModernButton { Text = "Choose picture...", Bounds = new Rectangle(262, y, 132, 32) };
+            pictureChoose.Click += delegate
+            {
+                using (var dialog = new OpenFileDialog
+                {
+                    Title = "Choose a picture for the meeting alert",
+                    Filter = "Pictures (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif",
+                })
+                {
+                    if (dialog.ShowDialog(this) != DialogResult.OK) return;
+                    try
+                    {
+                        AlertPicture.Set(dialog.FileName);
+                        pictureRemove.Enabled = true;
+                        tray.ShowTestMeetingAlert();
+                    }
+                    catch (Exception ex)
+                    {
+                        Program.LogError("Choosing the meeting alert picture", ex);
+                        MessageBox.Show(this, "That file couldn't be opened as a picture. Try a PNG or JPG.", "BusyLightz", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                }
+            };
+            pictureRemove.Click += delegate
+            {
+                AlertPicture.Clear();
+                pictureRemove.Enabled = false;
+            };
+            Add(pictureChoose);
+            Add(pictureRemove);
+            y += 32 + RowGap;
+
             var wordsLabel = new Label { Text = "What the alert says", AutoSize = true, Location = new Point(24, y + 4) };
             Add(wordsLabel);
             Info(wordsLabel, "The alert's first line. {when} becomes a live countdown like \"in 4:32\" (or \"now\") and {subject} becomes the meeting's title. Once the meeting has started it reads \"Meeting started 0:42 ago\".");

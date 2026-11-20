@@ -194,7 +194,7 @@ namespace Krabbz.Blynclight
             {
                 int fromBottom = open.Count - i;
                 open[i].Location = new Point(
-                    area.Right - MeetingAlertForm.FormWidth - MeetingAlertForm.Margin,
+                    area.Right - open[i].Width - MeetingAlertForm.Margin,
                     area.Bottom - MeetingAlertForm.Margin - fromBottom * MeetingAlertForm.FormHeight - (fromBottom - 1) * MeetingAlertForm.Gap);
             }
         }
@@ -213,12 +213,101 @@ namespace Krabbz.Blynclight
         }
     }
 
+    // The picture the user picked to show beside their meeting alerts (Settings > Meeting Alerts). A scaled-down copy is
+    // kept in the app's data folder, so moving or deleting the original doesn't matter, and nothing is sent anywhere.
+    public static class AlertPicture
+    {
+        const int MaxSide = 400;
+
+        static string FilePath
+        {
+            get
+            {
+                return System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Krabbz9999 Blynclight", "alert-picture.png");
+            }
+        }
+
+        public static bool Exists { get { return System.IO.File.Exists(FilePath); } }
+
+        // The saved picture, or null if there isn't one (or it can't be read). The caller disposes it.
+        public static Bitmap Load()
+        {
+            try
+            {
+                if (!Exists) return null;
+                using (var stream = new System.IO.FileStream(FilePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read))
+                using (var image = Image.FromStream(stream)) return new Bitmap(image);
+            }
+            catch (Exception ex)
+            {
+                Program.LogError("Reading the meeting alert picture", ex);
+                return null;
+            }
+        }
+
+        // Saves a copy of the chosen picture, no bigger than 400 pixels a side. Throws if it isn't a picture Windows can open.
+        public static void Set(string file)
+        {
+            using (var source = Image.FromFile(file))
+            {
+                double scale = Math.Min(1.0, (double)MaxSide / Math.Max(source.Width, source.Height));
+                int w = Math.Max(1, (int)Math.Round(source.Width * scale)), h = Math.Max(1, (int)Math.Round(source.Height * scale));
+                using (var copy = new Bitmap(w, h))
+                {
+                    using (var g = Graphics.FromImage(copy))
+                    {
+                        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                        g.DrawImage(source, 0, 0, w, h);
+                    }
+                    string dir = System.IO.Path.GetDirectoryName(FilePath);
+                    System.IO.Directory.CreateDirectory(dir);
+                    copy.Save(FilePath, System.Drawing.Imaging.ImageFormat.Png);
+                }
+            }
+        }
+
+        public static void Clear()
+        {
+            try { if (Exists) System.IO.File.Delete(FilePath); }
+            catch (Exception ex) { Program.LogError("Removing the meeting alert picture", ex); }
+        }
+    }
+
+    // The picture beside an alert: fills its box, cropped from the middle if the shape doesn't match.
+    class PictureTile : Control
+    {
+        readonly Bitmap image;
+
+        public PictureTile(Bitmap image)
+        {
+            this.image = image;
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            e.Graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            float scale = Math.Max((float)Width / image.Width, (float)Height / image.Height);
+            float w = image.Width * scale, h = image.Height * scale;
+            e.Graphics.DrawImage(image, (Width - w) / 2f, (Height - h) / 2f, w, h);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) image.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
     // The pop-up for one meeting: what it is, when, where, with Join (online meetings), Snooze and Dismiss. It doesn't
     // take focus from what the user is typing. Its first line ticks every second, and it goes away by itself a few
     // minutes after the meeting starts.
     class MeetingAlertForm : Form
     {
         public const int FormWidth = 380, FormHeight = 176, Gap = 10, Margin = 16;
+        // The user's own picture, when they've picked one, goes where the icon is, this many pixels square.
+        const int PictureSize = 64;
         // It closes this long after the meeting starts, and never sooner than this long after it appeared.
         const int AfterStartMinutes = 5;
         const int WS_EX_NOACTIVATE = 0x08000000, WS_EX_TOOLWINDOW = 0x00000080;
@@ -238,14 +327,23 @@ namespace Krabbz.Blynclight
             ShowInTaskbar = false;
             TopMost = true;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(FormWidth, FormHeight);
             BackColor = Theme.Card;
             Font = new Font("Segoe UI", 10);
 
-            // An icon tile on the left: a video camera for online meetings, a calendar for the rest. Left out if the
-            // icon font isn't there.
+            ClientSize = new Size(FormWidth, FormHeight);
+
+            // The user's own picture, if they picked one, takes the icon's place on the left, a little bigger.
+            var picture = AlertPicture.Load();
             int textLeft = 16;
-            if (Theme.Icons != null)
+            if (picture != null)
+            {
+                Controls.Add(new PictureTile(picture) { Bounds = new Rectangle(16, 16, PictureSize, PictureSize) });
+                textLeft = 16 + PictureSize + 12;
+            }
+
+            // An icon tile on the left: a video camera for online meetings, a calendar for the rest. Left out if the
+            // icon font isn't there, or if there's a picture instead.
+            if (picture == null && Theme.Icons != null)
             {
                 Controls.Add(new Label
                 {

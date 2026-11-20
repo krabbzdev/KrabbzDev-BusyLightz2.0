@@ -61,6 +61,7 @@ All on the **Meeting Alerts** page of Settings:
 | **Show today's meetings beside the window** | On by default. Untick it to hide the panel beside the BusyLightz window. |
 | **Alert me this long before** | 1, 2, 5 (default), 10 or 15 minutes before the meeting starts. |
 | **Play a sound** | A short sound with the alert. On by default. It stays quiet while you're on a call. |
+| **Picture on the alert** | **Choose picture...** puts your own picture on the alert, where the video camera icon would be (squared off from the middle, so keep the subject centered). **Remove** goes back to the icon. A small copy stays on this PC only; your original isn't touched. |
 | **What the alert says** | The alert's first line. Type your own: `{when}` becomes the live countdown, like *in 4:32* (or *now*) and `{subject}` becomes the meeting's title. The default is `Meeting starting {when}`. **Reset** puts the default back. |
 | **Show a test alert** | Shows an example alert, so you can check the wording, sound and place on screen. |
 
