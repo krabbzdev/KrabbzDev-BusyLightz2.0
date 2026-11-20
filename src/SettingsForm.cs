@@ -624,7 +624,7 @@ namespace Krabbz.Blynclight
 
             var wordsLabel = new Label { Text = "What the alert says", AutoSize = true, Location = new Point(24, y + 4) };
             Add(wordsLabel);
-            Info(wordsLabel, "The alert's first line. {when} becomes \"in 5 minutes\" (or \"now\") and {subject} becomes the meeting's title.");
+            Info(wordsLabel, "The alert's first line. {when} becomes a live countdown like \"in 4:32\" (or \"now\") and {subject} becomes the meeting's title. Once the meeting has started it reads \"Meeting started 0:42 ago\".");
             var reset = new ModernButton { Text = "Reset", Bounds = new Rectangle(402, y - 1, 78, 30) };
             Add(reset);
             y += 34;
@@ -645,7 +645,7 @@ namespace Krabbz.Blynclight
             y += 36;
             Add(new Label
             {
-                Text = "Use {when} for the time, like \"in 5 minutes\", and {subject} for the meeting's title.",
+                Text = "Use {when} for the live countdown, like \"in 4:32\", and {subject} for the meeting's title.",
                 AutoSize = true,
                 MaximumSize = new Size(width - 24 - 24 - 24, 0),
                 Font = new Font("Segoe UI", 9f),

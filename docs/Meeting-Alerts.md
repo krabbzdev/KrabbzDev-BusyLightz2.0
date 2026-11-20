@@ -17,13 +17,13 @@ If your organization's IT blocks users from allowing apps themselves, the button
 ## What the alert shows
 
 - An **icon** at the left: a video camera for online meetings, a calendar for the rest.
-- A first line, like *Meeting starting in 5 minutes*.
+- A first line with a **live timer** that ticks every second, like a stopwatch: *Meeting starting in 4:32*. Once the meeting has started it counts up instead: *Meeting started 0:42 ago*.
 - The meeting's **title**, its **start and end time**, and its **place** and **organizer** (when it has them).
 - **Join** (online meetings only): opens the meeting link in your browser, which hands it to Teams.
 - **Snooze 2 min**: shows the alert again in two minutes.
 - **Dismiss**: closes it.
 
-The pop-up sits in the bottom right corner of the screen, above other windows, and **doesn't take over the keyboard**, so it won't swallow what you're typing. If several meetings are close together, the alerts stack up. An alert closes by itself after 5 minutes.
+The pop-up sits in the bottom right corner of the screen, above other windows, and **doesn't take over the keyboard**, so it won't swallow what you're typing. If several meetings are close together, the alerts stack up. An alert closes by itself 5 minutes after the meeting starts (and never sooner than 5 minutes after it appeared).
 
 Declined and cancelled meetings and all-day events are skipped. Meetings that already started more than 5 minutes ago aren't alerted about (say, when you've only just started BusyLightz).
 
@@ -36,7 +36,7 @@ All on the **Meeting Alerts** page of Settings:
 | **Alert me before my meetings** | The on/off switch. |
 | **Alert me this long before** | 1, 2, 5 (default), 10 or 15 minutes before the meeting starts. |
 | **Play a sound** | A short sound with the alert. On by default. It stays quiet while you're on a call. |
-| **What the alert says** | The alert's first line. Type your own: `{when}` becomes *in 5 minutes* (or *now*) and `{subject}` becomes the meeting's title. The default is `Meeting starting {when}`. **Reset** puts the default back. |
+| **What the alert says** | The alert's first line. Type your own: `{when}` becomes the live countdown, like *in 4:32* (or *now*) and `{subject}` becomes the meeting's title. The default is `Meeting starting {when}`. **Reset** puts the default back. |
 | **Show a test alert** | Shows an example alert, so you can check the wording, sound and place on screen. |
 
 Meeting Alerts keeps working when **Disable Teams Integration** is on, because it reads your calendar and doesn't touch your Teams status. Turning the **Alert me before my meetings** switch off stops it.

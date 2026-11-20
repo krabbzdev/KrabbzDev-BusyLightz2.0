@@ -185,7 +185,7 @@ namespace Krabbz.Blynclight
                     key.SetValue("MeetingAlertMinutes", value, RegistryValueKind.DWord);
             }
         }
-        // What the alert says on its first line; {when} becomes "in 5 minutes" or "now", {subject} the meeting's title.
+        // What the alert says on its first line; {when} becomes "in 4:32" (counting down live) or "now", {subject} the meeting's title.
         public const string DefaultMeetingAlertText = "Meeting starting {when}";
         public const int MeetingAlertTextMaxLength = 120;
         public static string MeetingAlertText
