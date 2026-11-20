@@ -73,14 +73,10 @@ namespace Krabbz.Blynclight
             Box("Hotkeys: Alt+R for Busy, Alt+G for Available", AppSettings.HotkeysEnabled, v => { AppSettings.HotkeysEnabled = v; tray.ApplySettings(); },
                 help: "Press Alt+R for Busy or Alt+G for Available from any app, without opening BusyLightz. Turn off if another app uses these keys.");
             var updates = Box("Install updates automatically", AppSettings.AutoUpdate, v => AppSettings.AutoUpdate = v,
-                help: "Downloads and installs new versions of BusyLightz by itself. Check now looks for one right away.");
-            if (Program.UpdateRepo != null) SideButton(updates, "Check now", delegate { tray.CheckForUpdates(true); });
+                help: "Downloads and installs new versions of BusyLightz by itself. Check and install looks for one right away and installs it (a copy installed for everyone asks Windows for permission first).");
+            if (Program.UpdateRepo != null) SideButton(updates, "Check and install", delegate { tray.CheckForUpdates(true); });
             // Updates are automatic for the all-users copy (its background updater installs them).
-            if (AllUsersInstall.IsThisCopy)
-            {
-                updates.Enabled = false;
-                if (Program.UpdateRepo != null) UpdateNowRow();
-            }
+            if (AllUsersInstall.IsThisCopy) updates.Enabled = false;
             else if (Program.UpdateRepo != null) InstallForEveryoneRow();
             // The project on GitHub: what it is, the code, release notes and the guide.
             if (Program.UpdateRepo != null)
@@ -145,6 +141,10 @@ namespace Krabbz.Blynclight
             var orgApp = new ModernButton { Text = "Organization's Teams app...", Bounds = new Rectangle(24, y, 220, 32) };
             orgApp.Click += delegate { ShowTeamsAppDialog(); };
             Add(orgApp);
+            var reauth = new ModernButton { Text = "Re-authenticate Microsoft 365", Bounds = new Rectangle(252, y, 228, 32) };
+            reauth.Click += delegate { tray.ReauthTeams(); };
+            Add(reauth);
+            tips.SetToolTip(reauth, "Signs in to Microsoft 365 again in your browser. Use it if Teams status or meeting alerts stopped working, or after your organization changed the app's permissions. Calendar access is kept if you'd allowed it.");
             Info(orgApp, "Connect signs in with your work account so your lights follow your Teams status. " +
                 "Your IT admin sets up your organization's Teams app once; this is where its details go.");
             y += 32 + RowGap;
@@ -551,24 +551,6 @@ namespace Krabbz.Blynclight
 
         // A just-for-me copy (in AppData) offers to install for everyone in Program Files, with a Windows admin
         // prompt. Once installed, this copy hands over to it (see TrayContext.WatchInstall).
-        // For the all-users copy, whose updates a background task installs every few hours: update right now.
-        void UpdateNowRow()
-        {
-            var label = new Label
-            {
-                Text = "Updates install by themselves every few hours. Don't want to wait? Update now (needs an admin).",
-                AutoSize = true,
-                MaximumSize = new Size(350 - 24 - 8 - InfoRoom, 0),
-                Location = new Point(24, y),
-            };
-            Add(label);
-            Info(label, "Starts the background updater right away if a newer version is out. Windows asks for an administrator's permission, then BusyLightz closes and reopens by itself on the new version.");
-            var update = new ModernButton { Text = "Update now", Bounds = new Rectangle(350, y, 130, 30) };
-            update.Click += delegate { tray.ForceUpdate(); };
-            Add(update);
-            y += Math.Max(46, label.Height + RowGap);
-        }
-
         void InstallForEveryoneRow()
         {
             Add(new Label

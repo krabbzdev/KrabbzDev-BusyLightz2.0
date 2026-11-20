@@ -111,7 +111,7 @@ Invoke-Tool "$wix\light.exe" @('-nologo', '-ext', 'WixUtilExtension', '-spdb', '
 Write-Host "Built $msi"
 
 # The all-users installer (C:\Program Files\BusyLightz) and its "BusyLightz Updater" scheduled task, which runs as SYSTEM
-# at startup and every 4 hours to install updates. schtasks wants the task definition as UTF-16.
+# at startup and every hour to install updates. schtasks wants the task definition as UTF-16.
 @"
 <?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
@@ -120,8 +120,8 @@ Write-Host "Built $msi"
     <BootTrigger><Delay>PT5M</Delay></BootTrigger>
     <TimeTrigger>
       <StartBoundary>2026-01-01T00:00:00</StartBoundary>
-      <Repetition><Interval>PT4H</Interval></Repetition>
-      <RandomDelay>PT30M</RandomDelay>
+      <Repetition><Interval>PT1H</Interval></Repetition>
+      <RandomDelay>PT5M</RandomDelay>
     </TimeTrigger>
   </Triggers>
   <Principals><Principal id="System"><UserId>S-1-5-18</UserId><RunLevel>HighestAvailable</RunLevel></Principal></Principals>
