@@ -62,6 +62,7 @@ A small Windows app that controls USB busy lights, so the people around you can 
 | [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) | Muting with a Mutesync Button, its ring colors, and K2 USBC Key macros |
 | [Teams Status](Teams-Status.md) | Connecting to Teams, what each color means, Do not disturb in Teams, status messages |
 | [Meeting Alerts](Meeting-Alerts.md) | A pop-up before each meeting with a Join button, My Schedule Today, and their settings |
+| [Teams Meeting Transcripts](Meeting-Transcripts.md) | Saving the transcripts Teams makes of your meetings (opt-in), and what an admin has to approve |
 | [Call Detection](Call-Detection.md) | How the light knows you're on a call, ignoring apps, Test microphone |
 | [Setup Checklist](Setup-Checklist.md) | Every step of the checklist explained |
 | [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) | One-time steps for an IT admin |
@@ -69,4 +70,4 @@ A small Windows app that controls USB busy lights, so the people around you can 
 | [For Developers](For-Developers.md) | Building, publishing releases, project layout |
 
 ---
-[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
+[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Teams Meeting Transcripts](Meeting-Transcripts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

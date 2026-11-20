@@ -7,6 +7,10 @@
   - Two Microsoft Graph delegated permissions, Presence.ReadWrite (Teams status) and Calendars.Read (Meeting
     Alerts, read-only, only the user's own calendar), plus the openid, profile and offline_access sign-in
     scopes, with admin consent for the organization.
+  - With -Transcripts, two more: OnlineMeetings.Read and OnlineMeetingTranscript.Read.All, so BusyLightz can
+    save the transcripts Teams makes of meetings its user was in (Settings > Meeting Alerts, opt-in per
+    user). Left out by default, because this permission lets the app read every transcript its signed-in user
+    can open; add it only if you want that feature.
   Safe to run again: an existing "Krabbz9999 Blynclight" registration is reused and brought up to date.
   Needs the Microsoft.Graph.Authentication, .Applications and .Identity.SignIns modules, and an admin
   sign-in (Global Administrator or Cloud Application Administrator) in the browser.
@@ -17,12 +21,15 @@
 param(
     [string]$DisplayName = 'Krabbz9999 Blynclight',
     # Where to write the client and tenant IDs (JSON) for build.ps1.
-    [string]$OutFile
+    [string]$OutFile,
+    # Also add the permissions for saving Teams meeting transcripts (see the description).
+    [switch]$Transcripts
 )
 
 $ErrorActionPreference = 'Stop'
 $graphAppId = '00000003-0000-0000-c000-000000000000' # Microsoft Graph
 $scopes = 'openid', 'profile', 'offline_access', 'Presence.ReadWrite', 'Calendars.Read'
+if ($Transcripts) { $scopes += 'OnlineMeetings.Read', 'OnlineMeetingTranscript.Read.All' }
 
 Import-Module Microsoft.Graph.Authentication, Microsoft.Graph.Applications, Microsoft.Graph.Identity.SignIns
 Write-Host 'Opening Microsoft sign-in. Use an account that can manage app registrations and grant consent.'

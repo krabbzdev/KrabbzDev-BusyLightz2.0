@@ -96,7 +96,7 @@ Turn them off in **Settings** (⚙ in the window, or tray menu > **Settings...**
 
 ## Is my data safe?
 
-- The app only reads and sets **your own Teams presence**. It can't see mail, chats, files or calendars.
+- The app reads and sets **your own Teams presence**. With your permission it also reads **your own calendar** (for [Meeting Alerts](Meeting-Alerts.md)) and, only if you turn it on and an admin approves, **the transcripts Teams made of your meetings** ([Teams Meeting Transcripts](Meeting-Transcripts.md)). It can't see mail, chats or files.
 - Your Teams sign-in is stored encrypted, usable only by your Windows account. **Connect to Microsoft Teams** (when checked) signs out and deletes it.
 - Call detection only asks Windows *which apps* are using the microphone, never any audio.
 - The only internet connections are to Microsoft (Teams status) and GitHub (updates).
@@ -127,4 +127,4 @@ Use **Send feedback...** in the tray menu or at the bottom of Settings. It opens
 Yes, but you have to do it yourself (Windows doesn't let installers do it): right-click the Start menu entry > **Pin to Start** or **Pin to taskbar**.
 
 ---
-[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
+[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Teams Meeting Transcripts](Meeting-Transcripts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

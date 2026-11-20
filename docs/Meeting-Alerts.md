@@ -71,6 +71,10 @@ All on the **Meeting Alerts** page of Settings:
 
 Meeting Alerts keeps working when **Sync with Microsoft Teams** is off, because it reads your calendar and doesn't touch your Teams status. Turning the **Alert me before my meetings** switch off stops it.
 
+## Transcripts of your Teams meetings
+
+The same page can also save a copy of the transcript Teams makes of your Teams meetings, if you turn it on. See [Teams Meeting Transcripts](Meeting-Transcripts.md).
+
 ## If it doesn't work
 
 - **No alerts at all:** is Settings > Meeting Alerts saying *Calendar access is allowed*? If not, click **Allow access...**. Is **Alert me before my meetings** on? Does your meeting have a start time today, and isn't it declined or all-day?
@@ -78,4 +82,4 @@ Meeting Alerts keeps working when **Sync with Microsoft Teams** is off, because 
 - **Alerts show after the meeting started:** BusyLightz checks the calendar once a minute, so an alert can be up to a minute late. Pick a longer lead time.
 
 ---
-[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
+[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Teams Meeting Transcripts](Meeting-Transcripts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

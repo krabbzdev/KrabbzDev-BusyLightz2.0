@@ -52,5 +52,15 @@ Then each user clicks **Connect** and signs in with their own work account.
 
 In the **Set up...** dialog, **Copy admin instructions** copies a short version of this page that users can paste into an email or ticket for IT.
 
+## Transcripts (optional)
+
+[Teams Meeting Transcripts](Meeting-Transcripts.md) saves a copy of the transcript Teams makes of a meeting, for the user who turns it on. It's the only part of BusyLightz that needs a permission an administrator must approve, and it's left out unless you ask for it.
+
+- **Permissions:** delegated Microsoft Graph `OnlineMeetings.Read` and `OnlineMeetingTranscript.Read.All`. The second needs admin consent. Users can read the transcripts of meetings they were invited to, and nothing else.
+- **With the script:** run [`scripts/New-EntraAppRegistration.ps1`](../scripts/New-EntraAppRegistration.ps1) with `-Transcripts`.
+- **By hand:** add both permissions under **API permissions > Microsoft Graph > Delegated permissions**, then **Grant admin consent**.
+- **Tenant settings:** Teams has an admin setting, *Graph API access to transcripts*. If it's off, apps get a *403* and BusyLightz says your organization turned it off.
+- **Think before you grant it for everyone:** the consent covers every signed-in user of the app, and any program on a PC that uses this app's client ID could ask for a user's transcripts with their sign-in. It only works for users who have also turned the feature on, but you may prefer to approve it for a pilot group first.
+
 ---
-[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)
+[Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Teams Meeting Transcripts](Meeting-Transcripts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

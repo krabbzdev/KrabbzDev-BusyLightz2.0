@@ -30,6 +30,9 @@ namespace Krabbz.Blynclight
         readonly Button connectButton = new ModernButton();
         readonly Label meetingStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
         readonly Button meetingButton = new ModernButton();
+        // Teams meeting transcripts, at the bottom of the Meeting Alerts page.
+        readonly Label transcriptStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
+        readonly Button transcriptButton = new ModernButton();
         int meetingAlertsPage;
         readonly Timer refresh = new Timer { Interval = RefreshMs };
         readonly List<SettingsPage> pages = new List<SettingsPage>();
@@ -736,6 +739,23 @@ namespace Krabbz.Blynclight
             test.Click += delegate { tray.ShowTestMeetingAlert(); };
             Add(test);
             y += 34 + RowGap;
+
+            // Teams meeting transcripts: opt-in, and for Teams meetings only.
+            Add(new Label { Text = "Teams meeting transcripts", AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), Location = new Point(24, y) });
+            y += 28;
+            Box("Save a transcript of my Teams meetings", AppSettings.TranscriptsOn,
+                v => { AppSettings.TranscriptsOn = v; tray.CheckTranscripts(); },
+                help: "When Teams has made a transcript of a Teams meeting you were invited to, BusyLightz saves a copy as a text file in Documents\\BusyLightz Transcripts and tells you. It doesn't record anything or start transcription: the meeting has to have transcription turned on in Teams. It needs calendar access (above) and transcript access (below), which an administrator of your Microsoft 365 has to approve.");
+            transcriptStatus.Location = new Point(24, y + 6);
+            Add(transcriptStatus);
+            transcriptButton.Bounds = new Rectangle(350, y, 130, 32);
+            transcriptButton.Click += delegate { tray.GrantTranscriptAccess(); };
+            Add(transcriptButton);
+            y += 44;
+            var folderButton = new ModernButton { Text = "Open transcripts folder", Bounds = new Rectangle(24, y, 200, 34) };
+            folderButton.Click += delegate { tray.OpenTranscriptsFolder(); };
+            Add(folderButton);
+            y += 34 + RowGap;
         }
 
         // "How often to check for updates": a Daily check or a Weekly one. For a copy installed for everyone, the choice
@@ -800,8 +820,12 @@ namespace Krabbz.Blynclight
                 meetingStatus.Text = "Connect to Microsoft Teams first (on the Microsoft Teams page).";
                 meetingButton.Text = "Allow access...";
                 meetingButton.Enabled = false;
+                transcriptStatus.Text = "Connect to Microsoft Teams first (on the Microsoft Teams page).";
+                transcriptButton.Text = "Allow access...";
+                transcriptButton.Enabled = false;
                 return;
             }
+            RefreshTranscripts(presence);
             meetingButton.Enabled = true;
             if (!presence.CalendarGranted)
             {
@@ -812,6 +836,30 @@ namespace Krabbz.Blynclight
             {
                 meetingStatus.Text = problem == null ? "Calendar access is allowed." : "Calendar access is allowed, but: " + problem;
                 meetingButton.Text = "Allow again...";
+            }
+        }
+
+        // Whether BusyLightz may read Teams meeting transcripts yet, and why not if something's wrong.
+        void RefreshTranscripts(TeamsPresence presence)
+        {
+            if (!presence.CalendarGranted)
+            {
+                transcriptStatus.Text = "Allow calendar access first (above).";
+                transcriptButton.Text = "Allow access...";
+                transcriptButton.Enabled = false;
+                return;
+            }
+            transcriptButton.Enabled = true;
+            string problem = tray.TranscriptProblem;
+            if (!presence.TranscriptsGranted)
+            {
+                transcriptStatus.Text = "Transcript access isn't allowed yet. An administrator of your Microsoft 365 has to approve it.";
+                transcriptButton.Text = "Allow access...";
+            }
+            else
+            {
+                transcriptStatus.Text = problem == null ? "Transcript access is allowed." : "Transcript access is allowed, but: " + problem;
+                transcriptButton.Text = "Allow again...";
             }
         }
 

@@ -326,6 +326,7 @@ namespace Krabbz.Blynclight
         const string ReauthText = "Re-authenticate Microsoft 365";
         readonly System.Threading.Timer teamsPoll;
         MeetingAlerts meetingAlerts;
+        MeetingTranscripts transcripts;
         AgendaForm agendaForm;
         DateTime agendaClosedUtc;
         // After a double-click opens the window, the click that ends it mustn't open the menu too.
@@ -449,6 +450,7 @@ namespace Krabbz.Blynclight
             });
             teamsPoll = new System.Threading.Timer(delegate { Program.Guard("Teams status check", PollTeams); }, null, 0, TeamsPollMs);
             meetingAlerts = new MeetingAlerts(() => presence, messages, () => callApp != null);
+            transcripts = new MeetingTranscripts(() => presence, TranscriptReady);
             Program.WatchForFreezes(messages);
             WatchInstall();
             if (Program.UpdateRepo != null)
@@ -640,6 +642,67 @@ namespace Krabbz.Blynclight
                 }
                 catch (Exception ex) { ShowBalloon("Couldn't allow calendar access: " + ex.Message, ToolTipIcon.Warning); }
             });
+        }
+
+        // Teams meeting transcripts: why one couldn't be read, and the buttons in Settings > Meeting Alerts.
+        public string TranscriptProblem { get { return transcripts == null ? null : transcripts.Problem; } }
+
+        public void CheckTranscripts()
+        {
+            if (transcripts != null) transcripts.CheckNow();
+        }
+
+        // Asks Microsoft, in the browser, to let BusyLightz read the transcripts of the user's Teams meetings (read-only).
+        // An administrator of their Microsoft 365 has to approve this permission.
+        public void GrantTranscriptAccess()
+        {
+            var teams = presence;
+            if (teams == null) { ShowSetup(); return; }
+            if (!teams.SignedIn)
+            {
+                ShowBalloon("Connect to Microsoft Teams first (Settings > Microsoft Teams), then allow transcript access.", ToolTipIcon.Info);
+                return;
+            }
+            Program.Background("Transcript access", delegate
+            {
+                try
+                {
+                    teams.GrantTranscriptAccess();
+                    ShowBalloon("Transcript access allowed. Transcripts of your Teams meetings will be saved in Documents\\BusyLightz Transcripts.", ToolTipIcon.Info);
+                    transcripts.CheckNow();
+                }
+                catch (Exception ex) { ShowBalloon("Couldn't allow transcript access: " + ex.Message, ToolTipIcon.Warning); }
+            });
+        }
+
+        public void OpenTranscriptsFolder()
+        {
+            try
+            {
+                Directory.CreateDirectory(MeetingTranscripts.Folder);
+                System.Diagnostics.Process.Start(MeetingTranscripts.Folder);
+            }
+            catch (Exception ex) { Program.LogError("Opening the transcripts folder", ex); }
+        }
+
+        // A transcript has been saved: a notice that opens it when clicked.
+        void TranscriptReady(string title, string path)
+        {
+            try
+            {
+                messages.BeginInvoke((Action)delegate
+                {
+                    if (exiting) return;
+                    balloonLink = null;
+                    balloonAction = delegate
+                    {
+                        try { System.Diagnostics.Process.Start(path); }
+                        catch (Exception ex) { Program.LogError("Opening a transcript", ex); }
+                    };
+                    tray.ShowBalloonTip(15000, "Transcript ready", title + ". Click to open it.", ToolTipIcon.Info);
+                });
+            }
+            catch (InvalidOperationException) { } // Window already gone during exit.
         }
 
         // Opens the tray menu where the pointer is, as a right-click does. NotifyIcon only does that itself for the right
@@ -1617,6 +1680,7 @@ namespace Krabbz.Blynclight
             if (k2Key != null) k2Key.Dispose();
             if (teamsPoll != null) teamsPoll.Dispose();
             if (meetingAlerts != null) meetingAlerts.Dispose();
+            if (transcripts != null) transcripts.Dispose();
             if (presence != null) presence.Dispose(); // Clears Busy if a phone call is in progress.
             if (updateTimer != null) updateTimer.Dispose();
             showWait.Unregister(null);

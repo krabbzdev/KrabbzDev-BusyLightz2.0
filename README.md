@@ -93,6 +93,8 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 
 [More about Meeting Alerts](docs/Meeting-Alerts.md).
 
+**Teams meeting transcripts (opt-in):** BusyLightz can also save a copy of the transcript Teams makes of your Teams meetings as a text file, and tell you when it's ready. It records nothing itself, and an administrator of your Microsoft 365 has to approve the permission. [More about transcripts](docs/Meeting-Transcripts.md).
+
 ### Setup and updates
 
 - **Setup checklist** on first run, including setting up the Teams app for your organization.
@@ -126,6 +128,7 @@ Windows doesn't let installers pin apps to the Start menu. Pin it yourself (righ
 | [Using the Light](docs/Using-the-Light.md) | Supported lights, the window, override timer, tray menu, hotkeys, notifications, Settings, Send feedback |
 | [Teams Status](docs/Teams-Status.md) | Connecting to Teams, what each color means, Busy in Teams, status messages |
 | [Meeting Alerts](docs/Meeting-Alerts.md) | A pop-up before each meeting, with the details and a Join button, and its settings |
+| [Teams Meeting Transcripts](docs/Meeting-Transcripts.md) | Saving the transcripts Teams makes of your meetings, and what an admin has to approve |
 | [Call Detection](docs/Call-Detection.md) | How the lights know you're on a call, ignoring apps |
 | [Setup Checklist](docs/Setup-Checklist.md) | Every step of the checklist explained |
 | [Setting Up Teams for Your Organization](docs/Setting-Up-Teams-for-Your-Organization.md) | One-time steps for an IT admin |

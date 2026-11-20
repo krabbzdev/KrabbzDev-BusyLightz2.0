@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Web;
 using System.Web.Script.Serialization;
@@ -22,6 +23,9 @@ namespace Krabbz.Blynclight
         const string Scopes = "openid profile offline_access https://graph.microsoft.com/Presence.ReadWrite";
         // Asked for separately, only when the user turns on Meeting Alerts, so the normal sign-in never needs it.
         const string CalendarScope = "https://graph.microsoft.com/Calendars.Read";
+        // Reading the transcripts Teams makes of meetings the user was in (Teams Meeting Transcripts). The transcript
+        // permission needs approval from an administrator of the user's Microsoft 365.
+        const string TranscriptScope = "https://graph.microsoft.com/OnlineMeetings.Read https://graph.microsoft.com/OnlineMeetingTranscript.Read.All";
         const string GraphUsers = "https://graph.microsoft.com/v1.0/users/";
         // Microsoft drops the Busy status on its own after this, so a crash or sleep never leaves it stuck.
         const string BusyExpiration = "PT5M";
@@ -53,6 +57,8 @@ namespace Krabbz.Blynclight
         DateTime accessTokenExpires;
         // True once the user has allowed reading their calendar (see GrantCalendarAccess).
         bool calendarGranted;
+        // True once the user has allowed reading their Teams meeting transcripts (see GrantTranscriptAccess).
+        bool transcriptsGranted;
         bool onCall;
         bool problemReported;
         readonly Timer messageTimer;
@@ -81,7 +87,11 @@ namespace Krabbz.Blynclight
         public bool SignedIn { get { lock (sync) return refreshToken != null; } }
         public string Account { get { lock (sync) return account; } }
         public bool CalendarGranted { get { lock (sync) return calendarGranted; } }
-        string CurrentScopes { get { return CalendarGranted ? Scopes + " " + CalendarScope : Scopes; } }
+        public bool TranscriptsGranted { get { lock (sync) return transcriptsGranted; } }
+        string CurrentScopes
+        {
+            get { return Scopes + (CalendarGranted ? " " + CalendarScope : "") + (TranscriptsGranted ? " " + TranscriptScope : ""); }
+        }
 
         string Authority { get { return "https://login.microsoftonline.com/" + tenantId + "/oauth2/v2.0/"; } }
 
@@ -89,7 +99,7 @@ namespace Krabbz.Blynclight
         public void SignIn()
         {
             SignInWith(Scopes);
-            lock (sync) calendarGranted = false;
+            lock (sync) { calendarGranted = false; transcriptsGranted = false; }
             Save();
         }
 
@@ -97,8 +107,19 @@ namespace Krabbz.Blynclight
         // Only the user's own calendar, read-only. Throws with a readable message if it isn't allowed.
         public void GrantCalendarAccess()
         {
-            SignInWith(Scopes + " " + CalendarScope);
+            SignInWith(Scopes + " " + CalendarScope + (TranscriptsGranted ? " " + TranscriptScope : ""));
             lock (sync) calendarGranted = true;
+            Save();
+            problemReported = false;
+        }
+
+        // Signs in again, this time also asking Microsoft to let BusyLightz read the transcripts of the user's Teams
+        // meetings (read-only). Needs approval from an administrator of the user's Microsoft 365. Throws with a readable
+        // message if it isn't allowed.
+        public void GrantTranscriptAccess()
+        {
+            SignInWith(Scopes + (CalendarGranted ? " " + CalendarScope : "") + " " + TranscriptScope);
+            lock (sync) transcriptsGranted = true;
             Save();
             problemReported = false;
         }
@@ -171,7 +192,7 @@ namespace Krabbz.Blynclight
             if (wasOnCall) TryClear();
             TakeDownStatusMessage();
             TakeDownPresence();
-            lock (sync) { refreshToken = null; accessToken = null; userId = null; account = null; calendarGranted = false; }
+            lock (sync) { refreshToken = null; accessToken = null; userId = null; account = null; calendarGranted = false; transcriptsGranted = false; }
             try { File.Delete(tokenPath); } catch (IOException) { }
         }
 
@@ -457,14 +478,26 @@ namespace Krabbz.Blynclight
                 try
                 {
                     try { StoreTokens(RequestTokens(RefreshForm(refresh), CurrentScopes)); }
-                    catch (TokenException calendarEx)
+                    catch (TokenException extraEx)
                     {
-                        // Calendar access was taken back (or never took): carry on without it, so Teams status keeps working.
-                        if (!CalendarGranted) throw;
-                        Log("Calendar access is no longer allowed (" + calendarEx.Error + "); carrying on without it.");
-                        lock (sync) calendarGranted = false;
-                        Save();
-                        StoreTokens(RequestTokens(RefreshForm(refresh), Scopes));
+                        // Calendar or transcript access was taken back (or never took): carry on without it, so Teams status
+                        // keeps working. Transcripts go first (they need an administrator's approval), keeping the calendar.
+                        if (!CalendarGranted && !TranscriptsGranted) throw;
+                        Log("Calendar or transcript access is no longer allowed (" + extraEx.Error + "); carrying on without it.");
+                        bool recovered = false;
+                        if (TranscriptsGranted && CalendarGranted)
+                        {
+                            lock (sync) transcriptsGranted = false;
+                            Save();
+                            try { StoreTokens(RequestTokens(RefreshForm(refresh), CurrentScopes)); recovered = true; }
+                            catch (TokenException) { }
+                        }
+                        if (!recovered)
+                        {
+                            lock (sync) { calendarGranted = false; transcriptsGranted = false; }
+                            Save();
+                            StoreTokens(RequestTokens(RefreshForm(refresh), Scopes));
+                        }
                     }
                 }
                 catch (TokenException ex)
@@ -556,6 +589,136 @@ namespace Krabbz.Blynclight
                 if (meeting.StartUtc != DateTime.MinValue) meetings.Add(meeting);
             }
             return meetings;
+        }
+
+        // One Teams meeting transcript: its ID and when Teams made it.
+        public class TranscriptInfo
+        {
+            public string Id;
+            public DateTime CreatedUtc;
+        }
+
+        // What a Graph call that failed said.
+        public class GraphException : Exception
+        {
+            public readonly int Status;
+            public readonly string Body;
+            public GraphException(int status, string body, string message) : base(message) { Status = status; Body = body ?? ""; }
+        }
+
+        // A Graph GET with the user's sign-in; throws GraphException (with the status and body) if Microsoft says no.
+        string GraphGetText(string url, string accept)
+        {
+            string token = AccessToken();
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            try
+            {
+                using (var web = new GraphWebClient())
+                {
+                    web.Headers[HttpRequestHeader.Authorization] = "Bearer " + token;
+                    if (accept != null) web.Headers[HttpRequestHeader.Accept] = accept;
+                    web.Encoding = Encoding.UTF8;
+                    return web.DownloadString(url);
+                }
+            }
+            catch (WebException ex)
+            {
+                var response = ex.Response as HttpWebResponse;
+                string body = "";
+                if (response != null)
+                {
+                    try { using (var reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8)) body = reader.ReadToEnd(); }
+                    catch (Exception) { }
+                }
+                throw new GraphException(response == null ? 0 : (int)response.StatusCode, body, ex.Message);
+            }
+        }
+
+        // The Graph ID of a Teams meeting from the link to join it, or null. A meeting the user organized is found by its link;
+        // one someone else organized has its ID worked out from the link, as Teams builds it.
+        public string FindOnlineMeetingId(string joinUrl)
+        {
+            if (!TranscriptsGranted) throw new InvalidOperationException("Transcript access isn't allowed yet.");
+            try
+            {
+                string body = GraphGetText("https://graph.microsoft.com/v1.0/me/onlineMeetings?$select=id&$filter=" +
+                    Uri.EscapeDataString("JoinWebUrl eq '" + joinUrl.Replace("'", "''") + "'"), null);
+                var root = Json.DeserializeObject(body) as Dictionary<string, object>;
+                object values;
+                if (root != null && root.TryGetValue("value", out values) && values is System.Collections.IEnumerable)
+                    foreach (object item in (System.Collections.IEnumerable)values)
+                    {
+                        string id = Text(item as Dictionary<string, object>, "id");
+                        if (id.Length > 0) return id;
+                    }
+            }
+            catch (GraphException ex)
+            {
+                // Not the user's own meeting (or not found that way): fall back to the link.
+                if (ex.Status != 400 && ex.Status != 403 && ex.Status != 404) throw ExplainTranscriptError(ex);
+            }
+            return MeetingIdFromJoinUrl(joinUrl);
+        }
+
+        // "https://teams.microsoft.com/l/meetup-join/19%3ameeting_XXXX%40thread.v2/0?context={"Tid":"...","Oid":"<organizer>"}"
+        // -> the Graph meeting ID, which is "1*<organizer>*0**<thread>" encoded as base64.
+        static string MeetingIdFromJoinUrl(string joinUrl)
+        {
+            Uri uri;
+            if (!Uri.TryCreate(joinUrl, UriKind.Absolute, out uri)) return null;
+            var thread = Regex.Match(Uri.UnescapeDataString(uri.AbsolutePath), @"meetup-join/(19:meeting_[^/]+@thread\.v2)");
+            var organizer = Regex.Match(Uri.UnescapeDataString(uri.Query), "\"Oid\"\\s*:\\s*\"([0-9a-fA-F-]{36})\"");
+            if (!thread.Success || !organizer.Success) return null;
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes("1*" + organizer.Groups[1].Value + "*0**" + thread.Groups[1].Value));
+        }
+
+        // The transcripts Teams has made of a meeting, oldest first. Empty if there are none (yet).
+        public List<TranscriptInfo> ListTranscripts(string meetingId)
+        {
+            var found = new List<TranscriptInfo>();
+            string body;
+            try { body = GraphGetText("https://graph.microsoft.com/v1.0/me/onlineMeetings/" + Uri.EscapeDataString(meetingId) + "/transcripts", null); }
+            catch (GraphException ex)
+            {
+                if (ex.Status == 404) return found; // No such meeting, or no transcript.
+                throw ExplainTranscriptError(ex);
+            }
+            var root = Json.DeserializeObject(body) as Dictionary<string, object>;
+            object values;
+            if (root == null || !root.TryGetValue("value", out values) || !(values is System.Collections.IEnumerable)) return found;
+            foreach (object item in (System.Collections.IEnumerable)values)
+            {
+                var entry = item as Dictionary<string, object>;
+                string id = Text(entry, "id");
+                if (id.Length == 0) continue;
+                DateTime created;
+                if (!DateTime.TryParse(Text(entry, "createdDateTime"), CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out created)) created = DateTime.MinValue;
+                found.Add(new TranscriptInfo { Id = id, CreatedUtc = created });
+            }
+            found.Sort((a, b) => a.CreatedUtc.CompareTo(b.CreatedUtc));
+            return found;
+        }
+
+        // The text of one transcript, as WebVTT (times, speakers and what they said).
+        public string GetTranscriptText(string meetingId, string transcriptId)
+        {
+            try
+            {
+                return GraphGetText("https://graph.microsoft.com/v1.0/me/onlineMeetings/" + Uri.EscapeDataString(meetingId) +
+                    "/transcripts/" + Uri.EscapeDataString(transcriptId) + "/content", "text/vtt");
+            }
+            catch (GraphException ex) { throw ExplainTranscriptError(ex); }
+        }
+
+        // Microsoft's refusal, in words the user can act on.
+        static Exception ExplainTranscriptError(GraphException ex)
+        {
+            if (ex.Status == 403 && ex.Body.IndexOf("GraphAccessToTranscriptsDisabled", StringComparison.OrdinalIgnoreCase) >= 0)
+                return new InvalidOperationException("Your organization has turned off access to transcripts for apps (a Teams admin setting).");
+            if (ex.Status == 401 || ex.Status == 403)
+                return new InvalidOperationException("Microsoft didn't allow reading transcripts. An administrator needs to approve OnlineMeetingTranscript.Read.All for BusyLightz.");
+            return new InvalidOperationException("Microsoft returned an error (" + ex.Status + ") reading a transcript.");
         }
 
         static Dictionary<string, object> Child(Dictionary<string, object> parent, string key)
@@ -651,7 +814,7 @@ namespace Krabbz.Blynclight
                 json = Json.Serialize(new Dictionary<string, object>
                 {
                     { "refresh_token", refreshToken }, { "oid", userId }, { "account", account },
-                    { "client_id", clientId }, { "tenant_id", tenantId }, { "calendar", calendarGranted },
+                    { "client_id", clientId }, { "tenant_id", tenantId }, { "calendar", calendarGranted }, { "transcripts", transcriptsGranted },
                 });
             }
             Directory.CreateDirectory(Path.GetDirectoryName(tokenPath));
@@ -678,6 +841,8 @@ namespace Krabbz.Blynclight
                 account = saved["account"] as string;
                 object calendar;
                 calendarGranted = saved.TryGetValue("calendar", out calendar) && calendar is bool && (bool)calendar;
+                object transcripts;
+                transcriptsGranted = saved.TryGetValue("transcripts", out transcripts) && transcripts is bool && (bool)transcripts;
             }
             catch (Exception ex)
             {

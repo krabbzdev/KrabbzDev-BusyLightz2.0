@@ -242,6 +242,9 @@ namespace Krabbz.Blynclight
         // Today's meetings in a panel attached to the right of the BusyLightz window while it's open. On unless changed.
         public static bool AgendaBesideWindow { get { return Get("AgendaBesideWindow"); } set { Set("AgendaBesideWindow", value); } }
         public static bool MeetingAlertSound { get { return Get("MeetingAlertSound"); } set { Set("MeetingAlertSound", value); } }
+        // Save a copy of the transcript Teams makes of each Teams meeting the user was in. Off unless turned on (it needs an
+        // administrator's approval in Microsoft 365 as well).
+        public static bool TranscriptsOn { get { return Get("TranscriptsOn", false); } set { Set("TranscriptsOn", value); } }
         // How often to look for a new version: a Daily check (the default) or a Weekly one. A copy installed for everyone
         // keeps this machine-wide, because its background updater runs as SYSTEM and can't see a user's settings; changing it
         // there needs an administrator (AllUsersInstall.SetMachineUpdateSchedule).
