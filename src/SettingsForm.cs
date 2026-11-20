@@ -122,10 +122,10 @@ namespace Krabbz.Blynclight
 
             StartPage("Microsoft Teams", TeamsGlyph, PageColors.Teams, "Follow your Teams status, and keep Teams in step with your lights.");
             Heading(null, null);
-            // The same setting as Disable Teams Integration in the tray menu.
-            var teamsOff = DisableSwitch("Disable Teams Integration", AppSettings.TeamsDisabled,
-                v => tray.SetTeamsDisabled(v),
-                "BusyLightz stops reading your Teams status and setting Busy or a status message. Your lights and call detection keep working, and your sign-in is kept.");
+            // On means working. Turning it off leaves Teams alone (AppSettings.TeamsDisabled).
+            var teamsOn = UseSwitch("Sync with Microsoft Teams", !AppSettings.TeamsDisabled,
+                v => tray.SetTeamsDisabled(!v),
+                "On: BusyLightz follows your Teams status and sets Busy and your status message. Turn it off to leave Teams alone: your lights and call detection keep working, and your sign-in is kept.");
             teamsStatus.Location = new Point(24, y + 6);
             Add(teamsStatus);
             connectButton.Bounds = new Rectangle(350, y, 130, 32);
@@ -162,7 +162,7 @@ namespace Krabbz.Blynclight
             var message = StatusMessagePicker(24 + ToggleBox.TextOffset);
             messageOn.CheckedChanged += delegate { message.Enabled = messageOn.Checked; };
             message.Enabled = messageOn.Checked;
-            GreyOutWhile(teamsOff, firstTeamsControl);
+            GreyOutUnless(teamsOn, firstTeamsControl);
             EndPage();
 
             meetingAlertsPage = pages.Count;
@@ -175,12 +175,12 @@ namespace Krabbz.Blynclight
             Heading(null, null);
             DevicePicture(new MuteSyncPicture(), muteButtonStatus,
                 "Its ring here shows what your button is showing right now.");
-            var muteSyncOff = DisableSwitch("Disable Mutesync Button Functions", !AppSettings.MuteSyncEnabled,
-                v => { AppSettings.MuteSyncEnabled = !v; tray.ApplySettings(); RefreshDevices(); },
-                "BusyLightz lets go of the button: pressing it won't mute your mic, and its ring goes dark. Turn this on to use the MuteMe app instead.");
+            var muteSyncOn = UseSwitch("Use the Mutesync button", AppSettings.MuteSyncEnabled,
+                v => { AppSettings.MuteSyncEnabled = v; tray.ApplySettings(); RefreshDevices(); },
+                "On: pressing the button mutes and unmutes your mic, and its ring shows which. Turn it off and BusyLightz lets go of the button: pressing it won't mute your mic, and its ring goes dark. Use that to run the MuteMe app instead.");
             int firstRingControl = page.Controls.Count;
             RingSection();
-            GreyOutWhile(muteSyncOff, firstRingControl);
+            GreyOutUnless(muteSyncOn, firstRingControl);
             EndPage();
 
             StartPage("K2 USBC Key", K2Glyph, PageColors.K2, "Two buttons for anything you like: type, mute, set your status.");
@@ -231,17 +231,18 @@ namespace Krabbz.Blynclight
 
         readonly K2Picture k2Picture = new K2Picture();
 
-        // A "Disable ... Functions" switch in bold, with what it does underneath; on means the device is left alone.
-        CheckBox DisableSwitch(string text, bool value, Action<bool> save, string note)
+        // A "Use ..." switch in bold, with what on and off do underneath. On means it's working, and turning it off is
+        // how you switch it off (save gets the new on/off).
+        CheckBox UseSwitch(string text, bool on, Action<bool> save, string note)
         {
             var box = new ToggleBox
             {
                 Text = text,
-                Checked = value,
+                Checked = on,
                 AutoSize = true,
                 Font = new Font("Segoe UI Semibold", 10.5f),
                 Location = new Point(24, y),
-                Accent = Theme.Red,
+                Accent = PageColors.Solid(pageAccent),
             };
             box.CheckedChanged += delegate { save(box.Checked); };
             Add(box);
@@ -259,13 +260,13 @@ namespace Krabbz.Blynclight
             return box;
         }
 
-        // Greys out the controls added to this page from index first on, while the switch is on.
-        void GreyOutWhile(CheckBox off, int first)
+        // Greys out the controls added to this page from index first on, while the switch is off.
+        void GreyOutUnless(CheckBox on, int first)
         {
             var controls = new List<Control>();
             for (int i = first; i < page.Controls.Count; i++) controls.Add(page.Controls[i]);
-            Action apply = () => { foreach (var control in controls) control.Enabled = !off.Checked; };
-            off.CheckedChanged += delegate { apply(); };
+            Action apply = () => { foreach (var control in controls) control.Enabled = on.Checked; };
+            on.CheckedChanged += delegate { apply(); };
             apply();
         }
 
@@ -356,9 +357,9 @@ namespace Krabbz.Blynclight
             DevicePicture(k2Picture, k2Status, "Press a button on your K2 and it lights up here.");
             tray.K2Pressed += k2Picture.Flash;
             FormClosed += delegate { tray.K2Pressed -= k2Picture.Flash; };
-            var k2Off = DisableSwitch("Disable K2 Functions", AppSettings.K2Disabled,
-                v => { AppSettings.K2Disabled = v; tray.ApplySettings(); },
-                "BusyLightz leaves the K2 alone: no actions run, and its buttons are ordinary left and right mouse clicks again.");
+            var k2On = UseSwitch("Use the K2 key", !AppSettings.K2Disabled,
+                v => { AppSettings.K2Disabled = !v; tray.ApplySettings(); },
+                "On: BusyLightz runs the actions you set for the K2's buttons. Turn it off and BusyLightz leaves the K2 alone: no actions run, and its buttons are ordinary left and right mouse clicks again.");
             int firstK2Control = page.Controls.Count;
             K2Row("Left button", K2Key.Button.Left, "What happens when you press the K2 USBC Key's left button on its own.");
             K2Row("Right button", K2Key.Button.Right, "What happens when you press the K2 USBC Key's right button on its own.");
@@ -371,7 +372,7 @@ namespace Krabbz.Blynclight
             email.TextChanged += delegate { AppSettings.MacroEmail = email.Text; };
             Add(email);
             y += 28 + RowGap + 4;
-            GreyOutWhile(k2Off, firstK2Control);
+            GreyOutUnless(k2On, firstK2Control);
             Add(new Label
             {
                 Text = "No K2 software needed. Out of the box the K2 USBC Key's buttons are mouse clicks; BusyLightz cancels those clicks " +
@@ -409,7 +410,7 @@ namespace Krabbz.Blynclight
             Action showValue = () =>
             {
                 string action = K2Actions.All[picker.SelectedIndex][0];
-                // Read-only (not disabled) when the action needs no text, so Disable K2 Functions can grey the row and
+                // Read-only (not disabled) when the action needs no text, so Use the K2 key can grey the row and
                 // turning it off again leaves this as the action wants it.
                 bool needs = K2Actions.NeedsValue(action);
                 value.ReadOnly = !needs;
@@ -1289,22 +1290,22 @@ namespace Krabbz.Blynclight
             });
             y += lights.Height + 18;
 
-            // The same setting as Disable USB Light Integration in the tray menu. While on, the rest of this window
-            // has nothing to show, so it's greyed out.
-            var disableAll = new ToggleBox
+            // On means BusyLightz controls the lights. While it's off the rest of this page has nothing to show, so
+            // it's greyed out (AppSettings.UsbLightsDisabled).
+            var lightsOn = new ToggleBox
             {
-                Text = "Disable All Light Functions",
-                Accent = Theme.Red,
-                Checked = AppSettings.UsbLightsDisabled,
+                Text = "Control my USB lights",
+                Accent = PageColors.Solid(PageColors.Light),
+                Checked = !AppSettings.UsbLightsDisabled,
                 AutoSize = true,
                 Font = new Font("Segoe UI Semibold", 10),
                 Location = new Point(20, y),
             };
-            Controls.Add(disableAll);
+            Controls.Add(lightsOn);
             y += 26;
             Controls.Add(new Label
             {
-                Text = "Turns your USB lights off and stops controlling them. Teams status and call detection keep working.",
+                Text = "On: BusyLightz sets your lights. Turn it off and your lights go dark and are left alone. Teams status and call detection keep working.",
                 AutoSize = true,
                 MaximumSize = new Size(width - 20 - ToggleBox.TextOffset, 0),
                 Font = new Font("Segoe UI", 9),
@@ -1361,10 +1362,10 @@ namespace Krabbz.Blynclight
             Controls.Add(reset);
             var lightControls = new List<Control>();
             for (int i = firstLightControl; i < Controls.Count; i++) lightControls.Add(Controls[i]);
-            Action showEnabled = () => { foreach (var control in lightControls) control.Enabled = !disableAll.Checked; };
-            disableAll.CheckedChanged += delegate
+            Action showEnabled = () => { foreach (var control in lightControls) control.Enabled = lightsOn.Checked; };
+            lightsOn.CheckedChanged += delegate
             {
-                tray.SetLightsDisabled(disableAll.Checked);
+                tray.SetLightsDisabled(!lightsOn.Checked);
                 showEnabled();
             };
             showEnabled();

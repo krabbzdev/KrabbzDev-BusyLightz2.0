@@ -89,7 +89,7 @@ namespace Krabbz.Blynclight
         // How many of the K2's own clicks have been cancelled, for the log and tests.
         public int ClicksBlocked { get { return blocked; } }
 
-        // Set from Disable K2 Functions in Settings: the K2's clicks go through as ordinary clicks, and no press is
+        // Set from Use the K2 key in Settings: the K2's clicks go through as ordinary clicks, and no press is
         // reported, so no action runs.
         public static volatile bool Disabled;
 

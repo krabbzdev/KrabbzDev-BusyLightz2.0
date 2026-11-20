@@ -60,14 +60,14 @@ With **Set my Teams status message while my lights are red** on in [Settings](Us
 
 ## Turning Teams off
 
-To stop BusyLightz talking to Teams without signing out, tick **Disable Teams Integration** in the tray menu, or in **Settings > Microsoft Teams**.
+To stop BusyLightz talking to Teams without signing out, turn **Sync with Microsoft Teams** off in **Settings > Microsoft Teams**. It's on by default.
 
 - The app stops reading your Teams status, setting **Busy** during other calls, and setting a status message. Anything it had set is put back, and your own status message returns.
 - Your lights and call detection keep working. Follow Teams Status shows *Teams integration disabled* instead of a status.
-- Your Teams sign-in is kept, so unticking it picks up again within a few seconds.
+- Your Teams sign-in is kept, so turning it back on picks up again within a few seconds.
 - It's remembered after a restart.
 
-The lights have the matching switch: **Disable USB Light Integration** (see [Using the Light](Using-the-Light.md#the-tray-menu-right-click-the-tray-icon)).
+The lights have the matching switch: **Control my USB lights** in Settings > Light Control.
 
 ## Without connecting to Teams
 

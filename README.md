@@ -52,7 +52,7 @@ If BusyLightz saves you a few interruptions, you can [buy me a coffee](https://b
 - **Four modes, one click each:** **Busy** (red), **Available** (green), **On a call** (flashing red and blue, for calls the app can't detect, like a desk phone) and **Follow Teams Status**. Pick them from the window, the tray menu, or anywhere with the hotkeys `Alt+R` (Busy) and `Alt+G` (Available).
 - **Override timer:** your pick goes back to Follow Teams Status on its own after 15 minutes, so you never forget one is on. Choose 5 minutes to 4 hours, or turn it off, in Settings. While an override is on, the window shows a countdown and the tray icon gets a small badge.
 - **Three window styles:** **Orbit** (the default, shown above, with orbiting dots, a countdown ring during overrides, and a running *Time since last reboot* clock, with the same time in words under it, like *32 mins ago*, that turns red after 24 hours), **Color block** and **Fluent list**, each in Light or Dark mode.
-- **Disable USB Light Integration and Disable Teams Integration:** two switches, in the tray menu and Settings, to leave your lights alone or leave Microsoft Teams alone. The other half keeps working: with the lights off, call detection and your Teams status still run, and with Teams off, the lights and call detection still run.
+- **Control my USB lights and Sync with Microsoft Teams:** two switches in Settings, both on by default and both showing ON or OFF, to leave your lights alone or leave Microsoft Teams alone when you turn them off. The other half keeps working: with the lights off, call detection and your Teams status still run, and with Teams off, the lights and call detection still run.
 - **Light Control** (a page in Settings): brightness, how fast On a call flashes, and the color for each status, each shown on your lights as you change it.
 - **Party Mode:** a rainbow button that cycles quickly through every color on every light, to check they all work and match.
 
@@ -102,7 +102,7 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 
 <p>
 <img src="docs/images/settings.png" alt="Settings on its General page: a page list on the left, switches with an i for help, and a Learn more about this project here button" width="330">
-<img src="docs/images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Disable All Light Functions switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="330">
+<img src="docs/images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Control my USB lights switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="330">
 <img src="docs/images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Re-authenticate Microsoft 365, Settings, Check and install updates and Exit" width="230">
 </p>
 
