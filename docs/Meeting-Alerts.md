@@ -16,6 +16,7 @@ If your organization's IT blocks users from allowing apps themselves, the button
 
 ## What the alert shows
 
+- An **icon** at the left: a video camera for online meetings, a calendar for the rest.
 - A first line, like *Meeting starting in 5 minutes*.
 - The meeting's **title**, its **start and end time**, and its **place** and **organizer** (when it has them).
 - **Join** (online meetings only): opens the meeting link in your browser, which hands it to Teams.
