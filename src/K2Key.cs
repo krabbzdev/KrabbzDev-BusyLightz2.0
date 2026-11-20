@@ -65,7 +65,8 @@ namespace Krabbz.Blynclight
         const int WM_LBUTTONDOWN = 0x201, WM_LBUTTONUP = 0x202, WM_RBUTTONDOWN = 0x204, WM_RBUTTONUP = 0x205;
         const uint PM_REMOVE = 1;
         const uint RIDI_DEVICENAME = 0x20000007, RID_INPUT = 0x10000003, RIDEV_INPUTSINK = 0x100;
-        const uint RIM_TYPEMOUSE = 0, RIM_TYPEKEYBOARD = 1;
+        const uint RIM_TYPEMOUSE = 0, RIM_TYPEKEYBOARD = 1, RIM_TYPEHID = 2;
+        const uint RIDEV_PAGEONLY = 0x20;
         const ushort LeftDown = 0x1, LeftUp = 0x2, RightDown = 0x4, RightUp = 0x8;
         const ushort KeyBreak = 0x1;
         // A K2 click is matched to the click Windows is about to act on within this long; one left unmatched (its
@@ -387,6 +388,8 @@ namespace Krabbz.Blynclight
             readonly ModernButton useRight = new ModernButton { Text = "Use as Right", Enabled = false };
             readonly ModernButton useBoth = new ModernButton { Text = "Use as Both", Enabled = false };
             readonly Label message = new Label { AutoSize = false };
+            // Every signal the key sends, as it arrives: key presses and releases, clicks, and other kinds of reports.
+            readonly TextBox activity = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Font = new Font("Consolas", 8.5f) };
             readonly Action changed;
 
             public Finder(Action changed)
@@ -397,7 +400,7 @@ namespace Krabbz.Blynclight
                 MaximizeBox = false;
                 MinimizeBox = false;
                 StartPosition = FormStartPosition.CenterParent;
-                ClientSize = new Size(560, 500);
+                ClientSize = new Size(560, 650);
                 BackColor = Theme.Page;
                 ForeColor = Theme.Text;
                 Font = new Font("Segoe UI", 9.5f);
@@ -450,7 +453,12 @@ namespace Krabbz.Blynclight
                 var close = new ModernButton { Text = "Close", Bounds = new Rectangle(440, 372, 104, 34) };
                 close.Click += delegate { Close(); };
                 Controls.Add(close);
-                message.Bounds = new Rectangle(16, 418, 528, 72);
+                message.Bounds = new Rectangle(16, 414, 528, 62);
+                Controls.Add(new Label { Text = "Everything the key sends (if it doesn't work, click Copy details and send this):", AutoSize = true, Font = new Font("Segoe UI", 9f), Location = new Point(16, 480) });
+                activity.Bounds = new Rectangle(16, 502, 528, 138);
+                activity.BackColor = Theme.Card;
+                activity.ForeColor = Theme.Text;
+                Controls.Add(activity);
                 message.ForeColor = Theme.Muted;
                 message.Text = "Nothing yet. Press a button on your key.";
                 Controls.Add(message);
@@ -487,8 +495,20 @@ namespace Krabbz.Blynclight
                 {
                     new RAWINPUTDEVICE { UsagePage = 1, Usage = 2, Flags = RIDEV_INPUTSINK, Target = Handle },
                     new RAWINPUTDEVICE { UsagePage = 1, Usage = 6, Flags = RIDEV_INPUTSINK, Target = Handle },
+                    // Media keys and other reports a key can send besides mouse clicks and typed keys.
+                    new RAWINPUTDEVICE { UsagePage = 1, Usage = 0x80, Flags = RIDEV_INPUTSINK, Target = Handle },
+                    new RAWINPUTDEVICE { UsagePage = 0x0C, Usage = 0, Flags = RIDEV_INPUTSINK | RIDEV_PAGEONLY, Target = Handle },
+                    new RAWINPUTDEVICE { UsagePage = 0xFF00, Usage = 0, Flags = RIDEV_INPUTSINK | RIDEV_PAGEONLY, Target = Handle },
+                    new RAWINPUTDEVICE { UsagePage = 0xFF01, Usage = 0, Flags = RIDEV_INPUTSINK | RIDEV_PAGEONLY, Target = Handle },
                 };
                 RegisterRawInputDevices(devices, (uint)devices.Length, (uint)Marshal.SizeOf(typeof(RAWINPUTDEVICE)));
+            }
+
+            // One line in the activity box (the newest at the bottom; the oldest are dropped).
+            void LogLine(string text)
+            {
+                if (activity.TextLength > 24000) activity.Text = activity.Text.Substring(activity.TextLength - 16000);
+                activity.AppendText(DateTime.Now.ToString("HH:mm:ss.fff") + "  " + text + "\r\n");
             }
 
             protected override void WndProc(ref Message m)
@@ -515,16 +535,31 @@ namespace Krabbz.Blynclight
                     var data = IntPtr.Add(buffer, (int)header);
                     string what = null;
                     int key = 0;
+                    var idMatch = IdPattern.Match(NameOf(h.Device).ToUpperInvariant());
+                    string devId = idMatch.Success ? idMatch.Value : "(no ID)";
+                    if (h.Type == RIM_TYPEHID)
+                    {
+                        // Some other kind of report (a media key, a vendor-defined one): its raw bytes.
+                        int sizeHid = Marshal.ReadInt32(data, 0), count = Marshal.ReadInt32(data, 4);
+                        int total = Math.Min(Math.Max(0, sizeHid * count), 32);
+                        var bytes = new StringBuilder();
+                        for (int i = 0; i < total; i++) bytes.Append(Marshal.ReadByte(data, 8 + i).ToString("X2")).Append(' ');
+                        LogLine("Report   " + devId + "   " + bytes.ToString().TrimEnd());
+                        return;
+                    }
                     if (h.Type == RIM_TYPEMOUSE)
                     {
                         ushort flags = (ushort)Marshal.ReadInt16(data, 4);
+                        short wheel = Marshal.ReadInt16(data, 6);
+                        if (flags != 0) LogLine("Mouse    " + devId + "   buttons 0x" + flags.ToString("X") + (wheel != 0 ? "   wheel " + wheel : ""));
                         if ((flags & LeftDown) != 0) what = "Left button";
                         else if ((flags & RightDown) != 0) what = "Right button";
                         else if ((flags & 0x10) != 0) what = "Middle button";
                     }
                     else if (h.Type == RIM_TYPEKEYBOARD)
                     {
-                        ushort flags = (ushort)Marshal.ReadInt16(data, 2), vkey = (ushort)Marshal.ReadInt16(data, 6);
+                        ushort make = (ushort)Marshal.ReadInt16(data, 0), flags = (ushort)Marshal.ReadInt16(data, 2), vkey = (ushort)Marshal.ReadInt16(data, 6);
+                        LogLine("Key      " + devId + "   " + ((flags & KeyBreak) != 0 ? "UP    " : "DOWN  ") + "vkey " + vkey + " (" + (Keys)vkey + ")   scan " + make + "   flags " + flags);
                         if ((flags & KeyBreak) == 0) { what = "Key " + (Keys)vkey; key = vkey; }
                     }
                     if (what == null) return;
@@ -593,6 +628,7 @@ namespace Krabbz.Blynclight
             void CopyDetails()
             {
                 var text = new StringBuilder("BusyLightz key finder" + Environment.NewLine);
+                if (activity.TextLength > 0) text.AppendLine().AppendLine("Everything it saw:").AppendLine(activity.Text).AppendLine("The list:");
                 foreach (ListViewItem row in list.Items)
                     text.AppendLine(row.SubItems[0].Text + "\t" + row.SubItems[1].Text + "\t" + row.SubItems[2].Text + "\t" + row.SubItems[3].Text + "\t" + row.SubItems[4].Text);
                 try { Clipboard.SetText(text.ToString()); Say("Copied. Paste it into an email or message."); }
