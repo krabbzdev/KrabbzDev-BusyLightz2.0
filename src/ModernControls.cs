@@ -9,7 +9,11 @@ namespace Krabbz.Blynclight
     // A check box drawn as a Windows 11 style on/off switch, with its text beside it. Behaves like any CheckBox.
     class ToggleBox : CheckBox
     {
-        const int SwitchWidth = 36, SwitchHeight = 18, Gap = 10;
+        const int SwitchWidth = 50, SwitchHeight = 22, Gap = 8;
+        // Where the text starts, for rows that line up under it.
+        public const int TextOffset = SwitchWidth + Gap;
+        // The ON / OFF in the switch, so it's plain what it's doing.
+        static readonly Font StateFont = new Font("Segoe UI Semibold", 7.5f);
         // The switch's color while on.
         public Color Accent = Theme.Teams;
 
@@ -31,6 +35,12 @@ namespace Krabbz.Blynclight
             return new Size(SwitchWidth + Gap + text.Width, Math.Max(RowHeight, text.Height + (RowHeight - LineHeight)));
         }
 
+        static void DrawState(Graphics g, string text, Rectangle area, Color color)
+        {
+            TextRenderer.DrawText(g, text, StateFont, area, color,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.SingleLine);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             var g = e.Graphics;
@@ -44,6 +54,7 @@ namespace Krabbz.Blynclight
                 Theme.FillRounded(g, track, SwitchHeight / 2, on, on);
                 using (var fill = new SolidBrush(Color.White))
                     g.FillEllipse(fill, track.Right - 4 - knob, track.Y + 4, knob, knob);
+                DrawState(g, "ON", new Rectangle(track.X + 3, track.Y, track.Width - knob - 9, track.Height), Color.White);
             }
             else
             {
@@ -51,6 +62,7 @@ namespace Krabbz.Blynclight
                 Theme.FillRounded(g, track, SwitchHeight / 2, BackColor, edge);
                 using (var fill = new SolidBrush(edge))
                     g.FillEllipse(fill, track.X + 4, track.Y + 4, knob, knob);
+                DrawState(g, "OFF", new Rectangle(track.X + knob + 6, track.Y, track.Width - knob - 9, track.Height), edge);
             }
             var text = new Rectangle(SwitchWidth + Gap, (RowHeight - LineHeight) / 2, Width - SwitchWidth - Gap, Height);
             TextRenderer.DrawText(g, Text, Font, text, Enabled ? Theme.Text : Theme.Muted, TextFormatFlags.WordBreak);

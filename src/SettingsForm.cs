@@ -159,7 +159,7 @@ namespace Krabbz.Blynclight
             var messageOn = Box("Set my Teams status message while my lights are red:",
                 AppSettings.TeamsStatusMessageOn, v => { AppSettings.TeamsStatusMessageOn = v; tray.ApplySettings(); },
                 help: "Shows a status message in Teams while your lights are red, so people know you're busy. It's cleared when your lights change back.");
-            var message = StatusMessagePicker(24 + 46);
+            var message = StatusMessagePicker(24 + ToggleBox.TextOffset);
             messageOn.CheckedChanged += delegate { message.Enabled = messageOn.Checked; };
             message.Enabled = messageOn.Checked;
             GreyOutWhile(teamsOff, firstTeamsControl);
@@ -250,9 +250,9 @@ namespace Krabbz.Blynclight
             {
                 Text = note,
                 AutoSize = true,
-                MaximumSize = new Size(width - 24 - 70 - 24, 0),
+                MaximumSize = new Size(width - 24 - (24 + ToggleBox.TextOffset) - 24, 0),
                 Font = new Font("Segoe UI", 9f),
-                Location = new Point(24 + 46, y),
+                Location = new Point(24 + ToggleBox.TextOffset, y),
                 Tag = VersionLabel,
             });
             y += 40 + RowGap;
@@ -769,7 +769,7 @@ namespace Krabbz.Blynclight
         // what its "i" says.
         CheckBox Box(string text, bool value, Action<bool> save, bool indented = false, string help = null)
         {
-            int x = indented ? 24 + 46 : 24;
+            int x = indented ? 24 + ToggleBox.TextOffset : 24;
             var box = new ToggleBox { Text = text, Checked = value, AutoSize = true, Location = new Point(x, y), MaximumSize = new Size(width - 24 - x - InfoRoom, 0), Accent = PageColors.Solid(pageAccent) };
             box.CheckedChanged += delegate { save(box.Checked); };
             Add(box);
@@ -1305,9 +1305,9 @@ namespace Krabbz.Blynclight
             {
                 Text = "Turns your USB lights off and stops controlling them. Teams status and call detection keep working.",
                 AutoSize = true,
-                MaximumSize = new Size(width - 66, 0),
+                MaximumSize = new Size(width - 20 - ToggleBox.TextOffset, 0),
                 Font = new Font("Segoe UI", 9),
-                Location = new Point(66, y),
+                Location = new Point(20 + ToggleBox.TextOffset, y),
                 Tag = MutedText,
             });
             y += 48;
