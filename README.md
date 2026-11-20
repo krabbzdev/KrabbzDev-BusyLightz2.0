@@ -84,7 +84,7 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 - **The details:** the meeting's title, start and end time, place and organizer, with a video camera icon for online meetings and a calendar for the rest.
 - **My Schedule Today, beside the window:** open BusyLightz and a panel against its right side lists today's meetings, with Join buttons for online ones (it can be turned off in Settings).
 - **Today's meetings:** **Today's meetings** in the tray menu opens a small window with the day's calendar: time, title and place, the meeting on now highlighted, and a **Join** button on online ones.
-- **A live timer:** the first line ticks every second like a stopwatch (*Meeting starting in 4:32*), then counts up once the meeting has started (*Meeting started 0:42 ago*).
+- **A live timer:** the first line ticks every second like a stopwatch (*Meeting starting in 4:32*), and the alert closes by itself when the meeting starts (if it only appears late, it counts up: *Meeting started 0:42 ago*).
 - **Join, Snooze, Dismiss:** **Join** (online meetings) opens the meeting in Teams, **Snooze 2 min** brings the alert back, **Dismiss** closes it. It never takes the keyboard from what you're typing.
 - **Yours to change** in Settings > Meeting Alerts: on or off, how early (1 to 15 minutes), a sound (quiet during calls), a picture on the alert (your own, if you like), and what the first line says.
 - **Read-only:** you allow calendar access once, in your browser. BusyLightz only reads the times, titles and links of your meetings, keeps none of it and can't change anything. After an update, a one-time notice points you to it.

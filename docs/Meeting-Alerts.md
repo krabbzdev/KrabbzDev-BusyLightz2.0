@@ -41,13 +41,13 @@ Turn it off with **Show today's meetings beside the window** in Settings > Meeti
 ## What the alert shows
 
 - An **icon** at the left: a video camera for online meetings, a calendar for the rest.
-- A first line with a **live timer** that ticks every second, like a stopwatch: *Meeting starting in 4:32*. Once the meeting has started it counts up instead: *Meeting started 0:42 ago*.
+- A first line with a **live timer** that ticks every second, like a stopwatch: *Meeting starting in 4:32*. If the alert only appears after the meeting has started, it counts up instead: *Meeting started 0:42 ago*.
 - The meeting's **title**, its **start and end time**, and its **place** and **organizer** (when it has them).
 - **Join** (online meetings only): opens the meeting link in your browser, which hands it to Teams.
 - **Snooze 2 min**: shows the alert again in two minutes.
 - **Dismiss**: closes it.
 
-The pop-up sits in the bottom right corner of the screen, above other windows, and **doesn't take over the keyboard**, so it won't swallow what you're typing. If several meetings are close together, the alerts stack up. An alert closes by itself 5 minutes after the meeting starts (and never sooner than 5 minutes after it appeared).
+The pop-up sits in the bottom right corner of the screen, above other windows, and **doesn't take over the keyboard**, so it won't swallow what you're typing. If several meetings are close together, the alerts stack up. An alert closes by itself when the meeting starts. (If it only appears at or after the start, it stays for 30 seconds so there's time to click **Join**.)
 
 Declined and cancelled meetings and all-day events are skipped. Meetings that already started more than 5 minutes ago aren't alerted about (say, when you've only just started BusyLightz).
 

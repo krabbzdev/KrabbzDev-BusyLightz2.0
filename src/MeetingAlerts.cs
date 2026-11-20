@@ -311,15 +311,16 @@ namespace Krabbz.Blynclight
     }
 
     // The pop-up for one meeting: what it is, when, where, with Join (online meetings), Snooze and Dismiss. It doesn't
-    // take focus from what the user is typing. Its first line ticks every second, and it goes away by itself a few
-    // minutes after the meeting starts.
+    // take focus from what the user is typing. Its first line ticks every second, and it closes by itself when the
+    // meeting starts.
     class MeetingAlertForm : Form
     {
         public const int FormWidth = 380, FormHeight = 176, Gap = 10, Margin = 16;
         // The user's own picture, when they've picked one, goes where the icon is, this many pixels square.
         const int PictureSize = 64;
-        // It closes this long after the meeting starts, and never sooner than this long after it appeared.
-        const int AfterStartMinutes = 5;
+        // It closes the moment the meeting starts, but an alert that only appears at or after the start (the calendar is
+        // read once a minute) stays this long, so there's time to click Join.
+        const int LateStaySeconds = 30;
         const int WS_EX_NOACTIVATE = 0x08000000, WS_EX_TOOLWINDOW = 0x00000080;
 
         readonly System.Windows.Forms.Timer tick = new System.Windows.Forms.Timer { Interval = 1000 };
@@ -330,8 +331,7 @@ namespace Krabbz.Blynclight
         public MeetingAlertForm(CalendarMeeting meeting, Func<string> headline, int snoozeMinutes)
         {
             var shownAt = DateTime.UtcNow;
-            var startPlus = meeting.StartUtc.AddMinutes(AfterStartMinutes);
-            var closeAtUtc = startPlus > shownAt.AddMinutes(AfterStartMinutes) ? startPlus : shownAt.AddMinutes(AfterStartMinutes);
+            var closeAtUtc = meeting.StartUtc > shownAt.AddSeconds(LateStaySeconds) ? meeting.StartUtc : shownAt.AddSeconds(LateStaySeconds);
 
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
