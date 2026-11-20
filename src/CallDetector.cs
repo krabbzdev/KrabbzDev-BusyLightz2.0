@@ -108,7 +108,7 @@ namespace Krabbz.Blynclight
             MicApp app = null;
             foreach (var candidate in apps)
             {
-                if (!candidate.InUse || ignored.Contains(IgnoreKey(candidate.Id))) continue;
+                if (!candidate.InUse || IsIgnored(candidate.Id, ignored)) continue;
                 // Prefer a calling app if several have the mic, so the status names the call.
                 if (app == null || candidate.IsTeams) app = candidate;
             }
@@ -240,6 +240,23 @@ namespace Krabbz.Blynclight
         {
             int hash = id.LastIndexOf('#');
             return (hash >= 0 ? id.Substring(hash + 1) : id).ToLowerInvariant();
+        }
+
+        // Dictation tools use the microphone for a few seconds at a time and are never a call, so they're ignored whatever the
+        // list says: any program with one of these in its file name (Wispr Flow, Whisper-based tools).
+        static readonly string[] AlwaysIgnored = { "wispr", "whisper" };
+
+        public static bool IsAlwaysIgnored(string id)
+        {
+            string key = IgnoreKey(id);
+            foreach (string name in AlwaysIgnored) if (key.Contains(name)) return true;
+            return false;
+        }
+
+        // Whether an app is ignored: built in, or on the user's list (given as the keys from IgnoredKeys).
+        public static bool IsIgnored(string id, HashSet<string> ignoredKeys)
+        {
+            return IsAlwaysIgnored(id) || ignoredKeys.Contains(IgnoreKey(id));
         }
 
         // The ignore list as the keys apps are matched on.

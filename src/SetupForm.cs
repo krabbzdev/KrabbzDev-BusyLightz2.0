@@ -331,8 +331,14 @@ namespace Krabbz.Blynclight
             foreach (var app in apps)
             {
                 string text = app.Name + "   (" + (app.InUse ? "using the mic now" : "last used " + app.LastUsed.ToString("MMM d")) + ")";
-                list.Items.Add(text, ignoredKeys.Contains(CallDetector.IgnoreKey(app.Id)));
+                bool always = CallDetector.IsAlwaysIgnored(app.Id);
+                list.Items.Add(text + (always ? "   (always ignored)" : ""), always || ignoredKeys.Contains(CallDetector.IgnoreKey(app.Id)));
             }
+            // Dictation tools stay ticked: they're ignored whatever the list says.
+            list.ItemCheck += (sender, e) =>
+            {
+                if (e.Index >= 0 && e.Index < apps.Count && CallDetector.IsAlwaysIgnored(apps[e.Index].Id)) e.NewValue = CheckState.Checked;
+            };
             Controls.Add(list);
 
             var save = new Button { Text = "Save", DialogResult = DialogResult.OK, Bounds = new Rectangle(240, 332, 96, 32) };

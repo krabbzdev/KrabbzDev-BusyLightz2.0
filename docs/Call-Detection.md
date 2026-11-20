@@ -17,6 +17,8 @@ Windows keeps a record of which apps use the microphone (it's what shows the mic
 
 ## Ignoring apps
 
+**Dictation tools are always ignored.** Any program with *Wispr* or *Whisper* in its file name (Wispr Flow, Whisper-based dictation tools) never counts as a call, whatever the list says. They show as ticked and *(always ignored)* in the list, and you can't untick them.
+
 Ignored apps are matched by the name of their program (for example `Wispr Flow.exe`), not by the folder it's in. Apps like Wispr Flow, Slack and Discord install every update into a new folder, and they stay ignored after each one. Ticking an app ignores every version of it, and ignoring a program by name also ignores another program with the same file name in a different folder.
 
 Some apps use the microphone without being on a call, for example:

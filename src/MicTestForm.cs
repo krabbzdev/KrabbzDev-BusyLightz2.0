@@ -101,7 +101,7 @@ namespace Krabbz.Blynclight
             foreach (var app in apps)
             {
                 string use = app.InUse ? "In use now" : "Last used " + app.LastUsed.ToString("MMM d, h:mm tt");
-                if (ignored.Contains(CallDetector.IgnoreKey(app.Id))) use += " (ignored)";
+                if (CallDetector.IsIgnored(app.Id, ignored)) use += CallDetector.IsAlwaysIgnored(app.Id) ? " (always ignored)" : " (ignored)";
                 rows.Add(new[] { app.Name, use, app.Id.Replace('#', '\\') });
             }
 
