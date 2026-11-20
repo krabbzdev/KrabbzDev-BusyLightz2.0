@@ -20,6 +20,8 @@ Click the BusyLightz icon in the system tray (near the clock) and choose **Today
 
 <img src="images/todays-meetings.png" alt="Illustration of the Today window: the date, then each meeting with its time, title and place, a finished one dimmed, the one on now highlighted, and Join buttons on online meetings" width="420">
 
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
+
 - A band at the top shows the product's name, *BusyLightz 2.0*, and *Click here or double-click the tray icon to open the program*. Click it to open the BusyLightz window.
 - A header shows the date, the day as a **timeline** with a marker for *now*, and how much of the day is **booked** and **free**.
 - The meeting on **right now** is a highlighted card marked *Happening now*, with a bar for how far through it you are and how long is left. Finished meetings are small and dimmed, with a check.
@@ -35,6 +37,8 @@ It uses the same calendar access as the alerts, so if you haven't allowed that y
 ## My Schedule Today, beside the window
 
 <img src="images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side, in its own frame: a title bar with a close button, the date and a timeline of the day, the meeting on now highlighted at the top, free time between meetings, Join buttons on online meetings, and an Open my calendar bar at the bottom" width="760">
+
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
 When you open the BusyLightz window, a **My Schedule Today** panel sits against its right side, the same height, with today's meetings in the same look as the window above: the timeline header, the meeting on now highlighted, finished ones dimmed, free time between meetings, and a **Join** button on online meetings that haven't finished. It has its own title bar and bottom bar, like the BusyLightz window, with an outline all round. The **×** in its title bar only hides it. **Show calendar** / **Hide calendar**, under **Settings** at the top right of the BusyLightz window, hides it or brings it back. So do the **Calendar** tile (when it's connected) and **Today's meetings** in the tray menu; it also returns the next time BusyLightz starts. To stop it appearing at all, turn off **Show today's meetings beside the window** in Settings > Meeting Alerts. It opens scrolled past the finished meetings, so the one on now or the next one is at the top; scroll up to see the earlier ones. It moves with the window, goes when you close or minimize it, and reads the calendar again every minute while it's showing. If the right side of the screen is too close, it goes on the left instead.
 
@@ -58,6 +62,8 @@ Declined and cancelled meetings and all-day events are skipped. Meetings that al
 All on the **Meeting Alerts** page of Settings:
 
 <img src="images/settings-meeting-alerts.png" alt="Illustration of Settings on its Meeting Alerts page: the connected account and that calendar access is allowed, switches showing ON, the lead time, a Picture on the alert row with Choose picture, Default and None buttons, the wording box and a Show a test alert button" width="420">
+
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
 | Setting | What it does |
 | --- | --- |

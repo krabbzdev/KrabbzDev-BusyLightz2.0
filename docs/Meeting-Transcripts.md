@@ -8,6 +8,8 @@ BusyLightz can save a copy of the transcript Microsoft Teams makes of your Teams
 
 <img src="images/settings-transcripts.png" alt="Illustration of Settings on its Transcripts page: a Save a transcript of my Teams meetings switch, how long to keep saved transcripts, the connected account and whether access is allowed, and Allow, Open transcripts folder and Admin approval buttons" width="440">
 
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
+
 1. **Connect to Microsoft Teams** and allow **calendar access** first (see [Meeting Alerts](Meeting-Alerts.md)).
 2. Open **Settings > Transcripts** and click **Allow access...**. Microsoft asks in your browser.
 3. Turn on **Save a transcript of my Teams meetings**.

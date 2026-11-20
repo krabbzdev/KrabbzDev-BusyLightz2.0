@@ -33,6 +33,8 @@ Pick how the window looks under **Window style** in [Settings](#settings). Each 
 
 <img src="images/window-styles.png" alt="The three window styles side by side: Orbit on a call in Dark mode, Color block following Teams as Available, and Fluent list set to Busy" width="900">
 
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
+
 | Style | Looks like |
 | --- | --- |
 | **Orbit** (the default) | The top of the window glows in your status color, with a big ring showing the status and its icon, e.g. ✓ *Available* over *From Teams Status*. Two faint orbits circle the ring, each with a small dot that drifts slowly around it. During an override the ring is a countdown: it empties as the time left runs out. Under the ring, **Time since last reboot** is a running clock in hours, to the millisecond (e.g. *34:08:49.234*), with the same time in words underneath that updates as the minutes pass (*Just now*, *1 min ago*, *32 mins ago*, *1 hr 12 mins ago*, *1 day 3 hrs ago*); after 24 hours it turns into a red pill with a ☹. (Windows' Fast Startup keeps the clock running through a shut down; only a restart resets it.) The modes are one pill-shaped switcher below. |
@@ -68,6 +70,8 @@ Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). 
 ## The tray menu (click the tray icon)
 
 <img src="images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Re-authenticate Microsoft 365, Settings, Check for updates and Exit" width="260">
+
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
 The menu is kept short. The rest lives in the window and in Settings: **Party Mode** and **Follow Teams Status** in the window, **Control my USB lights** in Settings > Light Control, **Sync with Microsoft Teams** in Settings > Microsoft Teams, and **Setup checklist...** and **Email crash log...** at the bottom of Settings.
 
@@ -116,6 +120,8 @@ Party Mode's color changes don't notify. Turn notifications off in [Settings](#s
 Open with the **⚙ Settings** button in the window or **Settings...** in the tray menu. Settings has a list of pages on the left, each with its own colored icon: **General**, **Calls**, **Microsoft Teams**, **Meeting Alerts**, **Mutesync Button**, **K2 USBC Key** and **Light Control**. **Meeting Alerts** is explained in [Meeting Alerts](Meeting-Alerts.md). Each page opens with a header saying what's on it. Each setting has an on/off switch in the page's color, and a small **ⓘ** beside it: hover over it, or click it, to see what the setting does. Changes take effect immediately.
 
 <img src="images/settings.png" alt="Settings on its General page: a page list with colored icons on the left, a General header, then switches for startup, the override timer, notifications, hotkeys and updates (with how often to check for them), each with an i for help, and a Learn more about this project here button" width="440">
+
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
 ### General
 
@@ -169,6 +175,8 @@ The mute button's on/off switch and ring colors, and what each K2 USBC Key butto
 The **Light Control** page in Settings. At the top, a picture of a Blynclight and a Luxafor glows in whatever color your real lights are showing. Each change is saved at once and shows on your lights (and the picture) for a few seconds, whatever they were showing: the On a call slider flashes, a color shows that status, and brightness shows the lit color. The page scrolls.
 
 <img src="images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Control my USB lights switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="440">
+
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
 | Setting | What it does |
 | --- | --- |

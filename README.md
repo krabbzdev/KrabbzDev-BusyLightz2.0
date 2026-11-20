@@ -8,6 +8,8 @@ A small Windows tray app that controls USB busy lights directly over USB, so the
 
 <img src="docs/images/busylightz-window.png" alt="The main window in the Orbit style: a glowing green top with a ring reading Available, From Teams Status, inside two orbits; a Show calendar or Hide calendar link under Settings; an Active Devices panel with Blynclight, Luxafor, MuteSync, K2 Key, Teams and Calendar tiles; and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
 
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
+
 📖 **[User guide](docs/README.md)**: every feature and how to use it.
 
 ## Why I made this
@@ -60,6 +62,8 @@ If BusyLightz saves you a few interruptions, you can [buy me a coffee](https://b
 
 <img src="docs/images/window-styles.png" alt="The three window styles side by side: Orbit on a call in Dark mode, Color block following Teams as Available, and Fluent list set to Busy" width="900">
 
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
+
 ### Calls
 
 - **Flashes whenever you're on a call:** any app using your microphone (Teams, Zoom, Cytracom, Loom, a browser call and so on) sets the lights flashing red and blue, or steady red if you prefer, then back afterwards. The window and tray icon flash with them.
@@ -79,9 +83,13 @@ Connect once with a browser sign-in to your work account. No client secret is st
 
 <img src="docs/images/meeting-alert.png" alt="Illustration of the meeting alert pop-up in Dark and Light mode: an icon, a live timer (Meeting starting in 4:32, or Meeting started 0:42 ago), the meeting's title, time, place and organizer, and Join, Snooze 2 min and Dismiss buttons" width="620">
 
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
+
 A small pop-up shortly before each meeting in your Microsoft 365 calendar, so you don't miss one while you're heads down.
 
 <img src="docs/images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side: the date, then each meeting with its time, title and place, the one on now highlighted and at the top (finished ones scroll out of sight), free time between meetings, Join buttons on online meetings, and Open my calendar at the bottom" width="760">
+
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
 - **The details:** the meeting's title, start and end time, place and organizer, with a video camera icon for online meetings and a calendar for the rest.
 - **My Schedule Today, beside the window:** open BusyLightz and a panel against its right side shows the day as a timeline, with the meeting on now highlighted, the free time between meetings, and Join buttons for online ones (in its own frame, with a × to hide it; it can also be turned off in Settings).
@@ -111,6 +119,8 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 <img src="docs/images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Control my USB lights switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="330">
 <img src="docs/images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Re-authenticate Microsoft 365, Settings, Check and install updates and Exit" width="230">
 </p>
+
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
 ## Install
 

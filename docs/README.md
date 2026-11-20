@@ -22,7 +22,11 @@ A small Windows app that controls USB busy lights, so the people around you can 
 
 <img src="images/busylightz-window.png" alt="The main window in the Orbit style: a green top with a ring reading Available, From Teams Status, a Show calendar or Hide calendar link under Settings, tiles for the Blynclight, Luxafor, MuteSync, K2 Key, Teams and Calendar, and a switcher for Busy, Available, On a call and Follow Teams Status" width="440">
 
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
+
 <img src="images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side, listing the day's meetings with Join buttons" width="760">
+
+<sub><i>Illustration with sample data, not a real screenshot.</i></sub>
 
 ## What it does
 
