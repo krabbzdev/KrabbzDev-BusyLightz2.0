@@ -16,7 +16,7 @@ If your organization's IT blocks users from allowing apps themselves, the button
 
 ## Today's meetings
 
-Click the BusyLightz icon in the system tray (near the clock) once, or choose **Today's meetings** in the tray menu, and a small window shows today's calendar.
+Click the BusyLightz icon in the system tray (near the clock) and choose **Today's meetings**, and a small window shows today's calendar.
 
 <img src="images/todays-meetings.png" alt="Illustration of the Today window: the date, then each meeting with its time, title and place, a finished one dimmed, the one on now highlighted, and Join buttons on online meetings" width="420">
 
@@ -26,9 +26,9 @@ Click the BusyLightz icon in the system tray (near the clock) once, or choose **
 - Online meetings that haven't finished have a **Join** button.
 - **Refresh** reads the calendar again, and **Open my calendar** opens Outlook on the web.
 - It closes when you click anywhere else, or press **Esc**.
-- **Double-click** the tray icon still opens the BusyLightz window. Because of that, the Today window opens a moment after a single click (about half a second), once Windows knows it wasn't a double-click.
+- A normal click on the tray icon opens the tray menu, the same as a right-click. **Double-click** opens the BusyLightz window.
 
-It uses the same calendar access as the alerts, so if you haven't allowed that yet, the window says so and has a button to the Settings page. To turn the click off, untick **Click the tray icon to see today's meetings** in Settings > Meeting Alerts. The tray menu item stays.
+It uses the same calendar access as the alerts, so if you haven't allowed that yet, the window says so and has a button to the Settings page.
 
 ## My Schedule Today, beside the window
 
@@ -57,7 +57,6 @@ All on the **Meeting Alerts** page of Settings:
 | --- | --- |
 | **Alert me before my meetings** | The on/off switch. |
 | **Show today's meetings beside the window** | On by default. Untick it to hide the panel beside the BusyLightz window. |
-| **Click the tray icon to see today's meetings** | On by default. Untick it to stop the single click opening the [Today window](#todays-meetings). |
 | **Alert me this long before** | 1, 2, 5 (default), 10 or 15 minutes before the meeting starts. |
 | **Play a sound** | A short sound with the alert. On by default. It stays quiet while you're on a call. |
 | **What the alert says** | The alert's first line. Type your own: `{when}` becomes the live countdown, like *in 4:32* (or *now*) and `{subject}` becomes the meeting's title. The default is `Meeting starting {when}`. **Reset** puts the default back. |

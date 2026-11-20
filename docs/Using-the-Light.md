@@ -62,7 +62,7 @@ Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). 
 
 **During a call** the light flashes red and blue automatically (or shows steady red, if you turn flashing off in Settings) and goes back to your choice afterwards. See [Call Detection](Call-Detection.md). If you pick a color *during* a call, your choice wins until that call ends. Going back to Follow Teams Status during a call (by hand, or when the override runs out) brings the call colors back.
 
-## The tray menu (right-click the tray icon)
+## The tray menu (click the tray icon)
 
 <img src="images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Re-authenticate Microsoft 365, Settings, Check for updates and Exit" width="260">
 
@@ -73,7 +73,7 @@ Each mode has a dot in its color, with a ring around the one that's on. The menu
 | Item | What it does |
 | --- | --- |
 | **Open KrabbzDev-BusyLightz2.0** | Opens the window. |
-| **Today's meetings** | Shows today's calendar in a small window by the tray icon. See [Meeting Alerts](Meeting-Alerts.md#todays-meetings). Clicking the tray icon once does the same; double-clicking opens the window. |
+| **Today's meetings** | Shows today's calendar in a small window by the tray icon. See [Meeting Alerts](Meeting-Alerts.md#todays-meetings). |
 | **[:15 Min Override] Red/Busy** / **Green/Available** | Same as the window's Busy and Available buttons. The time in brackets is your [override time](#override-timer) from Settings, e.g. *[1 Hr Override]*, or *[Override]* when overrides stay on until you change them. |
 | **[:15 Min Override] On A Call** | Same as the window's On a call button. |
 | **Re-authenticate Microsoft 365** | Signs in to Microsoft 365 again in your browser, for when Teams status or meeting alerts stopped working or the sign-in expired (Calendar access is kept if you allowed it). Connecting and disconnecting are in **Settings > Microsoft Teams**. |

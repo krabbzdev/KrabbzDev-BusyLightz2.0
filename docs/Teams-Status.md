@@ -4,7 +4,7 @@ The app can show your **Microsoft Teams status** on the light and set Teams to *
 
 ## Connect to Teams (once)
 
-1. Right-click the tray icon > **Connect to Microsoft Teams** (or click **Connect** in the [Setup Checklist](Setup-Checklist.md)).
+1. Open **Settings > Microsoft Teams** and click **Connect** (or click **Connect** in the [Setup Checklist](Setup-Checklist.md)).
 2. Your browser opens the normal Microsoft sign-in page. Sign in with your **work account**, including MFA if asked.
 3. When the browser says *"Sign-in finished. You can close this tab."*, close it. A notification confirms *"Connected to Teams as you@company.com"*.
 

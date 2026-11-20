@@ -611,9 +611,6 @@ namespace Krabbz.Blynclight
                 v => { AppSettings.AgendaBesideWindow = v; tray.UpdateDock(); },
                 help: "While the BusyLightz window is open, a \"My Schedule Today\" panel sits against its right side with today's meetings, the one on now highlighted, and Join buttons for online meetings. It moves with the window and goes when you close it.");
 
-            Box("Click the tray icon to see today's meetings", AppSettings.AgendaOnClick, v => AppSettings.AgendaOnClick = v,
-                help: "Click once on the BusyLightz icon in the system tray, near the clock, to see today's calendar: each meeting's time, title and place, the one on now highlighted, and a Join button for online meetings. Double-click still opens the BusyLightz window. The Today's meetings item in the tray menu does the same.");
-
             var leadLabel = new Label { Text = "Alert me this long before", AutoSize = true, Location = new Point(24, y + 4) };
             Add(leadLabel);
             Info(leadLabel, "How long before a meeting starts the alert shows. Snooze brings it back after 2 minutes.");
