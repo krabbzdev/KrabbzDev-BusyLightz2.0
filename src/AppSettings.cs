@@ -192,6 +192,39 @@ namespace Krabbz.Blynclight
             return ids;
         }
 
+        // Keys a two-button key sends instead of mouse clicks, by hardware ID: "VID_xxxx&PID_yyyy=leftKey/rightKey;..." (virtual
+        // key numbers, 0 for not set). Set with Use as Left button and Use as Right button in Find my key.
+        public static string K2KeyMapText { get { return GetString("K2KeyMap") ?? ""; } set { SetString("K2KeyMap", value ?? ""); } }
+
+        public static System.Collections.Generic.Dictionary<string, int[]> K2KeyMap()
+        {
+            var map = new System.Collections.Generic.Dictionary<string, int[]>();
+            foreach (string entry in K2KeyMapText.Split(';'))
+            {
+                int eq = entry.IndexOf('=');
+                if (eq <= 0) continue;
+                string id = entry.Substring(0, eq).Trim().ToUpperInvariant();
+                string[] keys = entry.Substring(eq + 1).Split('/');
+                int left = 0, right = 0;
+                if (keys.Length == 2) { int.TryParse(keys[0], out left); int.TryParse(keys[1], out right); }
+                if (id.Length > 0) map[id] = new[] { left, right };
+            }
+            return map;
+        }
+
+        public static void SetK2Key(string id, bool left, int vkey)
+        {
+            var map = K2KeyMap();
+            id = id.Trim().ToUpperInvariant();
+            int[] keys;
+            if (!map.TryGetValue(id, out keys)) keys = new[] { 0, 0 };
+            keys[left ? 0 : 1] = vkey;
+            map[id] = keys;
+            var parts = new System.Collections.Generic.List<string>();
+            foreach (var pair in map) parts.Add(pair.Key + "=" + pair.Value[0] + "/" + pair.Value[1]);
+            K2KeyMapText = string.Join(";", parts.ToArray());
+        }
+
         public static void AddK2Id(string id)
         {
             var ids = K2ExtraIdList();

@@ -112,7 +112,7 @@ Turn them off in **Settings** (⚙ in the window, or tray menu > **Settings...**
 
 ## My two-button key says "Not plugged in"
 
-You may have a different version of the key, with a different hardware ID. In **Settings > K2 USBC Key**, click **My key isn't found...**, press the key's buttons, pick its row and click **Use this key**. Steps: [If your two-button key isn't found](Mute-Button-and-K2-Key.md#if-your-two-button-key-isnt-found).
+You may have a different version of the key, with a different hardware ID, or one that types letters instead of clicking. In **Settings > K2 USBC Key**, click **My key isn't found...**, press the key's buttons and pick its row: **Use this key** if it clicks, or teach it with **Use as Left button** and **Use as Right button** if it types a letter. Steps: [If your two-button key isn't found](Mute-Button-and-K2-Key.md#if-your-two-button-key-isnt-found).
 
 ## How do I send an idea or report a problem?
 

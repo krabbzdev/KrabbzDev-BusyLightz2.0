@@ -275,9 +275,8 @@ namespace Krabbz.Blynclight
         }
 
         // A device's picture on the left, with its status and a short note beside it.
-        void DevicePicture(Control picture, Label status, string note)
+        void DevicePicture(Control picture, Label status, string note, int Size = 116)
         {
-            const int Size = 116;
             picture.Bounds = new Rectangle(24, y, Size, Size);
             Add(picture);
             status.Font = new Font("Segoe UI Semibold", 10.5f);
@@ -358,7 +357,7 @@ namespace Krabbz.Blynclight
         void K2Section()
         {
             Heading(null, null);
-            DevicePicture(k2Picture, k2Status, "Press a button on your K2 and its key lights up here.");
+            DevicePicture(k2Picture, k2Status, "Press a button on your K2 and its key lights up here.", 92);
             tray.K2Pressed += k2Picture.Flash;
             tray.K2Pressed += LogK2Press;
             FormClosed += delegate { tray.K2Pressed -= k2Picture.Flash; tray.K2Pressed -= LogK2Press; };
@@ -380,33 +379,19 @@ namespace Krabbz.Blynclight
             GreyOutUnless(k2On, firstK2Control);
             Add(new Label
             {
-                Text = "No K2 software needed. Out of the box the K2 USBC Key's buttons are mouse clicks; BusyLightz cancels those clicks " +
-                       "so a press only runs your action. Your real mouse isn't affected.",
+                Text = "No K2 software needed: out of the box its buttons are mouse clicks, and BusyLightz cancels those clicks so a press " +
+                       "only runs your action (your real mouse isn't affected). Tested with the Motospeed K2 2 Button RGB Keyboard.",
                 AutoSize = true,
                 MaximumSize = new Size(width - 48, 0),
-                Font = new Font("Segoe UI", 9f),
+                Font = new Font("Segoe UI", 8.5f),
                 Location = new Point(24, y),
                 Tag = VersionLabel,
             });
-            y += 56;
-            Add(new Label
-            {
-                Text = "Tested with the Motospeed K2 2 Button RGB Keyboard.",
-                AutoSize = true,
-                MaximumSize = new Size(width - 48, 0),
-                Font = new Font("Segoe UI", 9f, FontStyle.Italic),
-                Location = new Point(24, y),
-                Tag = VersionLabel,
-            });
-            y += 26;
-            // Test your buttons: every press is listed here and stays, so it's easy to see the K2 is working.
-            Add(new Label { Text = "Test your buttons", AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), Location = new Point(24, y) });
-            y += 26;
-            k2Test.Bounds = new Rectangle(24, y, width - 48, 104);
-            Add(k2Test);
-            UpdateK2Test();
-            y += 104 + RowGap;
-            var finder = new ModernButton { Text = "My key isn't found...", Bounds = new Rectangle(24, y, 200, 34) };
+            y += 50;
+            // Test your buttons: the last few presses stay listed, so it's easy to see the K2 is working. The finder, for a
+            // different version of the key, is on the same line.
+            Add(new Label { Text = "Test your buttons", AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), Location = new Point(24, y + 4) });
+            var finder = new ModernButton { Text = "My key isn't found...", Bounds = new Rectangle(width - 24 - 190, y, 190, 30) };
             finder.Click += delegate
             {
                 if (k2Finder != null && !k2Finder.IsDisposed) { k2Finder.Activate(); return; }
@@ -414,9 +399,11 @@ namespace Krabbz.Blynclight
                 k2Finder.Show(this);
             };
             Add(finder);
-            var finderNote = new Label { Text = "Using a different two-button key? Find its hardware ID here.", AutoSize = true, Font = new Font("Segoe UI", 9f), Location = new Point(236, y + 9), Tag = VersionLabel };
-            Add(finderNote);
-            y += 34 + RowGap;
+            y += 34;
+            k2Test.Bounds = new Rectangle(24, y, width - 48, 62);
+            Add(k2Test);
+            UpdateK2Test();
+            y += 62 + RowGap;
         }
 
         // A K2 button's action, and a box for the text it needs (greyed out for actions that need none).
@@ -775,7 +762,7 @@ namespace Krabbz.Blynclight
             foreach (var choice in K2Actions.All) if (choice[0] == action) label = choice[1];
             string name = button == K2Key.Button.Left ? "Left button" : button == K2Key.Button.Right ? "Right button" : "Both buttons";
             k2Presses.Insert(0, DateTime.Now.ToLongTimeString() + "    " + name + "    \u2192    " + label);
-            if (k2Presses.Count > 5) k2Presses.RemoveAt(5);
+            if (k2Presses.Count > 3) k2Presses.RemoveAt(3);
             UpdateK2Test();
         }
 

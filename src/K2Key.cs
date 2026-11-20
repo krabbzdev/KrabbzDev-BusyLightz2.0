@@ -60,7 +60,8 @@ namespace Krabbz.Blynclight
         static extern IntPtr GetModuleHandle(string name);
 
         const int WM_INPUT = 0xFF, WM_APP_STOP = 0x8000 + 1;
-        const int WH_MOUSE_LL = 14;
+        const int WH_MOUSE_LL = 14, WH_KEYBOARD_LL = 13;
+        const int WM_KEYDOWN = 0x100, WM_KEYUP = 0x101, WM_SYSKEYDOWN = 0x104, WM_SYSKEYUP = 0x105;
         const int WM_LBUTTONDOWN = 0x201, WM_LBUTTONUP = 0x202, WM_RBUTTONDOWN = 0x204, WM_RBUTTONUP = 0x205;
         const uint PM_REMOVE = 1;
         const uint RIDI_DEVICENAME = 0x20000007, RID_INPUT = 0x10000003, RIDEV_INPUTSINK = 0x100;
@@ -79,6 +80,13 @@ namespace Krabbz.Blynclight
         HookProc hookProc; // Kept so the delegate isn't collected while Windows still calls it.
         // Which raw input devices are a K2, by handle (looked up once each).
         readonly Dictionary<IntPtr, bool> isK2 = new Dictionary<IntPtr, bool>();
+        // Keys a K2-type device sends instead of clicks, by hardware ID (set in Find my key), which device each raw input
+        // handle is, and keystrokes seen in raw input but not yet matched to the one Windows acts on: key and when.
+        readonly Dictionary<string, int[]> keyMap = AppSettings.K2KeyMap();
+        readonly Dictionary<IntPtr, string> idOf = new Dictionary<IntPtr, string>();
+        readonly List<KeyValuePair<int, int>> unmatchedKeys = new List<KeyValuePair<int, int>>();
+        IntPtr keyHook;
+        HookProc keyProc; // Kept so the delegate isn't collected while Windows still calls it.
         // K2 clicks seen in raw input but not yet matched to the click Windows acts on: button flag and when.
         readonly List<KeyValuePair<ushort, int>> unmatched = new List<KeyValuePair<ushort, int>>();
         bool leftDown, rightDown, bothSeen;
@@ -122,6 +130,14 @@ namespace Krabbz.Blynclight
                 hook = SetWindowsHookEx(WH_MOUSE_LL, hookProc, GetModuleHandle(null), 0);
                 if (hook == IntPtr.Zero)
                     Program.LogEvent("Couldn't stop the K2 key's own clicks (error " + Marshal.GetLastWin32Error() + ")");
+                // A key that types letters has them cancelled the same way, so they don't land in the open document.
+                if (keyMap.Count > 0)
+                {
+                    keyProc = OnKey;
+                    keyHook = SetWindowsHookEx(WH_KEYBOARD_LL, keyProc, GetModuleHandle(null), 0);
+                    if (keyHook == IntPtr.Zero)
+                        Program.LogEvent("Couldn't stop the K2 key's own keystrokes (error " + Marshal.GetLastWin32Error() + ")");
+                }
             });
             started.Set();
             Application.Run();
@@ -159,6 +175,59 @@ namespace Krabbz.Blynclight
                 }
             }
             return CallNextHookEx(hook, code, wParam, lParam);
+        }
+
+        // Called by Windows, on this thread, before it acts on any keystroke. A key from a mapped K2 is cancelled.
+        IntPtr OnKey(int code, IntPtr wParam, IntPtr lParam)
+        {
+            if (code >= 0 && !Disabled)
+            {
+                int message = wParam.ToInt32();
+                if (message == WM_KEYDOWN || message == WM_KEYUP || message == WM_SYSKEYDOWN || message == WM_SYSKEYUP)
+                {
+                    int vkey = Marshal.ReadInt32(lParam);
+                    if (IsMappedKey(vkey))
+                    {
+                        try
+                        {
+                            MSG msg;
+                            while (PeekMessage(out msg, listener.Handle, WM_INPUT, WM_INPUT, PM_REMOVE)) DispatchMessage(ref msg);
+                            if (TakeUnmatchedKey(vkey)) return (IntPtr)1;
+                        }
+                        catch (Exception) { } // Never let a problem here stop the keyboard.
+                    }
+                }
+            }
+            return CallNextHookEx(keyHook, code, wParam, lParam);
+        }
+
+        bool IsMappedKey(int vkey)
+        {
+            foreach (var keys in keyMap.Values) if (keys[0] == vkey || keys[1] == vkey) return true;
+            return false;
+        }
+
+        bool TakeUnmatchedKey(int vkey)
+        {
+            int now = Environment.TickCount;
+            unmatchedKeys.RemoveAll(key => now - key.Value > MatchMs);
+            int index = unmatchedKeys.FindIndex(key => key.Key == vkey);
+            if (index < 0) return false;
+            unmatchedKeys.RemoveAt(index);
+            return true;
+        }
+
+        // The hardware ID (VID_xxxx&PID_yyyy) of a raw input device, looked up once each.
+        string DeviceIdOf(IntPtr device)
+        {
+            string id;
+            if (!idOf.TryGetValue(device, out id))
+            {
+                var match = Regex.Match(NameOf(device).ToUpperInvariant(), "VID_[0-9A-F]{4}&PID_[0-9A-F]{4}");
+                id = match.Success ? match.Value : null;
+                idOf[device] = id;
+            }
+            return id;
         }
 
         bool TakeUnmatched(ushort flag)
@@ -248,6 +317,15 @@ namespace Krabbz.Blynclight
                     // RAWKEYBOARD: MakeCode, Flags, Reserved, VKey.
                     ushort flags = (ushort)Marshal.ReadInt16(data, 2), vkey = (ushort)Marshal.ReadInt16(data, 6);
                     Button? button = vkey == (ushort)Keys.F13 ? Button.Left : vkey == (ushort)Keys.F14 ? Button.Right : (Button?)null;
+                    // A key set up in Find my key: its own two keys are Left and Right.
+                    string deviceId = DeviceIdOf(h.Device);
+                    int[] mapped;
+                    if (deviceId != null && keyMap.TryGetValue(deviceId, out mapped))
+                    {
+                        if (mapped[0] != 0 && vkey == mapped[0]) button = Button.Left;
+                        else if (mapped[1] != 0 && vkey == mapped[1]) button = Button.Right;
+                        if (button != null) unmatchedKeys.Add(new KeyValuePair<int, int>(vkey, Environment.TickCount));
+                    }
                     if (button == null) return;
                     if ((flags & KeyBreak) != 0) Up(button.Value);
                     else Down(button.Value); // Held keys repeat; Down ignores the repeats.
@@ -275,15 +353,27 @@ namespace Krabbz.Blynclight
         }
 
         // "Find my key": lists every device that sends a button press or a key while it's open, with its hardware ID and
-        // what it sent, so a two-button key with a different hardware ID can be added. The user's normal mouse and keyboard
-        // show up too; they pick their key's row. Raw input goes to one window at a time, so while this is open the K2
-        // listener isn't getting it; closing (and adding a key) restarts that through changed.
+        // what it sent. The user's normal mouse and keyboard show up too; they pick their key's row. A key that sends mouse
+        // clicks is added by its hardware ID; one that sends keys (letters, say) has its Left and Right keys taught here.
+        // Raw input goes to one window at a time, so while this is open the K2 listener isn't getting it; closing restarts
+        // that, with whatever was saved, through changed.
         public sealed class Finder : Form
         {
             static readonly Regex IdPattern = new Regex("VID_[0-9A-F]{4}&PID_[0-9A-F]{4}", RegexOptions.Compiled);
+
+            // What each row in the list stands for.
+            sealed class FinderRow
+            {
+                public string Id;
+                public bool Known;
+                public int Key; // The last key it sent (0 if it only sends mouse clicks).
+            }
+
             readonly ListView list = new ListView { View = View.Details, FullRowSelect = true, MultiSelect = false, HideSelection = false, GridLines = true };
             readonly Dictionary<string, ListViewItem> rows = new Dictionary<string, ListViewItem>();
-            readonly ModernButton use = new ModernButton { Text = "Use this key", Accent = true, Enabled = false };
+            readonly ModernButton useKey = new ModernButton { Text = "Use this key", Accent = true, Enabled = false };
+            readonly ModernButton useLeft = new ModernButton { Text = "Use as Left button", Enabled = false };
+            readonly ModernButton useRight = new ModernButton { Text = "Use as Right button", Enabled = false };
             readonly Label message = new Label { AutoSize = false };
             readonly Action changed;
 
@@ -295,19 +385,21 @@ namespace Krabbz.Blynclight
                 MaximizeBox = false;
                 MinimizeBox = false;
                 StartPosition = FormStartPosition.CenterParent;
-                ClientSize = new Size(560, 448);
+                ClientSize = new Size(560, 500);
                 BackColor = Theme.Page;
                 ForeColor = Theme.Text;
                 Font = new Font("Segoe UI", 9.5f);
 
                 Controls.Add(new Label
                 {
-                    Text = "Press the buttons on your two-button key now. Every device that sends a button press or a key shows up below " +
-                           "with its hardware ID and what it sent. Your normal mouse and keyboard show up too: ignore those, pick the row " +
-                           "that appeared when you pressed your key, then click Use this key.",
-                    Bounds = new Rectangle(16, 12, 528, 72),
+                    Text = "Press the buttons on your two-button key. Every device that sends a button press or a key shows up below with " +
+                           "its hardware ID and what it sent. Your normal mouse and keyboard show up too: ignore those.\r\n" +
+                           "Sends mouse clicks (Left button, Right button)? Select its row and click Use this key.\r\n" +
+                           "Sends a key (like Key Z)? Select its row, press the key's LEFT button and click Use as Left button, then press " +
+                           "its RIGHT button and click Use as Right button.",
+                    Bounds = new Rectangle(16, 10, 528, 112),
                 });
-                list.Bounds = new Rectangle(16, 92, 528, 244);
+                list.Bounds = new Rectangle(16, 128, 528, 190);
                 list.BackColor = Theme.Card;
                 list.ForeColor = Theme.Text;
                 list.Columns.Add("Device", 80);
@@ -315,32 +407,59 @@ namespace Krabbz.Blynclight
                 list.Columns.Add("Last sent", 130);
                 list.Columns.Add("Presses", 60);
                 list.Columns.Add("", 90);
-                list.SelectedIndexChanged += delegate { use.Enabled = list.SelectedItems.Count > 0; };
+                list.SelectedIndexChanged += delegate { UpdateButtons(); };
                 Controls.Add(list);
 
-                use.Bounds = new Rectangle(16, 348, 130, 34);
-                use.Click += delegate { UseSelected(); };
-                Controls.Add(use);
-                var copy = new ModernButton { Text = "Copy details", Bounds = new Rectangle(154, 348, 120, 34) };
+                useLeft.Bounds = new Rectangle(16, 330, 170, 34);
+                useLeft.Click += delegate { MapSelected(true); };
+                Controls.Add(useLeft);
+                useRight.Bounds = new Rectangle(194, 330, 170, 34);
+                useRight.Click += delegate { MapSelected(false); };
+                Controls.Add(useRight);
+                useKey.Bounds = new Rectangle(372, 330, 172, 34);
+                useKey.Click += delegate { UseSelected(); };
+                Controls.Add(useKey);
+
+                var copy = new ModernButton { Text = "Copy details", Bounds = new Rectangle(16, 372, 120, 34) };
                 copy.Click += delegate { CopyDetails(); };
                 Controls.Add(copy);
-                var forget = new ModernButton { Text = "Forget added keys", Bounds = new Rectangle(282, 348, 150, 34) };
+                var forget = new ModernButton { Text = "Forget added keys", Bounds = new Rectangle(144, 372, 150, 34) };
                 forget.Click += delegate
                 {
                     AppSettings.K2ExtraIds = "";
-                    changed();
-                    message.Text = "Keys you added have been forgotten. Only the original K2 is recognized now.";
+                    AppSettings.K2KeyMapText = "";
+                    Say("Keys you added and keys you taught have been forgotten. Only the original K2 is recognized now (when you close this window).");
                 };
                 Controls.Add(forget);
-                var close = new ModernButton { Text = "Close", Bounds = new Rectangle(440, 348, 104, 34) };
+                var close = new ModernButton { Text = "Close", Bounds = new Rectangle(440, 372, 104, 34) };
                 close.Click += delegate { Close(); };
                 Controls.Add(close);
-                message.Bounds = new Rectangle(16, 392, 528, 44);
+                message.Bounds = new Rectangle(16, 418, 528, 72);
                 message.ForeColor = Theme.Muted;
                 message.Text = "Nothing yet. Press a button on your key.";
                 Controls.Add(message);
 
                 FormClosed += delegate { changed(); };
+            }
+
+            // Says what just happened, in the normal text color so it's noticed.
+            void Say(string text)
+            {
+                message.ForeColor = Theme.Text;
+                message.Text = text;
+            }
+
+            FinderRow Selected()
+            {
+                return list.SelectedItems.Count == 0 ? null : (FinderRow)list.SelectedItems[0].Tag;
+            }
+
+            void UpdateButtons()
+            {
+                var row = Selected();
+                useKey.Enabled = row != null;
+                useLeft.Enabled = row != null && row.Key != 0;
+                useRight.Enabled = row != null && row.Key != 0;
             }
 
             protected override void OnHandleCreated(EventArgs e)
@@ -377,6 +496,7 @@ namespace Krabbz.Blynclight
                     if (h.Device == IntPtr.Zero) return;
                     var data = IntPtr.Add(buffer, (int)header);
                     string what = null;
+                    int key = 0;
                     if (h.Type == RIM_TYPEMOUSE)
                     {
                         ushort flags = (ushort)Marshal.ReadInt16(data, 4);
@@ -387,49 +507,65 @@ namespace Krabbz.Blynclight
                     else if (h.Type == RIM_TYPEKEYBOARD)
                     {
                         ushort flags = (ushort)Marshal.ReadInt16(data, 2), vkey = (ushort)Marshal.ReadInt16(data, 6);
-                        if ((flags & KeyBreak) == 0) what = "Key " + (Keys)vkey;
+                        if ((flags & KeyBreak) == 0) { what = "Key " + (Keys)vkey; key = vkey; }
                     }
                     if (what == null) return;
-                    Record(h.Type == RIM_TYPEMOUSE ? "Mouse" : "Keyboard", NameOf(h.Device), what);
+                    Record(h.Type == RIM_TYPEMOUSE ? "Mouse" : "Keyboard", NameOf(h.Device), what, key);
                 }
                 finally { Marshal.FreeHGlobal(buffer); }
             }
 
             // Adds a press to the list: a row for each device and kind of input, counting its presses.
-            void Record(string kind, string path, string what)
+            void Record(string kind, string path, string what, int key)
             {
                 var match = IdPattern.Match((path ?? "").ToUpperInvariant());
                 string id = match.Success ? match.Value : "(no ID)";
-                string key = id + "|" + kind;
+                string rowKey = id + "|" + kind;
                 ListViewItem row;
-                if (!rows.TryGetValue(key, out row))
+                if (!rows.TryGetValue(rowKey, out row))
                 {
-                    row = new ListViewItem(kind) { Tag = id };
+                    row = new ListViewItem(kind) { Tag = new FinderRow { Id = id, Known = IsK2Name(path) } };
                     row.SubItems.Add(id);
                     row.SubItems.Add(what);
                     row.SubItems.Add("0");
                     row.SubItems.Add(IsK2Name(path) ? "Known K2" : "");
-                    rows[key] = row;
+                    rows[rowKey] = row;
                     list.Items.Add(row);
                 }
+                if (key != 0) ((FinderRow)row.Tag).Key = key;
                 row.SubItems[2].Text = what;
                 row.SubItems[3].Text = (int.Parse(row.SubItems[3].Text) + 1).ToString();
+                message.ForeColor = Theme.Muted;
                 message.Text = "Last press: " + kind + " " + id + ", " + what + ".";
+                UpdateButtons();
             }
 
+            // The key sends mouse clicks (or F13 and F14): recognize its hardware ID.
             void UseSelected()
             {
-                if (list.SelectedItems.Count == 0) return;
-                string id = (string)list.SelectedItems[0].Tag;
-                if (!IdPattern.IsMatch(id))
+                var row = Selected();
+                if (row == null) return;
+                if (!IdPattern.IsMatch(row.Id)) { Say("That device has no hardware ID, so it can't be added."); return; }
+                if (row.Known && row.Key != 0)
                 {
-                    message.Text = "That device has no hardware ID, so it can't be added.";
+                    Say("That key is already recognized, but it sends a key (" + (Keys)row.Key + "), not a mouse click, so its presses are ignored. " +
+                        "Press its LEFT button and click Use as Left button, then its RIGHT button and click Use as Right button.");
                     return;
                 }
-                AppSettings.AddK2Id(id);
-                changed();
-                message.Text = "Added " + id + ". Press a button on the key: on the K2 page of Settings, Test your buttons should list it. " +
-                               "If it doesn't, copy the details and send them with the key's make and model.";
+                AppSettings.AddK2Id(row.Id);
+                Say("Added " + row.Id + ". Close this window, then press a button on the key: the K2 page's Test your buttons list should show it.");
+            }
+
+            // The key sends keys: teach which one is the Left button and which the Right.
+            void MapSelected(bool left)
+            {
+                var row = Selected();
+                if (row == null) return;
+                if (row.Key == 0 || !IdPattern.IsMatch(row.Id)) { Say("Press the button on your key first, so this row shows the key it sends."); return; }
+                AppSettings.AddK2Id(row.Id);
+                AppSettings.SetK2Key(row.Id, left, row.Key);
+                Say((left ? "Left" : "Right") + " button is now " + (Keys)row.Key + " on " + row.Id + "." +
+                    (left ? " Now press the key's RIGHT button, then click Use as Right button." : " Close this window, then press the buttons: Test your buttons on the K2 page should list them."));
             }
 
             // The list as text, to paste into an email.
@@ -438,8 +574,8 @@ namespace Krabbz.Blynclight
                 var text = new StringBuilder("BusyLightz key finder" + Environment.NewLine);
                 foreach (ListViewItem row in list.Items)
                     text.AppendLine(row.SubItems[0].Text + "\t" + row.SubItems[1].Text + "\t" + row.SubItems[2].Text + "\t" + row.SubItems[3].Text + "\t" + row.SubItems[4].Text);
-                try { Clipboard.SetText(text.ToString()); message.Text = "Copied. Paste it into an email or message."; }
-                catch (Exception) { message.Text = "Couldn't copy to the clipboard."; }
+                try { Clipboard.SetText(text.ToString()); Say("Copied. Paste it into an email or message."); }
+                catch (Exception) { Say("Couldn't copy to the clipboard."); }
             }
         }
 
@@ -465,6 +601,8 @@ namespace Krabbz.Blynclight
                 {
                     if (owner.hook != IntPtr.Zero) UnhookWindowsHookEx(owner.hook);
                     owner.hook = IntPtr.Zero;
+                    if (owner.keyHook != IntPtr.Zero) UnhookWindowsHookEx(owner.keyHook);
+                    owner.keyHook = IntPtr.Zero;
                     DestroyHandle();
                     Application.ExitThread();
                     return;

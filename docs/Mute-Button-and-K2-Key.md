@@ -50,7 +50,7 @@ Out of the box the K2's buttons are a left and a right mouse click. BusyLightz c
 
 Pick an action for **Left button**, **Right button** and **Both together** in **Settings > K2 USBC Key**. At the top of that page, a picture of the K2 lights up the key you press on the real one (both keys for Both together), so you can check it's working.
 
-**Test your buttons:** at the bottom of that page, a list shows your last five presses, newest first, each with the time, which button (*Left button*, *Right button* or *Both buttons*) and the action it runs. The list stays put, so you can press a button, look away and come back. If it says the K2 isn't plugged in, or that **Use the K2 key** is off, presses can't be picked up until that's fixed.
+**Test your buttons:** at the bottom of that page, a list shows your last three presses, newest first, each with the time, which button (*Left button*, *Right button* or *Both buttons*) and the action it runs. The list stays put, so you can press a button, look away and come back. If it says the K2 isn't plugged in, or that **Use the K2 key** is off, presses can't be picked up until that's fixed.
 
 | Action | What it does |
 | --- | --- |
@@ -63,16 +63,18 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 | **Busy (red)**, **Available (green)**, **On a call**, **Follow Teams Status**, **Party Mode** | Sets that mode, like the buttons in the window. |
 | **Open:** | Opens a program, file or web address you enter, e.g. `https://teams.microsoft.com`. |
 
-### If your two-button key isn't found
+### If your two-button key isn't found, or sends letters
 
-BusyLightz recognizes the K2 by its hardware ID (USB `VID_04D9&PID_A2D0`). Some two-button keys that look the same report a different ID, so the page says *Not plugged in* even though the key is.
+BusyLightz recognizes the K2 by its hardware ID (USB `VID_04D9&PID_A2D0`) and expects its buttons to be mouse clicks (or F13 and F14). Some two-button keys that look the same report a different ID, or are set up to type letters like **Z** and **X** instead. Then the page says *Not plugged in*, or the key is found but its presses do nothing.
 
-1. Go to **Settings > K2 USBC Key** and click **My key isn't found...**.
-2. Press the buttons on your key. Each device that sends a button press or a key appears in the list with its hardware ID and what it sent (*Left button*, *Right button*, or a key name). Your normal mouse and keyboard show up too: ignore them.
-3. Select the row that appeared when you pressed your key and click **Use this key**.
-4. Close the window and press a button. **Test your buttons** on the same page should list it, and the K2 tile in the window lights up.
+1. Go to **Settings > K2 USBC Key** and click **My key isn't found...** (at the bottom of the page).
+2. Press the buttons on your key. Each device that sends a button press or a key appears in the list with its hardware ID and what it sent (*Left button*, *Right button*, or a key name like *Key Z*). Your normal mouse and keyboard show up too: ignore them.
+3. Select the row for your key, then:
+   - **It sends mouse clicks** (*Left button* / *Right button*): click **Use this key**.
+   - **It sends a key** (like *Key Z*): press the key's **left** button, click **Use as Left button**, then press its **right** button and click **Use as Right button**. This is the re-map: you teach BusyLightz which of its keys is Left and which is Right.
+4. Close the window and press a button. **Test your buttons** on the same page should list it, and the K2 tile in the window lights up. A key you taught this way is also stopped from typing its letter into whatever you have open.
 
-**Copy details** puts the list on the clipboard to paste into an email, and **Forget added keys** goes back to recognizing only the original K2. A key that sends ordinary letters or numbers instead of mouse clicks (or F13 and F14) can't be used yet: copy the details and send them with the key's make and model.
+**Copy details** puts the list on the clipboard to paste into an email, and **Forget added keys** forgets every key you added or taught, going back to recognizing only the original K2.
 
 ### Your email address
 
