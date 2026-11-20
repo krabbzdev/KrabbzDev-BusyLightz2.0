@@ -995,6 +995,29 @@ namespace Krabbz.Blynclight
             });
         }
 
+        // "Update now" in Settings, for the all-users copy: if a newer version is out, starts its background updater
+        // straight away (Windows asks for permission) instead of waiting for the next run.
+        public void ForceUpdate()
+        {
+            if (!AllUsersInstall.IsThisCopy) { CheckForUpdates(true); return; } // A just-for-me copy installs at once.
+            Program.Background("Update now", delegate
+            {
+                try
+                {
+                    var latest = Updater.LatestVersion(Program.UpdateRepo);
+                    if (latest == null || latest <= new Version(Program.Version.Major, Program.Version.Minor, Program.Version.Build))
+                    {
+                        ShowBalloon("You're on the latest version (" + Program.VersionText + ").", ToolTipIcon.Info);
+                        return;
+                    }
+                    ShowBalloon("Version " + latest.ToString(3) + " is out. Windows will ask for permission to update, then BusyLightz closes and reopens by itself.", ToolTipIcon.Info);
+                    if (AllUsersInstall.RunUpdaterNow()) Program.LogEvent("Update now: started the background updater for version " + latest.ToString(3));
+                    else ShowBalloon("The update wasn't started, because the permission prompt was closed.", ToolTipIcon.Warning);
+                }
+                catch (Exception ex) { ShowBalloon("Couldn't start the update: " + ex.Message, ToolTipIcon.Warning); }
+            });
+        }
+
         // Check for updates in the all-users copy: says whether a newer version is out, which installs on its own.
         void CheckAllUsersVersion()
         {

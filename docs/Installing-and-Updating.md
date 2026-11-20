@@ -54,6 +54,7 @@ What happens:
 - **Copies installed just for one user move over on their own.** Within a few seconds (or at their next start) they open the Program Files copy and uninstall themselves. Settings, the Teams sign-in and the log carry over, since they're kept per user.
 - **It starts at every user's sign-in**, for users who have **Start with Windows** on in Settings.
 - **Updates install in the background.** A **BusyLightz Updater** scheduled task runs as SYSTEM at startup and every 4 hours, downloads the newest all-users installer from GitHub, checks its SHA-256 against what GitHub recorded, and installs it silently. Each user's copy closes while it installs and reopens afterwards. Its log is `C:\Program Files\BusyLightz Updates\updater.log`.
+- **Update now.** Don't want to wait for the next run? In **Settings > General**, click **Update now**. If a newer version is out, it starts the background updater straight away. Windows asks for an administrator's permission (the task runs as SYSTEM, so starting it needs one), then BusyLightz closes and reopens by itself on the new version. If you're already up to date, it says so. (You can do the same by hand from an administrator PowerShell: `schtasks /run /tn "BusyLightz Updater"`.) A copy installed just for you doesn't need this: **Check for updates** installs a new version at once.
 - **Uninstall** from Settings > Apps > Installed apps > BusyLightz (needs admin). It removes the updater task too.
 
 ## Deploying to many PCs (IT)
