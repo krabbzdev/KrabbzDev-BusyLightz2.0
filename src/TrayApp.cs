@@ -636,7 +636,7 @@ namespace Krabbz.Blynclight
             }
             // Clicking the tray icon takes focus from the window, which closes it; don't open it again for that click.
             if ((DateTime.UtcNow - agendaClosedUtc).TotalMilliseconds < 700) return;
-            agendaForm = new AgendaForm(() => presence, ShowMeetingAlertsSettings);
+            agendaForm = new AgendaForm(() => presence, ShowMeetingAlertsSettings, ShowWindow);
             agendaForm.FormClosed += delegate { agendaClosedUtc = DateTime.UtcNow; };
             agendaForm.Show();
         }
