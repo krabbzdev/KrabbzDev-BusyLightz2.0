@@ -607,6 +607,10 @@ namespace Krabbz.Blynclight
             Box("Alert me before my meetings", AppSettings.MeetingAlertsOn, v => AppSettings.MeetingAlertsOn = v,
                 help: "Shows a small window shortly before each meeting in your calendar, with its time, place and organizer, and a Join button when it's an online meeting. Declined and cancelled meetings and all-day events are skipped.");
 
+            Box("Show today's meetings beside the window", AppSettings.AgendaBesideWindow,
+                v => { AppSettings.AgendaBesideWindow = v; tray.UpdateDock(); },
+                help: "While the BusyLightz window is open, a \"My Schedule Today\" panel sits against its right side with today's meetings, the one on now highlighted, and Join buttons for online meetings. It moves with the window and goes when you close it.");
+
             Box("Click the tray icon to see today's meetings", AppSettings.AgendaOnClick, v => AppSettings.AgendaOnClick = v,
                 help: "Click once on the BusyLightz icon in the system tray, near the clock, to see today's calendar: each meeting's time, title and place, the one on now highlighted, and a Join button for online meetings. Double-click still opens the BusyLightz window. The Today's meetings item in the tray menu does the same.");
 
