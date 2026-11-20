@@ -223,6 +223,24 @@ namespace Krabbz.Blynclight
             BackColor = Theme.Card;
             Font = new Font("Segoe UI", 10);
 
+            // An icon tile on the left: a video camera for online meetings, a calendar for the rest. Left out if the
+            // icon font isn't there.
+            int textLeft = 16;
+            if (Theme.Icons != null)
+            {
+                Controls.Add(new Label
+                {
+                    Text = string.IsNullOrEmpty(meeting.JoinUrl) ? "\uE787" : "\uE714",
+                    Font = new Font(Theme.Icons.FontFamily, 20f),
+                    ForeColor = Theme.TeamsText,
+                    BackColor = Theme.TeamsTint,
+                    TextAlign = ContentAlignment.MiddleCenter,
+                    Bounds = new Rectangle(16, 16, 48, 48),
+                });
+                textLeft = 76;
+            }
+            int textWidth = FormWidth - textLeft - 16;
+
             Controls.Add(new Label
             {
                 Text = headline,
@@ -230,7 +248,7 @@ namespace Krabbz.Blynclight
                 ForeColor = Theme.TeamsText,
                 AutoEllipsis = true,
                 BackColor = Color.Transparent,
-                Bounds = new Rectangle(16, 12, FormWidth - 32, 22),
+                Bounds = new Rectangle(textLeft, 12, textWidth, 22),
             });
             Controls.Add(new Label
             {
@@ -239,7 +257,7 @@ namespace Krabbz.Blynclight
                 ForeColor = Theme.Text,
                 AutoEllipsis = true,
                 BackColor = Color.Transparent,
-                Bounds = new Rectangle(16, 36, FormWidth - 32, 30),
+                Bounds = new Rectangle(textLeft, 36, textWidth, 30),
             });
             Controls.Add(new Label
             {
@@ -247,7 +265,7 @@ namespace Krabbz.Blynclight
                 ForeColor = Theme.Text,
                 AutoEllipsis = true,
                 BackColor = Color.Transparent,
-                Bounds = new Rectangle(16, 68, FormWidth - 32, 22),
+                Bounds = new Rectangle(textLeft, 68, textWidth, 22),
             });
             var details = new List<string>();
             if (!string.IsNullOrWhiteSpace(meeting.Location)) details.Add(meeting.Location);
@@ -259,7 +277,7 @@ namespace Krabbz.Blynclight
                 ForeColor = Theme.Muted,
                 AutoEllipsis = true,
                 BackColor = Color.Transparent,
-                Bounds = new Rectangle(16, 92, FormWidth - 32, 20),
+                Bounds = new Rectangle(textLeft, 92, textWidth, 20),
             });
 
             int x = 16;
