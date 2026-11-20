@@ -1026,9 +1026,6 @@ namespace Krabbz.Blynclight
                 catch (InvalidOperationException) { } // Window already gone during exit.
             });
         }
-            catch (Exception ex) { message = "Couldn't check for updates: " + ex.Message; }
-            ShowBalloon(message, ToolTipIcon.Info);
-        }
 
         public void SetState(string state)
         {
