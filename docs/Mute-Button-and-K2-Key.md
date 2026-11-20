@@ -71,7 +71,7 @@ BusyLightz recognizes the K2 by its hardware ID (USB `VID_04D9&PID_A2D0`) and ex
 2. Press the buttons on your key. Each device that sends a button press or a key appears in the list with its hardware ID and what it sent (*Left button*, *Right button*, or a key name like *Key Z*). Your normal mouse and keyboard show up too: ignore them.
 3. Select the row for your key, then:
    - **It sends mouse clicks** (*Left button* / *Right button*): click **Use this key**.
-   - **It sends a key** (like *Key Z*): press the key's **left** button, click **Use as Left button**, then press its **right** button and click **Use as Right button**. This is the re-map: you teach BusyLightz which of its keys is Left and which is Right.
+   - **It sends a key** (like *Key Z*): press the key's **left** button, click **Use as Left**, then press its **right** button and click **Use as Right**. This is the re-map: you teach BusyLightz which of its keys is Left and which is Right. If the key sends its own key when you press **both** buttons together, press both and click **Use as Both**; if it just sends both letters at once, you don't need to, because BusyLightz already counts that as *Both together*.
 4. Close the window and press a button. **Test your buttons** on the same page should list it, and the K2 tile in the window lights up. A key you taught this way is also stopped from typing its letter into whatever you have open.
 
 **Copy details** puts the list on the clipboard to paste into an email, and **Forget added keys** forgets every key you added or taught, going back to recognizing only the original K2.

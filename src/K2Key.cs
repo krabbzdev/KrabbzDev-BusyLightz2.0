@@ -203,7 +203,7 @@ namespace Krabbz.Blynclight
 
         bool IsMappedKey(int vkey)
         {
-            foreach (var keys in keyMap.Values) if (keys[0] == vkey || keys[1] == vkey) return true;
+            foreach (var keys in keyMap.Values) if (keys[0] == vkey || keys[1] == vkey || keys[2] == vkey) return true;
             return false;
         }
 
@@ -324,7 +324,14 @@ namespace Krabbz.Blynclight
                     {
                         if (mapped[0] != 0 && vkey == mapped[0]) button = Button.Left;
                         else if (mapped[1] != 0 && vkey == mapped[1]) button = Button.Right;
-                        if (button != null) unmatchedKeys.Add(new KeyValuePair<int, int>(vkey, Environment.TickCount));
+                        bool bothKey = mapped[2] != 0 && vkey == mapped[2];
+                        if (button != null || bothKey) unmatchedKeys.Add(new KeyValuePair<int, int>(vkey, Environment.TickCount));
+                        if (bothKey)
+                        {
+                            // A key the device sends for both buttons at once: one Both press, when it's let go (held keys repeat).
+                            if ((flags & KeyBreak) != 0 && !Disabled) ui.Post(delegate { if (Pressed != null) Pressed(Button.Both); }, null);
+                            return;
+                        }
                     }
                     if (button == null) return;
                     if ((flags & KeyBreak) != 0) Up(button.Value);
@@ -372,8 +379,9 @@ namespace Krabbz.Blynclight
             readonly ListView list = new ListView { View = View.Details, FullRowSelect = true, MultiSelect = false, HideSelection = false, GridLines = true };
             readonly Dictionary<string, ListViewItem> rows = new Dictionary<string, ListViewItem>();
             readonly ModernButton useKey = new ModernButton { Text = "Use this key", Accent = true, Enabled = false };
-            readonly ModernButton useLeft = new ModernButton { Text = "Use as Left button", Enabled = false };
-            readonly ModernButton useRight = new ModernButton { Text = "Use as Right button", Enabled = false };
+            readonly ModernButton useLeft = new ModernButton { Text = "Use as Left", Enabled = false };
+            readonly ModernButton useRight = new ModernButton { Text = "Use as Right", Enabled = false };
+            readonly ModernButton useBoth = new ModernButton { Text = "Use as Both", Enabled = false };
             readonly Label message = new Label { AutoSize = false };
             readonly Action changed;
 
@@ -395,8 +403,9 @@ namespace Krabbz.Blynclight
                     Text = "Press the buttons on your two-button key. Every device that sends a button press or a key shows up below with " +
                            "its hardware ID and what it sent. Your normal mouse and keyboard show up too: ignore those.\r\n" +
                            "Sends mouse clicks (Left button, Right button)? Select its row and click Use this key.\r\n" +
-                           "Sends a key (like Key Z)? Select its row, press the key's LEFT button and click Use as Left button, then press " +
-                           "its RIGHT button and click Use as Right button.",
+                           "Sends a key (like Key Z)? Select its row, press the key's LEFT button and click Use as Left, then press its RIGHT " +
+                           "button and click Use as Right. If it sends its own key when you press both buttons together, press both and click " +
+                           "Use as Both.",
                     Bounds = new Rectangle(16, 10, 528, 112),
                 });
                 list.Bounds = new Rectangle(16, 128, 528, 190);
@@ -410,13 +419,16 @@ namespace Krabbz.Blynclight
                 list.SelectedIndexChanged += delegate { UpdateButtons(); };
                 Controls.Add(list);
 
-                useLeft.Bounds = new Rectangle(16, 330, 170, 34);
-                useLeft.Click += delegate { MapSelected(true); };
+                useLeft.Bounds = new Rectangle(16, 330, 124, 34);
+                useLeft.Click += delegate { MapSelected(0); };
                 Controls.Add(useLeft);
-                useRight.Bounds = new Rectangle(194, 330, 170, 34);
-                useRight.Click += delegate { MapSelected(false); };
+                useRight.Bounds = new Rectangle(148, 330, 124, 34);
+                useRight.Click += delegate { MapSelected(1); };
                 Controls.Add(useRight);
-                useKey.Bounds = new Rectangle(372, 330, 172, 34);
+                useBoth.Bounds = new Rectangle(280, 330, 124, 34);
+                useBoth.Click += delegate { MapSelected(2); };
+                Controls.Add(useBoth);
+                useKey.Bounds = new Rectangle(412, 330, 132, 34);
                 useKey.Click += delegate { UseSelected(); };
                 Controls.Add(useKey);
 
@@ -460,6 +472,7 @@ namespace Krabbz.Blynclight
                 useKey.Enabled = row != null;
                 useLeft.Enabled = row != null && row.Key != 0;
                 useRight.Enabled = row != null && row.Key != 0;
+                useBoth.Enabled = row != null && row.Key != 0;
             }
 
             protected override void OnHandleCreated(EventArgs e)
@@ -549,7 +562,7 @@ namespace Krabbz.Blynclight
                 if (row.Known && row.Key != 0)
                 {
                     Say("That key is already recognized, but it sends a key (" + (Keys)row.Key + "), not a mouse click, so its presses are ignored. " +
-                        "Press its LEFT button and click Use as Left button, then its RIGHT button and click Use as Right button.");
+                        "Press its LEFT button and click Use as Left, then its RIGHT button and click Use as Right.");
                     return;
                 }
                 AppSettings.AddK2Id(row.Id);
@@ -557,15 +570,18 @@ namespace Krabbz.Blynclight
             }
 
             // The key sends keys: teach which one is the Left button and which the Right.
-            void MapSelected(bool left)
+            void MapSelected(int slot)
             {
                 var row = Selected();
                 if (row == null) return;
                 if (row.Key == 0 || !IdPattern.IsMatch(row.Id)) { Say("Press the button on your key first, so this row shows the key it sends."); return; }
                 AppSettings.AddK2Id(row.Id);
-                AppSettings.SetK2Key(row.Id, left, row.Key);
-                Say((left ? "Left" : "Right") + " button is now " + (Keys)row.Key + " on " + row.Id + "." +
-                    (left ? " Now press the key's RIGHT button, then click Use as Right button." : " Close this window, then press the buttons: Test your buttons on the K2 page should list them."));
+                AppSettings.SetK2Key(row.Id, slot, row.Key);
+                string[] names = { "Left button", "Right button", "Both buttons together" };
+                string next = slot == 0 ? " Now press the key's RIGHT button, then click Use as Right."
+                    : slot == 1 ? " If the key sends its own key when you press both buttons together, press both and click Use as Both. Otherwise close this window and press the buttons: Test your buttons on the K2 page should list them."
+                    : " Close this window and press both buttons: Test your buttons on the K2 page should list it.";
+                Say(names[slot] + " is now " + (Keys)row.Key + " on " + row.Id + "." + next);
             }
 
             // The list as text, to paste into an email.

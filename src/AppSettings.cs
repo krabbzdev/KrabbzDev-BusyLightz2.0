@@ -193,7 +193,7 @@ namespace Krabbz.Blynclight
         }
 
         // Keys a two-button key sends instead of mouse clicks, by hardware ID: "VID_xxxx&PID_yyyy=leftKey/rightKey;..." (virtual
-        // key numbers, 0 for not set). Set with Use as Left button and Use as Right button in Find my key.
+        // key numbers: left, right, and the key sent for both together; 0 for not set). Set with Use as Left, Right and Both in Find my key.
         public static string K2KeyMapText { get { return GetString("K2KeyMap") ?? ""; } set { SetString("K2KeyMap", value ?? ""); } }
 
         public static System.Collections.Generic.Dictionary<string, int[]> K2KeyMap()
@@ -205,23 +205,24 @@ namespace Krabbz.Blynclight
                 if (eq <= 0) continue;
                 string id = entry.Substring(0, eq).Trim().ToUpperInvariant();
                 string[] keys = entry.Substring(eq + 1).Split('/');
-                int left = 0, right = 0;
-                if (keys.Length == 2) { int.TryParse(keys[0], out left); int.TryParse(keys[1], out right); }
-                if (id.Length > 0) map[id] = new[] { left, right };
+                var numbers = new int[3];
+                for (int i = 0; i < 3 && i < keys.Length; i++) int.TryParse(keys[i], out numbers[i]);
+                if (id.Length > 0) map[id] = numbers;
             }
             return map;
         }
 
-        public static void SetK2Key(string id, bool left, int vkey)
+        // slot: 0 for the Left button, 1 for Right, 2 for the key the device sends when both are pressed together.
+        public static void SetK2Key(string id, int slot, int vkey)
         {
             var map = K2KeyMap();
             id = id.Trim().ToUpperInvariant();
             int[] keys;
-            if (!map.TryGetValue(id, out keys)) keys = new[] { 0, 0 };
-            keys[left ? 0 : 1] = vkey;
+            if (!map.TryGetValue(id, out keys)) keys = new int[3];
+            keys[slot] = vkey;
             map[id] = keys;
             var parts = new System.Collections.Generic.List<string>();
-            foreach (var pair in map) parts.Add(pair.Key + "=" + pair.Value[0] + "/" + pair.Value[1]);
+            foreach (var pair in map) parts.Add(pair.Key + "=" + pair.Value[0] + "/" + pair.Value[1] + "/" + pair.Value[2]);
             K2KeyMapText = string.Join(";", parts.ToArray());
         }
 
