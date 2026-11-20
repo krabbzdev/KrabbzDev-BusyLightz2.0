@@ -32,6 +32,8 @@ It uses the same calendar access as the alerts, so if you haven't allowed that y
 
 ## My Schedule Today, beside the window
 
+<img src="images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side: the date, then each meeting with its time, title and place, the one on now highlighted, finished ones dimmed, Join buttons on online meetings, and Open my calendar at the bottom" width="760">
+
 When you open the BusyLightz window, a **My Schedule Today** panel sits against its right side, the same height, with today's meetings: time, title and place, the one on now highlighted and marked *Now*, finished ones dimmed, and a **Join** button on online meetings that haven't finished. It moves with the window, goes when you close or minimize it, and reads the calendar again every minute while it's showing. If the right side of the screen is too close, it goes on the left instead.
 
 Turn it off with **Show today's meetings beside the window** in Settings > Meeting Alerts. If you haven't allowed calendar access yet, the panel says so, with a button to the right Settings page.

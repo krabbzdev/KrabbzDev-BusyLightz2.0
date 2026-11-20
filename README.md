@@ -79,6 +79,8 @@ Connect once with a browser sign-in to your work account. No client secret is st
 
 A small pop-up shortly before each meeting in your Microsoft 365 calendar, so you don't miss one while you're heads down.
 
+<img src="docs/images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side: the date, then each meeting with its time, title and place, the one on now highlighted, finished ones dimmed, Join buttons on online meetings, and Open my calendar at the bottom" width="760">
+
 - **The details:** the meeting's title, start and end time, place and organizer, with a video camera icon for online meetings and a calendar for the rest.
 - **My Schedule Today, beside the window:** open BusyLightz and a panel against its right side lists today's meetings, with Join buttons for online ones (it can be turned off in Settings).
 - **Today's meetings:** **Today's meetings** in the tray menu opens a small window with the day's calendar: time, title and place, the meeting on now highlighted, and a **Join** button on online ones.
