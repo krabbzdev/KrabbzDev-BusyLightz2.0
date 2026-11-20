@@ -30,6 +30,12 @@ Click the BusyLightz icon in the system tray (near the clock) once, or choose **
 
 It uses the same calendar access as the alerts, so if you haven't allowed that yet, the window says so and has a button to the Settings page. To turn the click off, untick **Click the tray icon to see today's meetings** in Settings > Meeting Alerts. The tray menu item stays.
 
+## My Schedule Today, beside the window
+
+When you open the BusyLightz window, a **My Schedule Today** panel sits against its right side, the same height, with today's meetings: time, title and place, the one on now highlighted and marked *Now*, finished ones dimmed, and a **Join** button on online meetings that haven't finished. It moves with the window, goes when you close or minimize it, and reads the calendar again every minute while it's showing. If the right side of the screen is too close, it goes on the left instead.
+
+Turn it off with **Show today's meetings beside the window** in Settings > Meeting Alerts. If you haven't allowed calendar access yet, the panel says so, with a button to the right Settings page.
+
 ## What the alert shows
 
 - An **icon** at the left: a video camera for online meetings, a calendar for the rest.
@@ -50,6 +56,7 @@ All on the **Meeting Alerts** page of Settings:
 | Setting | What it does |
 | --- | --- |
 | **Alert me before my meetings** | The on/off switch. |
+| **Show today's meetings beside the window** | On by default. Untick it to hide the panel beside the BusyLightz window. |
 | **Click the tray icon to see today's meetings** | On by default. Untick it to stop the single click opening the [Today window](#todays-meetings). |
 | **Alert me this long before** | 1, 2, 5 (default), 10 or 15 minutes before the meeting starts. |
 | **Play a sound** | A short sound with the alert. On by default. It stays quiet while you're on a call. |
