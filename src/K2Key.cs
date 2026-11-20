@@ -799,7 +799,13 @@ namespace Krabbz.Blynclight
         // Types text into whatever has the keyboard focus, as if typed.
         static void TypeText(string text)
         {
-            if (string.IsNullOrEmpty(text)) return;
+            if (string.IsNullOrEmpty(text))
+            {
+                Program.LogEvent("K2 key: nothing to type");
+                return;
+            }
+            // Let the key's own release be cancelled first (the Z/X key sends its letter's key-up at this moment).
+            System.Threading.Thread.Sleep(60);
             var inputs = new List<INPUT>();
             foreach (char c in text.Replace("\r\n", "\r").Replace('\n', '\r'))
             {
@@ -854,8 +860,11 @@ namespace Krabbz.Blynclight
         static void Send(List<INPUT> inputs)
         {
             if (inputs.Count == 0) return;
-            if (SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf(typeof(INPUT))) != inputs.Count)
-                Program.LogEvent("K2 key: Windows blocked the typing (error " + Marshal.GetLastWin32Error() + ")");
+            uint sent = SendInput((uint)inputs.Count, inputs.ToArray(), Marshal.SizeOf(typeof(INPUT)));
+            if (sent != inputs.Count)
+                Program.LogEvent("K2 key: Windows blocked the typing (sent " + sent + " of " + inputs.Count + ", error " + Marshal.GetLastWin32Error() + ")");
+            else
+                Program.LogEvent("K2 key: Windows accepted " + inputs.Count + " key events"); // Not what the program then did with them.
         }
     }
 }
