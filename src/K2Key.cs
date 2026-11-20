@@ -388,6 +388,8 @@ namespace Krabbz.Blynclight
             readonly ModernButton useRight = new ModernButton { Text = "Use as Right" };
             readonly ModernButton useBoth = new ModernButton { Text = "Use as Both" };
             readonly Label message = new Label { AutoSize = false };
+            // What has been taught so far (Left, Right and Both keys), always shown under the buttons.
+            readonly Label mapLabel = new Label { AutoSize = false, Font = new Font("Segoe UI Semibold", 10f) };
             // Every signal the key sends, as it arrives: key presses and releases, clicks, and other kinds of reports.
             readonly TextBox activity = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Font = new Font("Consolas", 8.5f) };
             readonly Action changed;
@@ -403,22 +405,20 @@ namespace Krabbz.Blynclight
                 MaximizeBox = false;
                 MinimizeBox = false;
                 StartPosition = FormStartPosition.CenterParent;
-                ClientSize = new Size(560, 650);
+                ClientSize = new Size(560, 566);
                 BackColor = Theme.Page;
                 ForeColor = Theme.Text;
                 Font = new Font("Segoe UI", 9.5f);
 
                 Controls.Add(new Label
                 {
-                    Text = "Press the buttons on your two-button key. Every device that sends a button press or a key shows up below with " +
-                           "its hardware ID and what it sent. Your normal mouse and keyboard show up too: ignore those.\r\n" +
-                           "Sends mouse clicks (Left button, Right button)? Select its row and click Use this key.\r\n" +
-                           "Sends a key (like Key Z)? Select its row, click Use as Left and press the key's LEFT button once, then click " +
-                           "Use as Right and press its RIGHT button once. If it sends its own key when you press both buttons together, click " +
-                           "Use as Both and press both. Then press the buttons again: this window says what it recognized.",
-                    Bounds = new Rectangle(16, 10, 528, 112),
+                    Text = "1. Press your key's buttons: its row appears below (ignore your normal mouse and keyboard).\r\n" +
+                           "2. It sends mouse clicks? Select its row and click Use this key.\r\n" +
+                           "3. It sends a key (like Key Z)? Click Use as Left, then press the key's LEFT button ONCE. Click Use as Right, then " +
+                           "press its RIGHT button ONCE. Wait for SAVED before you close the window.",
+                    Bounds = new Rectangle(16, 10, 528, 92),
                 });
-                list.Bounds = new Rectangle(16, 128, 528, 190);
+                list.Bounds = new Rectangle(16, 108, 528, 130);
                 list.BackColor = Theme.Card;
                 list.ForeColor = Theme.Text;
                 list.Columns.Add("Device", 80);
@@ -429,42 +429,50 @@ namespace Krabbz.Blynclight
                 list.SelectedIndexChanged += delegate { UpdateButtons(); };
                 Controls.Add(list);
 
-                useLeft.Bounds = new Rectangle(16, 330, 124, 34);
+                useLeft.Bounds = new Rectangle(16, 248, 124, 34);
                 useLeft.Click += delegate { MapSelected(0); };
                 Controls.Add(useLeft);
-                useRight.Bounds = new Rectangle(148, 330, 124, 34);
+                useRight.Bounds = new Rectangle(148, 248, 124, 34);
                 useRight.Click += delegate { MapSelected(1); };
                 Controls.Add(useRight);
-                useBoth.Bounds = new Rectangle(280, 330, 124, 34);
+                useBoth.Bounds = new Rectangle(280, 248, 124, 34);
                 useBoth.Click += delegate { MapSelected(2); };
                 Controls.Add(useBoth);
-                useKey.Bounds = new Rectangle(412, 330, 132, 34);
+                useKey.Bounds = new Rectangle(412, 248, 132, 34);
                 useKey.Click += delegate { UseSelected(); };
                 Controls.Add(useKey);
 
-                var copy = new ModernButton { Text = "Copy details", Bounds = new Rectangle(16, 372, 120, 34) };
+                // What has been taught so far, and the result of the last click, right under the buttons.
+                mapLabel.Bounds = new Rectangle(16, 290, 528, 22);
+                Controls.Add(mapLabel);
+                message.Bounds = new Rectangle(16, 318, 528, 64);
+                message.BorderStyle = BorderStyle.FixedSingle;
+                message.BackColor = Theme.Card;
+                message.ForeColor = Theme.Muted;
+                message.Text = "Nothing yet. Press a button on your key.";
+                Controls.Add(message);
+
+                var copy = new ModernButton { Text = "Copy details", Bounds = new Rectangle(16, 392, 120, 34) };
                 copy.Click += delegate { CopyDetails(); };
                 Controls.Add(copy);
-                var forget = new ModernButton { Text = "Forget added keys", Bounds = new Rectangle(144, 372, 150, 34) };
+                var forget = new ModernButton { Text = "Forget added keys", Bounds = new Rectangle(144, 392, 150, 34) };
                 forget.Click += delegate
                 {
                     AppSettings.K2ExtraIds = "";
                     AppSettings.K2KeyMapText = "";
+                    ShowTaught();
                     Say("Keys you added and keys you taught have been forgotten. Only the original K2 is recognized now (when you close this window).");
                 };
                 Controls.Add(forget);
-                var close = new ModernButton { Text = "Close", Bounds = new Rectangle(440, 372, 104, 34) };
+                var close = new ModernButton { Text = "Close", Bounds = new Rectangle(440, 392, 104, 34) };
                 close.Click += delegate { Close(); };
                 Controls.Add(close);
-                message.Bounds = new Rectangle(16, 414, 528, 62);
-                Controls.Add(new Label { Text = "Everything the key sends (if it doesn't work, click Copy details and send this):", AutoSize = true, Font = new Font("Segoe UI", 9f), Location = new Point(16, 480) });
-                activity.Bounds = new Rectangle(16, 502, 528, 138);
+                Controls.Add(new Label { Text = "Everything the key sends (if it doesn't work, click Copy details and send this):", AutoSize = true, Font = new Font("Segoe UI", 9f), Location = new Point(16, 436) });
+                activity.Bounds = new Rectangle(16, 458, 528, 96);
                 activity.BackColor = Theme.Card;
                 activity.ForeColor = Theme.Text;
                 Controls.Add(activity);
-                message.ForeColor = Theme.Muted;
-                message.Text = "Nothing yet. Press a button on your key.";
-                Controls.Add(message);
+                ShowTaught();
 
                 IsOpen = true;
                 FormClosed += delegate { IsOpen = false; changed(); };
@@ -478,6 +486,18 @@ namespace Krabbz.Blynclight
                 message.Font = SayFont;
                 message.ForeColor = Theme.Text;
                 message.Text = text;
+            }
+
+            static string KeyName(int vkey) { return vkey == 0 ? "(not set)" : ((Keys)vkey).ToString(); }
+
+            void ShowTaught()
+            {
+                var map = AppSettings.K2KeyMap();
+                if (map.Count == 0) { mapLabel.Text = "Taught so far: nothing yet"; return; }
+                var parts = new List<string>();
+                foreach (var pair in map)
+                    parts.Add("Left = " + KeyName(pair.Value[0]) + ", Right = " + KeyName(pair.Value[1]) + ", Both = " + KeyName(pair.Value[2]));
+                mapLabel.Text = "Taught so far: " + string.Join("   |   ", parts.ToArray());
             }
 
             FinderRow Selected()
@@ -637,6 +657,7 @@ namespace Krabbz.Blynclight
                     learnSlot = -1;
                     AppSettings.AddK2Id(devId);
                     AppSettings.SetK2Key(devId, slot, vkey);
+                    ShowTaught();
                     string[] names = { "Left button", "Right button", "Both buttons together" };
                     string next = slot == 0 ? " Now click Use as Right and press the key's RIGHT button."
                         : slot == 1 ? " Press each button again to check it: this window says what it recognized. If the key has its own key for both buttons together, click Use as Both and press both. Then close this window."
