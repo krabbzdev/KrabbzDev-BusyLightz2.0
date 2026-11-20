@@ -76,7 +76,11 @@ namespace Krabbz.Blynclight
                 help: "Downloads and installs new versions of BusyLightz by itself. Check now looks for one right away.");
             if (Program.UpdateRepo != null) SideButton(updates, "Check now", delegate { tray.CheckForUpdates(true); });
             // Updates are automatic for the all-users copy (its background updater installs them).
-            if (AllUsersInstall.IsThisCopy) updates.Enabled = false;
+            if (AllUsersInstall.IsThisCopy)
+            {
+                updates.Enabled = false;
+                if (Program.UpdateRepo != null) UpdateNowRow();
+            }
             else if (Program.UpdateRepo != null) InstallForEveryoneRow();
             // The project on GitHub: what it is, the code, release notes and the guide.
             if (Program.UpdateRepo != null)
@@ -547,6 +551,24 @@ namespace Krabbz.Blynclight
 
         // A just-for-me copy (in AppData) offers to install for everyone in Program Files, with a Windows admin
         // prompt. Once installed, this copy hands over to it (see TrayContext.WatchInstall).
+        // For the all-users copy, whose updates a background task installs every few hours: update right now.
+        void UpdateNowRow()
+        {
+            var label = new Label
+            {
+                Text = "Updates install by themselves every few hours. Don't want to wait? Update now (needs an admin).",
+                AutoSize = true,
+                MaximumSize = new Size(350 - 24 - 8 - InfoRoom, 0),
+                Location = new Point(24, y),
+            };
+            Add(label);
+            Info(label, "Starts the background updater right away if a newer version is out. Windows asks for an administrator's permission, then BusyLightz closes and reopens by itself on the new version.");
+            var update = new ModernButton { Text = "Update now", Bounds = new Rectangle(350, y, 130, 30) };
+            update.Click += delegate { tray.ForceUpdate(); };
+            Add(update);
+            y += Math.Max(46, label.Height + RowGap);
+        }
+
         void InstallForEveryoneRow()
         {
             Add(new Label
