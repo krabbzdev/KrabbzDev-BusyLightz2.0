@@ -1034,7 +1034,7 @@ namespace Krabbz.Blynclight
         }
 
         // "Update now" in Settings, for the all-users copy: if a newer version is out, starts its background updater
-        // straight away (Windows asks for permission) instead of waiting for the next run.
+        // straight away instead of waiting for the next run (no prompt, unless Windows refuses, as on an install from before 2.36.2).
         public void ForceUpdate()
         {
             if (!AllUsersInstall.IsThisCopy) { CheckForUpdates(true); return; } // A just-for-me copy installs at once.
@@ -1048,7 +1048,7 @@ namespace Krabbz.Blynclight
                         ShowBalloon("You're on the latest version (" + Program.VersionText + ").", ToolTipIcon.Info);
                         return;
                     }
-                    ShowBalloon("Version " + latest.ToString(3) + " is out. Windows will ask for permission to update, then BusyLightz closes and reopens by itself.", ToolTipIcon.Info);
+                    ShowBalloon("Version " + latest.ToString(3) + " is out. Starting the update now: BusyLightz closes and reopens by itself.", ToolTipIcon.Info);
                     if (AllUsersInstall.RunUpdaterNow()) Program.LogEvent("Update now: started the background updater for version " + latest.ToString(3));
                     else ShowBalloon("The update wasn't started, because the permission prompt was closed.", ToolTipIcon.Warning);
                 }
@@ -1060,7 +1060,7 @@ namespace Krabbz.Blynclight
         string offeredUpdate;
 
         // For the all-users copy, which can't update itself: when a newer version is out, says so with a click to
-        // install it now (Windows asks for permission), so nobody waits for the background updater's next run.
+        // install it now, so nobody waits for the background updater's next run.
         void OfferAllUsersUpdate()
         {
             Program.Background("Update check", delegate
