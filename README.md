@@ -93,7 +93,7 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 
 [More about Meeting Alerts](docs/Meeting-Alerts.md).
 
-**Teams meeting transcripts (opt-in):** BusyLightz can also save a copy of the transcript Teams makes of your Teams meetings as a text file, and tell you when it's ready. It records nothing itself, and an administrator of your Microsoft 365 has to approve the permission. [More about transcripts](docs/Meeting-Transcripts.md).
+**Teams meeting transcripts (opt-in):** BusyLightz can also save a copy of the transcript Teams makes of your Teams meetings as a text file, and tell you when it's ready. It records nothing itself, deletes its saved copies after 7 days by default, and an administrator of your Microsoft 365 has to approve the permission. [More about transcripts](docs/Meeting-Transcripts.md).
 
 ### Setup and updates
 

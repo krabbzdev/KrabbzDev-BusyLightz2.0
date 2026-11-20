@@ -17,13 +17,14 @@ BusyLightz can save a copy of the transcript Microsoft Teams makes of your Teams
 - A few minutes after a Teams meeting ends, if Teams made a transcript of it, a notice says **Transcript ready** with the meeting's name. Click it to open the file.
 - Files are saved in **Documents\BusyLightz Transcripts** (the **Open transcripts folder** button opens it), named like `2026-11-20 0930 - Weekly planning.txt`.
 - Each file starts with the meeting's title, time and organizer, then lines like `[00:01:23] Sam Rivera: Let's start with the budget.`
-- Each transcript is saved once. A meeting transcribed in two parts gives two files.
+- Each transcript is saved once, and not saved again after it's been deleted. A meeting transcribed in two parts gives two files.
 
 ## Good to know
 
 - **Only meetings with a transcript.** If nobody turned transcription on, there's nothing to save.
 - **Only Teams meetings.** Zoom, phone and other calls aren't included. This feature never records them.
-- **Files are plain text on your PC,** not encrypted. They're yours to keep, share or delete like any other file. How long you keep transcripts, and who you share them with, may be covered by your organization's or your clients' rules (for example about recordings and personal information): ask whoever looks after that for your company if you're not sure.
+- **Files are plain text on your PC,** not encrypted, in your own Documents folder. They're yours to share like any other file.
+- **They're deleted after 7 days.** BusyLightz deletes the transcripts it saved once they're older than that, so they don't pile up. Change it under **Settings > Transcripts > Delete saved transcripts after** (*1 day*, *7 days*, *30 days* or *Never*). Copy or move a transcript out of the folder to keep it. Only files BusyLightz saved (named like `2026-11-20 0930 - Weekly planning.txt`) are ever deleted. How long transcripts may be kept, and who they're shared with, may be covered by your organization's or your clients' rules: ask whoever looks after that if you're not sure.
 - **Microsoft decides what you can read.** You can only get transcripts of meetings you were invited to, and only while Microsoft still keeps them.
 - It checks every few minutes, for meetings that ended in the last 6 hours.
 

@@ -799,6 +799,19 @@ namespace Krabbz.Blynclight
             Box("Save a transcript of my Teams meetings", AppSettings.TranscriptsOn,
                 v => { AppSettings.TranscriptsOn = v; tray.CheckTranscripts(); },
                 help: "When Teams has made a transcript of a Teams meeting you were invited to, BusyLightz saves a copy as a text file in Documents\\BusyLightz Transcripts and tells you. It doesn't record anything or start transcription: the meeting has to have transcription turned on in Teams. It needs calendar access (on the Meeting Alerts page) and transcript access (below), which an administrator of your Microsoft 365 has to approve.");
+            // How long saved transcripts are kept before BusyLightz deletes them.
+            var keepLabel = new Label { Text = "Delete saved transcripts after", AutoSize = true, Location = new Point(24, y + 4) };
+            Add(keepLabel);
+            Info(keepLabel, "BusyLightz deletes the transcripts it saved (files named like 2026-11-20 0930 - Weekly planning.txt) from Documents\\BusyLightz Transcripts after this long. Copy or move a transcript out of the folder to keep it. Other files in the folder are never touched.");
+            var keep = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
+            foreach (int choice in AppSettings.TranscriptKeepChoices)
+            {
+                keep.Items.Add(choice == 0 ? "Never" : choice == 1 ? "1 day" : choice + " days");
+                if (choice == AppSettings.TranscriptKeepDays) keep.SelectedIndex = keep.Items.Count - 1;
+            }
+            keep.SelectedIndexChanged += delegate { AppSettings.TranscriptKeepDays = AppSettings.TranscriptKeepChoices[keep.SelectedIndex]; };
+            Add(keep);
+            y += 30 + RowGap;
             transcriptStatus.MaximumSize = new Size(width - 48, 0);
             transcriptStatus.Location = new Point(24, y + 4);
             Add(transcriptStatus);
@@ -813,7 +826,7 @@ namespace Krabbz.Blynclight
             Add(new Label
             {
                 Text = "BusyLightz doesn't record anything and never listens to your calls. It only saves a copy of the transcript Teams already made " +
-                       "of a Teams meeting you were invited to, in Documents\\BusyLightz Transcripts. Zoom, phone and other calls aren't included.",
+                       "of a Teams meeting you were invited to, in Documents\\BusyLightz Transcripts, and deletes its copies after the time above. Zoom, phone and other calls aren't included.",
                 AutoSize = true,
                 MaximumSize = new Size(width - 48, 0),
                 Font = new Font("Segoe UI", 9f),

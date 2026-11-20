@@ -245,6 +245,25 @@ namespace Krabbz.Blynclight
         // Save a copy of the transcript Teams makes of each Teams meeting the user was in. Off unless turned on (it needs an
         // administrator's approval in Microsoft 365 as well).
         public static bool TranscriptsOn { get { return Get("TranscriptsOn", false); } set { Set("TranscriptsOn", value); } }
+        // How many days saved Teams meeting transcripts are kept before BusyLightz deletes them (0 keeps them for ever).
+        public static readonly int[] TranscriptKeepChoices = { 1, 7, 30, 0 };
+        public const int DefaultTranscriptKeepDays = 7;
+        public static int TranscriptKeepDays
+        {
+            get
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(SettingsKey))
+                {
+                    object value = key == null ? null : key.GetValue("TranscriptKeepDays");
+                    return value is int && Array.IndexOf(TranscriptKeepChoices, (int)value) >= 0 ? (int)value : DefaultTranscriptKeepDays;
+                }
+            }
+            set
+            {
+                using (var key = Registry.CurrentUser.CreateSubKey(SettingsKey))
+                    key.SetValue("TranscriptKeepDays", value, RegistryValueKind.DWord);
+            }
+        }
         // How often to look for a new version: a Daily check (the default) or a Weekly one. A copy installed for everyone
         // keeps this machine-wide, because its background updater runs as SYSTEM and can't see a user's settings; changing it
         // there needs an administrator (AllUsersInstall.SetMachineUpdateSchedule).

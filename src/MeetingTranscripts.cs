@@ -59,9 +59,38 @@ namespace Krabbz.Blynclight
             Program.Background("Meeting transcripts", Check);
         }
 
+        // The files BusyLightz saves: "2026-11-20 0930 - Weekly planning.txt". Nothing else in the folder is ever deleted.
+        static readonly Regex OurFile = new Regex(@"^\d{4}-\d{2}-\d{2} \d{4} - .+\.txt$", RegexOptions.Compiled);
+        DateTime cleanedAt = DateTime.MinValue;
+
+        // Deletes the transcripts BusyLightz saved once they're older than the keep time (7 days unless changed in Settings).
+        // Checked about once an hour, whether or not saving transcripts is on.
+        void DeleteOld()
+        {
+            int days = AppSettings.TranscriptKeepDays;
+            if (days <= 0 || DateTime.UtcNow - cleanedAt < TimeSpan.FromHours(1)) return;
+            cleanedAt = DateTime.UtcNow;
+            try
+            {
+                if (!Directory.Exists(Folder)) return;
+                var cutoff = DateTime.Now.AddDays(-days);
+                int deleted = 0;
+                foreach (string path in Directory.GetFiles(Folder, "*.txt"))
+                {
+                    if (!OurFile.IsMatch(Path.GetFileName(path)) || File.GetLastWriteTime(path) >= cutoff) continue;
+                    try { File.Delete(path); deleted++; }
+                    catch (IOException) { } // Open in another program; the next check tries again.
+                    catch (UnauthorizedAccessException) { }
+                }
+                if (deleted > 0) Program.LogEvent("Deleted " + deleted + " saved transcript(s) older than " + days + " days");
+            }
+            catch (Exception ex) { Program.LogEvent("Transcripts: couldn't clean up old files: " + ex.Message); }
+        }
+
         void Check()
         {
             if (Interlocked.Exchange(ref checking, 1) == 1) return;
+            DeleteOld();
             try { CheckMeetings(); }
             finally { Interlocked.Exchange(ref checking, 0); }
         }

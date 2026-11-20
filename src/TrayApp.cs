@@ -739,7 +739,10 @@ namespace Krabbz.Blynclight
                         try { System.Diagnostics.Process.Start(path); }
                         catch (Exception ex) { Program.LogError("Opening a transcript", ex); }
                     };
-                    tray.ShowBalloonTip(15000, "Transcript ready", title + ". Click to open it.", ToolTipIcon.Info);
+                    string shortTitle = title.Length > 100 ? title.Substring(0, 100) + "..." : title;
+                    int keep = AppSettings.TranscriptKeepDays;
+                    tray.ShowBalloonTip(15000, "Transcript ready", shortTitle + ". Click to open it." +
+                        (keep > 0 ? " It's deleted after " + keep + (keep == 1 ? " day." : " days.") : ""), ToolTipIcon.Info);
                 });
             }
             catch (InvalidOperationException) { } // Window already gone during exit.
