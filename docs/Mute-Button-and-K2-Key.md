@@ -55,7 +55,6 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 | Action | What it does |
 | --- | --- |
 | **Do nothing** | Nothing. **The default for Both together.** |
-| **Type text:** | Types the text you enter in the box beside it. |
 | **Press keys:** | Presses a shortcut you enter, e.g. `Ctrl+Shift+M` (Teams' mute) or `Win+D`. |
 | **Mute / unmute my mic** | Mutes or unmutes your microphone in Windows, like the Mutesync Button. **The default for Left button.** |
 | **Switch Busy / Available** | Switches your lights between Busy and Available. **The default for Right button.** |
@@ -64,7 +63,7 @@ Pick an action for **Left button**, **Right button** and **Both together** in **
 
 ### The Red Light version of the K2 works out of the box
 
-The **Red Light version** of the K2 types a shortcut instead of clicking: **Ctrl+Alt+Z** for the left button and **Ctrl+Alt+X** for the right. BusyLightz knows that version: its two buttons run the actions you set for **Left button** and **Right button**, and the letter is cancelled so it isn't sent to your programs (its Ctrl and Alt still go through, and BusyLightz waits for them to be let go before it types) (only keystrokes from the K2 itself are stopped, never your normal keyboard). There's nothing to set up. **Known limit:** on the Red Light version, pressing both buttons together doesn't run **Both together** (that action works on the version that clicks). Use Left and Right.
+The **Red Light version** of the K2 types a shortcut instead of clicking: **Ctrl+Alt+Z** for the left button and **Ctrl+Alt+X** for the right. BusyLightz knows that version: its two buttons run the actions you set for **Left button** and **Right button**, and the letter is cancelled so it isn't sent to your programs (its Ctrl and Alt still go through) (only keystrokes from the K2 itself are stopped, never your normal keyboard). There's nothing to set up. **Known limit:** on the Red Light version, pressing both buttons together doesn't run **Both together** (that action works on the version that clicks). Use Left and Right.
 
 ### If your two-button key isn't found, or sends letters: Remap Custom Keys
 

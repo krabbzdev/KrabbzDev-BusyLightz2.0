@@ -735,7 +735,6 @@ namespace Krabbz.Blynclight
         public static readonly string[][] All =
         {
             new[] { "None", "Do nothing" },
-            new[] { "TypeText", "Type text:" },
             new[] { "Keys", "Press keys:" },
             new[] { "Mute", "Mute / unmute my mic" },
             new[] { "BusyAvailable", "Switch Busy / Available" },
@@ -747,12 +746,11 @@ namespace Krabbz.Blynclight
             new[] { "Open", "Open:" },
         };
 
-        public static bool NeedsValue(string action) { return action == "TypeText" || action == "Keys" || action == "Open"; }
+        public static bool NeedsValue(string action) { return action == "Keys" || action == "Open"; }
 
         // What the value box suggests for each action that has one.
         public static string Hint(string action)
         {
-            if (action == "TypeText") return "Text to type";
             if (action == "Keys") return "e.g. Ctrl+Shift+M";
             if (action == "Open") return "Program, file or https:// address";
             return "";
@@ -764,7 +762,6 @@ namespace Krabbz.Blynclight
             Program.LogEvent("K2 key " + button.ToString().ToLowerInvariant() + " pressed: " + action);
             switch (action)
             {
-                case "TypeText": TypeText(value); break;
                 case "Keys": PressKeys(value); break;
                 case "Mute":
                     bool? muted = MicMute.IsMuted();
@@ -793,43 +790,6 @@ namespace Krabbz.Blynclight
         [DllImport("user32.dll", SetLastError = true)]
         static extern uint SendInput(uint count, INPUT[] inputs, int size);
         const uint INPUT_KEYBOARD = 1, KEYEVENTF_KEYUP = 0x2, KEYEVENTF_UNICODE = 0x4;
-
-        [DllImport("user32.dll")]
-        static extern short GetAsyncKeyState(int vKey);
-
-        // The Red Light K2 holds Ctrl and Alt while it sends its letter, and lets go a few milliseconds after the press is
-        // seen. Typed while they're still down, the text would arrive as shortcuts, so wait (at most half a second) for
-        // Ctrl, Alt, Shift and Windows to be up first. Nothing is cancelled or changed: they're only looked at.
-        static void WaitForModifiersUp()
-        {
-            int[] keys = { 0x10, 0x11, 0x12, 0x5B, 0x5C };
-            for (int i = 0; i < 25; i++)
-            {
-                bool down = false;
-                foreach (int key in keys) if ((GetAsyncKeyState(key) & 0x8000) != 0) down = true;
-                if (!down) break;
-                System.Threading.Thread.Sleep(20);
-            }
-            System.Threading.Thread.Sleep(30);
-        }
-
-        // Types text into whatever has the keyboard focus, as if typed.
-        static void TypeText(string text)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                Program.LogEvent("K2 key: nothing to type");
-                return;
-            }
-            WaitForModifiersUp();
-            var inputs = new List<INPUT>();
-            foreach (char c in text.Replace("\r\n", "\r").Replace('\n', '\r'))
-            {
-                inputs.Add(Key(0, c, KEYEVENTF_UNICODE));
-                inputs.Add(Key(0, c, KEYEVENTF_UNICODE | KEYEVENTF_KEYUP));
-            }
-            Send(inputs);
-        }
 
         // Presses a shortcut like "Ctrl+Shift+M" or "Win+D": the modifiers, then the key, then lets go in reverse.
         static void PressKeys(string combo)
