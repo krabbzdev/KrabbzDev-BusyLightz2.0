@@ -327,10 +327,11 @@ namespace Krabbz.Blynclight
 
             list.Bounds = new Rectangle(20, 70, 420, 250);
             var ignored = new HashSet<string>(CallDetector.IgnoredIds(), StringComparer.OrdinalIgnoreCase);
+            var ignoredKeys = CallDetector.IgnoredKeys(ignored);
             foreach (var app in apps)
             {
                 string text = app.Name + "   (" + (app.InUse ? "using the mic now" : "last used " + app.LastUsed.ToString("MMM d")) + ")";
-                list.Items.Add(text, ignored.Contains(app.Id));
+                list.Items.Add(text, ignoredKeys.Contains(CallDetector.IgnoreKey(app.Id)));
             }
             Controls.Add(list);
 
@@ -348,8 +349,10 @@ namespace Krabbz.Blynclight
         {
             for (int i = 0; i < apps.Count; i++)
             {
+                // An app is ignored by its program's name, so every version of it counts: replace any older entries.
+                string key = CallDetector.IgnoreKey(apps[i].Id);
+                previouslyIgnored.RemoveWhere(id => CallDetector.IgnoreKey(id) == key);
                 if (list.GetItemChecked(i)) previouslyIgnored.Add(apps[i].Id);
-                else previouslyIgnored.Remove(apps[i].Id);
             }
             CallDetector.SetIgnoredIds(previouslyIgnored);
         }

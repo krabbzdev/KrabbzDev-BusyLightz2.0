@@ -96,12 +96,12 @@ namespace Krabbz.Blynclight
 
             var apps = CallDetector.AppsUsingMic();
             var ignoredIds = CallDetector.IgnoredIds();
-            var ignored = new HashSet<string>(ignoredIds, StringComparer.OrdinalIgnoreCase);
+            var ignored = CallDetector.IgnoredKeys(ignoredIds);
             var rows = new List<string[]>();
             foreach (var app in apps)
             {
                 string use = app.InUse ? "In use now" : "Last used " + app.LastUsed.ToString("MMM d, h:mm tt");
-                if (ignored.Contains(app.Id)) use += " (ignored)";
+                if (ignored.Contains(CallDetector.IgnoreKey(app.Id))) use += " (ignored)";
                 rows.Add(new[] { app.Name, use, app.Id.Replace('#', '\\') });
             }
 

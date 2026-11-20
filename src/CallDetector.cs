@@ -104,11 +104,11 @@ namespace Krabbz.Blynclight
         // The app that counts as being on a call, or null: one using the mic that isn't ignored.
         public static MicApp CallApp(List<MicApp> apps, List<string> ignoredIds)
         {
-            var ignored = new HashSet<string>(ignoredIds, StringComparer.OrdinalIgnoreCase);
+            var ignored = IgnoredKeys(ignoredIds);
             MicApp app = null;
             foreach (var candidate in apps)
             {
-                if (!candidate.InUse || ignored.Contains(candidate.Id)) continue;
+                if (!candidate.InUse || ignored.Contains(IgnoreKey(candidate.Id))) continue;
                 // Prefer a calling app if several have the mic, so the status names the call.
                 if (app == null || candidate.IsTeams) app = candidate;
             }
@@ -231,6 +231,23 @@ namespace Krabbz.Blynclight
         {
             string name = keyName.Split('_')[0];
             return KnownNames.ContainsKey(name) ? name : name.Substring(name.LastIndexOf('.') + 1);
+        }
+
+        // What identifies an app in the ignore list: the file name of its program for a desktop app, so a new version in
+        // a new folder (Wispr Flow, Slack, Discord and others install each update to a folder of its own) is still the same
+        // app, or the package name for a Store app. Compared without regard to case.
+        public static string IgnoreKey(string id)
+        {
+            int hash = id.LastIndexOf('#');
+            return (hash >= 0 ? id.Substring(hash + 1) : id).ToLowerInvariant();
+        }
+
+        // The ignore list as the keys apps are matched on.
+        public static HashSet<string> IgnoredKeys(IEnumerable<string> ids)
+        {
+            var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string id in ids) keys.Add(IgnoreKey(id));
+            return keys;
         }
 
         public static List<string> IgnoredIds()
