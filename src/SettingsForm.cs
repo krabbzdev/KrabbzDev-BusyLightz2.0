@@ -30,8 +30,8 @@ namespace Krabbz.Blynclight
         readonly Button connectButton = new ModernButton();
         readonly Label meetingStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
         readonly Button meetingButton = new ModernButton();
-        // Teams meeting transcripts, at the bottom of the Meeting Alerts page.
-        readonly Label transcriptStatus = new Label { AutoSize = true, MaximumSize = new Size(300, 0) };
+        // Teams meeting transcripts, on the Transcripts page.
+        readonly Label transcriptStatus = new Label { AutoSize = true };
         readonly Button transcriptButton = new ModernButton();
         int meetingAlertsPage;
         readonly Timer refresh = new Timer { Interval = RefreshMs };
@@ -189,6 +189,10 @@ namespace Krabbz.Blynclight
             meetingAlertsPage = pages.Count;
             StartPage("Meeting Alerts", MeetingGlyph, PageColors.Teams, "A pop-up shortly before each meeting, with its details and a Join button for online meetings.");
             MeetingAlertsPage();
+            EndPage();
+
+            StartPage("Transcripts", "\uE8A5", PageColors.Teams, "Save a copy of the transcript Teams makes of your Teams meetings.");
+            TranscriptsPage();
             EndPage();
 
             StartPage("Mutesync Button", MuteSyncGlyph, PageColors.MuteSync, "Mute and unmute your mic with one press, with a ring that shows which.");
@@ -740,68 +744,37 @@ namespace Krabbz.Blynclight
             Add(test);
             y += 34 + RowGap;
 
-            // Teams meeting transcripts: opt-in, and for Teams meetings only.
-            Add(new Label { Text = "Teams meeting transcripts", AutoSize = true, Font = new Font("Segoe UI Semibold", 10.5f), Location = new Point(24, y) });
-            y += 28;
+        }
+
+        // The Transcripts page: save a copy of the transcript Teams makes of your Teams meetings (opt-in).
+        void TranscriptsPage()
+        {
+            Heading(null, null);
             Box("Save a transcript of my Teams meetings", AppSettings.TranscriptsOn,
                 v => { AppSettings.TranscriptsOn = v; tray.CheckTranscripts(); },
-                help: "When Teams has made a transcript of a Teams meeting you were invited to, BusyLightz saves a copy as a text file in Documents\\BusyLightz Transcripts and tells you. It doesn't record anything or start transcription: the meeting has to have transcription turned on in Teams. It needs calendar access (above) and transcript access (below), which an administrator of your Microsoft 365 has to approve.");
-            transcriptStatus.Location = new Point(24, y + 6);
+                help: "When Teams has made a transcript of a Teams meeting you were invited to, BusyLightz saves a copy as a text file in Documents\\BusyLightz Transcripts and tells you. It doesn't record anything or start transcription: the meeting has to have transcription turned on in Teams. It needs calendar access (on the Meeting Alerts page) and transcript access (below), which an administrator of your Microsoft 365 has to approve.");
+            transcriptStatus.MaximumSize = new Size(width - 48, 0);
+            transcriptStatus.Location = new Point(24, y + 4);
             Add(transcriptStatus);
-            transcriptButton.Bounds = new Rectangle(350, y, 130, 32);
+            y += 64;
+            transcriptButton.Bounds = new Rectangle(24, y, 150, 34);
             transcriptButton.Click += delegate { tray.GrantTranscriptAccess(); };
             Add(transcriptButton);
-            y += 44;
-            var folderButton = new ModernButton { Text = "Open transcripts folder", Bounds = new Rectangle(24, y, 200, 34) };
+            var folderButton = new ModernButton { Text = "Open transcripts folder", Bounds = new Rectangle(182, y, 200, 34) };
             folderButton.Click += delegate { tray.OpenTranscriptsFolder(); };
             Add(folderButton);
             y += 34 + RowGap;
-        }
-
-        // "How often to check for updates": a Daily check or a Weekly one. For a copy installed for everyone, the choice
-        // is machine-wide and Windows asks for an administrator to save it.
-        void UpdateSchedulePicker()
-        {
-            var label = new Label { Text = "How often to check for updates", AutoSize = true, Location = new Point(24, y + 4) };
-            Add(label);
-            Info(label, "Daily checks for a new version once a day; Weekly once a week. A check is also made when you click Check and install. For a copy installed for everyone on this PC, the choice is for everyone and Windows asks for an administrator to save it.");
-            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
-            picker.Items.Add("Daily check");
-            picker.Items.Add("Weekly check");
-            picker.SelectedIndex = AppSettings.UpdateSchedule == "Weekly" ? 1 : 0;
-            bool putBack = false;
-            picker.SelectedIndexChanged += delegate
+            Add(new Label
             {
-                if (putBack) return;
-                string choice = AppSettings.UpdateScheduleChoices[picker.SelectedIndex];
-                int before = choice == "Weekly" ? 0 : 1;
-                try
-                {
-                    if (AllUsersInstall.IsThisCopy)
-                    {
-                        if (!AllUsersInstall.SetMachineUpdateSchedule(choice))
-                        {
-                            // The administrator prompt was closed: nothing changed.
-                            putBack = true;
-                            picker.SelectedIndex = before;
-                            putBack = false;
-                            return;
-                        }
-                    }
-                    else AppSettings.UpdateSchedule = choice;
-                    tray.ApplyUpdateSchedule();
-                }
-                catch (Exception ex)
-                {
-                    Program.LogError("Saving the update schedule", ex);
-                    putBack = true;
-                    picker.SelectedIndex = before;
-                    putBack = false;
-                    MessageBox.Show(this, "Couldn't save that: " + ex.Message, "BusyLightz", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-            };
-            Add(picker);
-            y += 30 + RowGap;
+                Text = "BusyLightz doesn't record anything and never listens to your calls. It only saves a copy of the transcript Teams already made " +
+                       "of a Teams meeting you were invited to, in Documents\\BusyLightz Transcripts. Zoom, phone and other calls aren't included.",
+                AutoSize = true,
+                MaximumSize = new Size(width - 48, 0),
+                Font = new Font("Segoe UI", 9f),
+                Location = new Point(24, y),
+                Tag = VersionLabel,
+            });
+            y += 56;
         }
 
         // Opens the Meeting Alerts page (from the "New: Meeting Alerts" notice).

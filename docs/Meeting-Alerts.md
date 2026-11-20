@@ -73,7 +73,7 @@ Meeting Alerts keeps working when **Sync with Microsoft Teams** is off, because 
 
 ## Transcripts of your Teams meetings
 
-The same page can also save a copy of the transcript Teams makes of your Teams meetings, if you turn it on. See [Teams Meeting Transcripts](Meeting-Transcripts.md).
+BusyLightz can also save a copy of the transcript Teams makes of your Teams meetings, if you turn it on, on its own **Transcripts** page in Settings. See [Teams Meeting Transcripts](Meeting-Transcripts.md).
 
 ## If it doesn't work
 
