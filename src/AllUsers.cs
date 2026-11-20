@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
@@ -26,6 +27,13 @@ namespace Krabbz.Blynclight
         public static string UpdatesDir { get { return Path.Combine(ProgramFiles, "BusyLightz Updates"); } }
         // Present while the background updater installs an update; each user's copy closes and reopens after it.
         public static string UpdatingFlag { get { return Path.Combine(UpdatesDir, "updating.flag"); } }
+
+        // A user's "Update now", for the background updater: the time it was made. The updater only ever reads it, and only
+        // to check right away instead of waiting for the next Daily or Weekly check, so it can't make it do anything else.
+        public static string RequestFile
+        {
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), @"BusyLightz\check-now.txt"); }
+        }
 
         // True when this is the all-users copy.
         public static bool IsThisCopy
@@ -130,6 +138,17 @@ namespace Krabbz.Blynclight
         // version, the permission is there). False if that prompt was closed; throws if Windows couldn't start the task.
         public static bool RunUpdaterNow()
         {
+            // The updater only looks for a new version on its Daily or Weekly schedule, unless asked.
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(RequestFile));
+                File.WriteAllText(RequestFile, DateTime.UtcNow.ToString("o"));
+            }
+            catch (Exception ex)
+            {
+                Program.LogEvent("Couldn't write the update request: " + ex.Message);
+                throw new InvalidOperationException("Couldn't ask the updater to check now. It will check on its next " + AppSettings.UpdateSchedule.ToLowerInvariant() + " check.");
+            }
             try
             {
                 var quiet = new ProcessStartInfo("schtasks.exe", "/run /tn \"" + UpdaterTask + "\"")
@@ -172,6 +191,34 @@ namespace Krabbz.Blynclight
             }
         }
 
+        // Saves the Daily or Weekly update check for everyone on this PC (the background updater runs as SYSTEM and reads
+        // it from the machine's settings), which needs an administrator. False if the Windows prompt was closed.
+        public static bool SetMachineUpdateSchedule(string schedule)
+        {
+            if (schedule != "Daily" && schedule != "Weekly") throw new ArgumentException("Daily or Weekly");
+            var start = new ProcessStartInfo("reg.exe", "add \"HKLM\\Software\\Krabbz9999\\Blynclight App Control\" /v UpdateSchedule /t REG_SZ /d " + schedule + " /f")
+            {
+                UseShellExecute = true,
+                Verb = "runas",
+                WindowStyle = ProcessWindowStyle.Hidden,
+            };
+            try
+            {
+                using (var process = Process.Start(start))
+                {
+                    process.WaitForExit();
+                    if (process.ExitCode != 0)
+                        throw new InvalidOperationException("Windows couldn't save the setting (code " + process.ExitCode + ").");
+                }
+                return true;
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                if (ex.NativeErrorCode == 1223) return false; // The admin prompt was closed.
+                throw;
+            }
+        }
+
         static void RunHidden(string script)
         {
             Process.Start(new ProcessStartInfo("cmd.exe", "/c " + script)
@@ -196,6 +243,12 @@ namespace Krabbz.Blynclight
             try
             {
                 Directory.CreateDirectory(AllUsersInstall.UpdatesDir);
+                EnsureRequestFolder();
+                // It runs every hour, but only looks for a new version on the Daily or Weekly schedule (or when a user has
+                // just clicked Update now).
+                string why;
+                if (!CheckDue(out why)) return 0;
+                Log("Checking for updates (" + why + ")");
                 // Another run (the scheduled one, or one started by hand) is installing already; two at once collide.
                 if (AllUsersInstall.UpdateInProgress)
                 {
@@ -203,6 +256,7 @@ namespace Krabbz.Blynclight
                     return 0;
                 }
                 var update = Updater.DownloadAllUsersIfNewer(Program.UpdateRepo, Program.Version, AllUsersInstall.UpdatesDir);
+                MarkChecked();
                 if (update == null)
                 {
                     Log("Up to date (version " + Program.VersionText + ")");
@@ -232,6 +286,85 @@ namespace Krabbz.Blynclight
                 try { File.Delete(AllUsersInstall.UpdatingFlag); } catch (Exception) { }
                 return 1;
             }
+        }
+
+        const string MachineKey = @"Software\Krabbz9999\Blynclight App Control";
+
+        // Whether it's time to look for a new version: the Daily or Weekly check has come round (an hour early is fine, as it
+        // runs hourly), or a user asked with Update now since the last check.
+        static bool CheckDue(out string why)
+        {
+            var every = AppSettings.UpdateInterval(AppSettings.UpdateSchedule);
+            DateTime last = LastCheckUtc(), asked = RequestedUtc();
+            if (asked > last) { why = "asked for with Update now"; return true; }
+            if (last == DateTime.MinValue || DateTime.UtcNow - last >= every - TimeSpan.FromMinutes(30))
+            {
+                why = AppSettings.UpdateSchedule.ToLowerInvariant() + " check";
+                return true;
+            }
+            why = null;
+            return false;
+        }
+
+        static DateTime LastCheckUtc()
+        {
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(MachineKey))
+                {
+                    DateTime when;
+                    string saved = key == null ? null : key.GetValue("LastUpdateCheckUtc") as string;
+                    if (!string.IsNullOrEmpty(saved) && DateTime.TryParse(saved, null, System.Globalization.DateTimeStyles.RoundtripKind, out when))
+                        return when.ToUniversalTime();
+                }
+            }
+            catch (Exception) { }
+            return DateTime.MinValue;
+        }
+
+        static void MarkChecked()
+        {
+            try
+            {
+                using (var key = Microsoft.Win32.Registry.LocalMachine.CreateSubKey(MachineKey))
+                    key.SetValue("LastUpdateCheckUtc", DateTime.UtcNow.ToString("o"), Microsoft.Win32.RegistryValueKind.String);
+            }
+            catch (Exception ex) { Log("Couldn't save when it last checked: " + ex.Message); }
+        }
+
+        // When a user last clicked Update now (MinValue if never). A time in the future is ignored.
+        static DateTime RequestedUtc()
+        {
+            try
+            {
+                DateTime when;
+                if (File.Exists(AllUsersInstall.RequestFile)
+                    && DateTime.TryParse(File.ReadAllText(AllUsersInstall.RequestFile).Trim(), null, System.Globalization.DateTimeStyles.RoundtripKind, out when))
+                {
+                    when = when.ToUniversalTime();
+                    if (when <= DateTime.UtcNow.AddMinutes(5)) return when;
+                }
+            }
+            catch (Exception) { }
+            return DateTime.MinValue;
+        }
+
+        // The folder users write their Update now requests to: everyone can add to it, only administrators and SYSTEM
+        // are in charge of it.
+        static void EnsureRequestFolder()
+        {
+            try
+            {
+                string dir = Path.GetDirectoryName(AllUsersInstall.RequestFile);
+                var security = new DirectorySecurity();
+                var inherit = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
+                security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null), FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
+                security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null), FileSystemRights.FullControl, inherit, PropagationFlags.None, AccessControlType.Allow));
+                security.AddAccessRule(new FileSystemAccessRule(new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null), FileSystemRights.Modify, inherit, PropagationFlags.None, AccessControlType.Allow));
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir, security);
+                else Directory.SetAccessControl(dir, security);
+            }
+            catch (Exception ex) { Log("Couldn't set up the request folder: " + ex.Message); }
         }
 
         static void WaitForOtherCopiesToClose(TimeSpan timeout)

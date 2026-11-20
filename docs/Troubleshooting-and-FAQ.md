@@ -61,7 +61,7 @@ Another program already uses that key combination; the app tells you when it sta
 - Click **Check and install updates** in the tray menu (or **Check for updates** in the window). If there's a newer version it installs; otherwise it says *"You're on the latest version"* if there's nothing newer.
 - Updates only arrive once they're published on the [Releases](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases) page.
 - Update logs are in `%LOCALAPPDATA%\Krabbz9999 Blynclight\updates`.
-- **Installed for everyone on the PC** (`C:\Program Files\BusyLightz`): updates come from the **BusyLightz Updater** task at startup and every hour, not from the app. **Check and install updates** starts that task straight away, with no administrator needed, so you don't have to wait for its next run. The updater's log is `C:\Program Files\BusyLightz Updates\updater.log`.
+- **Installed for everyone on the PC** (`C:\Program Files\BusyLightz`): updates come from the **BusyLightz Updater** task, not from the app. It looks for a new version on the **Daily** or **Weekly** check you set in **Settings > General**, and straight away when you click **Check and install updates**. **Check and install updates** starts that task straight away, with no administrator needed, so you don't have to wait for its next run. The updater's log is `C:\Program Files\BusyLightz Updates\updater.log`.
 
 ## If the app freezes
 

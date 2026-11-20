@@ -18,7 +18,7 @@ After installing:
 
 The app keeps itself up to date. (Installed for everyone on the PC, a background updater does this instead: see [below](#installing-for-everyone-on-a-pc-program-files).)
 
-- It checks for a new version **1 minute after it starts, then every 6 hours**.
+- It checks for a new version on a **Daily check** (the default) or a **Weekly check**, your choice in **Settings > General > How often to check for updates**. If a whole day or week has passed since the last check, it also checks 1 minute after it starts.
 - To check right now, click **Check and install updates** in the tray menu, **Check and install** in Settings > General, or **Check for updates** in the window (bottom line). If there's a newer version, it installs straight away.
 - When there's a new version, the app:
   1. downloads it from this project's [Releases](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases) page,
@@ -53,7 +53,7 @@ What happens:
 
 - **Copies installed just for one user move over on their own.** Within a few seconds (or at their next start) they open the Program Files copy and uninstall themselves. Settings, the Teams sign-in and the log carry over, since they're kept per user.
 - **It starts at every user's sign-in**, for users who have **Start with Windows** on in Settings.
-- **Updates install in the background.** A **BusyLightz Updater** scheduled task runs as SYSTEM at startup and every hour, downloads the newest all-users installer from GitHub, checks its SHA-256 against what GitHub recorded, and installs it silently. Each user's copy closes while it installs and reopens afterwards. Its log is `C:\Program Files\BusyLightz Updates\updater.log`.
+- **Updates install in the background.** A **BusyLightz Updater** scheduled task runs as SYSTEM at startup and every hour, but only looks for a new version on the **Daily** or **Weekly** check (set machine-wide in **Settings > General > How often to check for updates**; Windows asks for an administrator to save it, since it's for everyone on the PC). When it's time, it downloads the newest all-users installer from GitHub, checks its SHA-256 against what GitHub recorded, and installs it silently. Each user's copy closes while it installs and reopens afterwards. Its log is `C:\Program Files\BusyLightz Updates\updater.log`.
 - **Check and install updates (don't wait).** Click **Check and install updates** in the tray menu (or **Check and install** in **Settings > General**). If a newer version is out, it starts the background updater straight away, and BusyLightz closes and reopens by itself on the new version. The updater runs as SYSTEM, so **no administrator is needed**: the installer lets any user start it. If you're already up to date, it says so. (A PC still on a version from before 2.36.2 asks for an administrator's permission once, until it has updated.)
 - **A notice when one's out.** When BusyLightz finds a newer version, it shows *Update available*. Click it to install now. (By hand: `schtasks /run /tn "BusyLightz Updater"`.)
 - **Uninstall** from Settings > Apps > Installed apps > BusyLightz (needs admin). It removes the updater task too.

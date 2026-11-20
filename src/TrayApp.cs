@@ -309,9 +309,8 @@ namespace Krabbz.Blynclight
         static readonly string[] HotkeyStates = { LightState.Red, LightState.Green };
         static readonly Keys[] HotkeyKeys = { Keys.R, Keys.G };
 
-        // Check for updates a minute after starting, then this often.
+        // Check for updates a minute after starting if one is due, then every day or week (Settings > General).
         const int UpdateFirstCheckMs = 60 * 1000;
-        const int UpdateCheckMs = 6 * 60 * 60 * 1000;
         // How often to read Teams presence while following Teams status.
         const int TeamsPollMs = 20 * 1000;
 
@@ -453,8 +452,11 @@ namespace Krabbz.Blynclight
             Program.WatchForFreezes(messages);
             WatchInstall();
             if (Program.UpdateRepo != null)
+            {
                 updateTimer = new System.Threading.Timer(delegate { Program.Guard("Update check", () => CheckForUpdates(false)); },
-                    null, UpdateFirstCheckMs, UpdateCheckMs);
+                    null, Timeout.Infinite, Timeout.Infinite);
+                ApplyUpdateSchedule();
+            }
             showWait = ThreadPool.RegisterWaitForSingleObject(showSignal,
                 delegate { Program.Guard("Opening the window", () => messages.BeginInvoke((Action)ShowWindow)); }, null, -1, false);
             if (showWindow) ShowWindow();
@@ -995,8 +997,22 @@ namespace Krabbz.Blynclight
             installWatch.Start();
         }
 
+        // The Daily or Weekly check: a minute after starting if a whole day or week has passed since the last one, otherwise
+        // when it falls due, then every day or week. Called again when the setting changes.
+        public void ApplyUpdateSchedule()
+        {
+            if (updateTimer == null) return;
+            var every = AppSettings.UpdateInterval(AppSettings.UpdateSchedule);
+            var last = AppSettings.LastUpdateCheckUtc;
+            var due = last == DateTime.MinValue ? TimeSpan.Zero : last + every - DateTime.UtcNow;
+            var soonest = TimeSpan.FromMilliseconds(UpdateFirstCheckMs);
+            if (due < soonest) due = soonest;
+            updateTimer.Change((long)due.TotalMilliseconds, (long)every.TotalMilliseconds);
+        }
+
         public void CheckForUpdates(bool manual)
         {
+            if (!manual) AppSettings.LastUpdateCheckUtc = DateTime.UtcNow;
             // The all-users copy is updated by its background updater, which has the admin rights that needs. A manual
             // check starts that updater straight away (Windows asks for permission) when a newer version is out.
             if (AllUsersInstall.IsThisCopy)

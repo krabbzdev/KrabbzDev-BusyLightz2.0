@@ -79,6 +79,7 @@ namespace Krabbz.Blynclight
             var updates = Box("Install updates automatically", AppSettings.AutoUpdate, v => AppSettings.AutoUpdate = v,
                 help: "Downloads and installs new versions of BusyLightz by itself. Check and install looks for one right away and installs it (a copy installed for everyone asks Windows for permission first).");
             if (Program.UpdateRepo != null) SideButton(updates, "Check and install", delegate { tray.CheckForUpdates(true); });
+            if (Program.UpdateRepo != null) UpdateSchedulePicker();
             // Updates are automatic for the all-users copy (its background updater installs them).
             if (AllUsersInstall.IsThisCopy) updates.Enabled = false;
             else if (Program.UpdateRepo != null) InstallForEveryoneRow();
@@ -735,6 +736,52 @@ namespace Krabbz.Blynclight
             test.Click += delegate { tray.ShowTestMeetingAlert(); };
             Add(test);
             y += 34 + RowGap;
+        }
+
+        // "How often to check for updates": a Daily check or a Weekly one. For a copy installed for everyone, the choice
+        // is machine-wide and Windows asks for an administrator to save it.
+        void UpdateSchedulePicker()
+        {
+            var label = new Label { Text = "How often to check for updates", AutoSize = true, Location = new Point(24, y + 4) };
+            Add(label);
+            Info(label, "Daily checks for a new version once a day; Weekly once a week. A check is also made when you click Check and install. For a copy installed for everyone on this PC, the choice is for everyone and Windows asks for an administrator to save it.");
+            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
+            picker.Items.Add("Daily check");
+            picker.Items.Add("Weekly check");
+            picker.SelectedIndex = AppSettings.UpdateSchedule == "Weekly" ? 1 : 0;
+            bool putBack = false;
+            picker.SelectedIndexChanged += delegate
+            {
+                if (putBack) return;
+                string choice = AppSettings.UpdateScheduleChoices[picker.SelectedIndex];
+                int before = choice == "Weekly" ? 0 : 1;
+                try
+                {
+                    if (AllUsersInstall.IsThisCopy)
+                    {
+                        if (!AllUsersInstall.SetMachineUpdateSchedule(choice))
+                        {
+                            // The administrator prompt was closed: nothing changed.
+                            putBack = true;
+                            picker.SelectedIndex = before;
+                            putBack = false;
+                            return;
+                        }
+                    }
+                    else AppSettings.UpdateSchedule = choice;
+                    tray.ApplyUpdateSchedule();
+                }
+                catch (Exception ex)
+                {
+                    Program.LogError("Saving the update schedule", ex);
+                    putBack = true;
+                    picker.SelectedIndex = before;
+                    putBack = false;
+                    MessageBox.Show(this, "Couldn't save that: " + ex.Message, "BusyLightz", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+            Add(picker);
+            y += 30 + RowGap;
         }
 
         // Opens the Meeting Alerts page (from the "New: Meeting Alerts" notice).

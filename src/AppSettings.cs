@@ -242,6 +242,44 @@ namespace Krabbz.Blynclight
         // Today's meetings in a panel attached to the right of the BusyLightz window while it's open. On unless changed.
         public static bool AgendaBesideWindow { get { return Get("AgendaBesideWindow"); } set { Set("AgendaBesideWindow", value); } }
         public static bool MeetingAlertSound { get { return Get("MeetingAlertSound"); } set { Set("MeetingAlertSound", value); } }
+        // How often to look for a new version: a Daily check (the default) or a Weekly one. A copy installed for everyone
+        // keeps this machine-wide, because its background updater runs as SYSTEM and can't see a user's settings; changing it
+        // there needs an administrator (AllUsersInstall.SetMachineUpdateSchedule).
+        public static readonly string[] UpdateScheduleChoices = { "Daily", "Weekly" };
+        public static string UpdateSchedule
+        {
+            get
+            {
+                string value = null;
+                try
+                {
+                    using (var key = (AllUsersInstall.IsThisCopy ? Registry.LocalMachine : Registry.CurrentUser).OpenSubKey(SettingsKey))
+                        value = key == null ? null : key.GetValue("UpdateSchedule") as string;
+                }
+                catch (Exception) { }
+                return string.Equals(value, "Weekly", StringComparison.OrdinalIgnoreCase) ? "Weekly" : "Daily";
+            }
+            set { SetString("UpdateSchedule", value == "Weekly" ? "Weekly" : "Daily"); }
+        }
+
+        public static TimeSpan UpdateInterval(string schedule)
+        {
+            return schedule == "Weekly" ? TimeSpan.FromDays(7) : TimeSpan.FromDays(1);
+        }
+
+        // When this user's copy last looked for a new version on its own schedule (MinValue if never).
+        public static DateTime LastUpdateCheckUtc
+        {
+            get
+            {
+                DateTime when;
+                string saved = GetString("LastUpdateCheckUtc");
+                return !string.IsNullOrEmpty(saved) && DateTime.TryParse(saved, null, System.Globalization.DateTimeStyles.RoundtripKind, out when)
+                    ? when.ToUniversalTime() : DateTime.MinValue;
+            }
+            set { SetString("LastUpdateCheckUtc", value.ToUniversalTime().ToString("o")); }
+        }
+
         // How long an app has to hold the microphone before it counts as a call, so a short burst like dictation doesn't flip
         // your lights and Teams status. 0 counts it right away.
         public static readonly int[] CallMinSecondChoices = { 0, 5, 10, 15, 30 };
