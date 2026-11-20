@@ -34,7 +34,7 @@ Start a call, then open **Settings > Test microphone...**. It shows live what Wi
 ## Follow Teams Status doesn't follow my Teams status
 
 - Are you connected? **Settings > Microsoft Teams** should say you're connected. If it's stopped working, click **Re-authenticate Microsoft 365** (there's one in the tray menu too) and sign in again.
-- Is **Disable Teams Integration** ticked (tray menu, or Settings > Microsoft Teams)? Then the app leaves Teams alone and says *Teams integration disabled*. Untick it.
+- Is **Sync with Microsoft Teams** switched off (Settings > Microsoft Teams)? Then the app leaves Teams alone and says *Teams integration disabled*. Switch it on.
 - Changes can take up to 20 seconds to show.
 - Did you pick Busy or Available since? Those override Teams until the override time runs out. Click **Follow Teams Status** to go back now.
 

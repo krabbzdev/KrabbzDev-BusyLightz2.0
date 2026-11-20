@@ -1058,7 +1058,7 @@ namespace Krabbz.Blynclight
             string picked = tray.Light.State;
             string statusText = tray.StatusText;
             string left = tray.OverrideTimeLeft;
-            // Lights turned off (Disable USB Light Integration) show no tiles.
+            // Lights turned off (Control my USB lights, in Settings > Light Control) show no tiles.
             bool enabled = tray.Light.LightsEnabled;
             int blynclights = enabled ? tray.Light.CountOf(LightKind.Blynclight) : 0;
             int luxafors = enabled ? tray.Light.CountOf(LightKind.Luxafor) : 0;

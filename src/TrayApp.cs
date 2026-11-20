@@ -560,8 +560,8 @@ namespace Krabbz.Blynclight
 
         // Whether a K2 macro key is plugged in, for the window's Active Devices; checked every few seconds.
         public bool K2Connected { get; private set; }
-        // Listens to the K2 (and cancels its own clicks with a mouse hook) only while one is plugged in and Disable K2
-        // Functions is off; null otherwise, so a PC without a K2 never has the hook or the input watching.
+        // Listens to the K2 (and cancels its own clicks with a mouse hook) only while one is plugged in and Use the K2 key
+        // is on in Settings; null otherwise, so a PC without a K2 never has the hook or the input watching.
         K2Key k2Key;
         // Raised on the UI thread for each K2 press, so Settings can light that key in its picture.
         public event Action<K2Key.Button> K2Pressed;
@@ -1413,8 +1413,8 @@ namespace Krabbz.Blynclight
             presence.ShowPresence(status);
         }
 
-        // Disable All Light Functions in Settings > Light Control: turns USB light integration off (the lights go dark
-        // and are left alone) or back on.
+        // Control my USB lights in Settings > Light Control, switched off: USB light integration is off (the lights go
+        // dark and are left alone), or back on.
         public void SetLightsDisabled(bool disable)
         {
             if (disable == AppSettings.UsbLightsDisabled) return;
@@ -1426,7 +1426,7 @@ namespace Krabbz.Blynclight
                 : "USB lights turned back on.", ToolTipIcon.Info);
         }
 
-        // Disable Teams Integration in Settings > Microsoft Teams. Your sign-in is kept.
+        // Sync with Microsoft Teams in Settings > Microsoft Teams, switched off. Your sign-in is kept.
         public void SetTeamsDisabled(bool disable)
         {
             if (disable == AppSettings.TeamsDisabled) return;

@@ -62,7 +62,7 @@ All on the **Meeting Alerts** page of Settings:
 | **What the alert says** | The alert's first line. Type your own: `{when}` becomes the live countdown, like *in 4:32* (or *now*) and `{subject}` becomes the meeting's title. The default is `Meeting starting {when}`. **Reset** puts the default back. |
 | **Show a test alert** | Shows an example alert, so you can check the wording, sound and place on screen. |
 
-Meeting Alerts keeps working when **Disable Teams Integration** is on, because it reads your calendar and doesn't touch your Teams status. Turning the **Alert me before my meetings** switch off stops it.
+Meeting Alerts keeps working when **Sync with Microsoft Teams** is off, because it reads your calendar and doesn't touch your Teams status. Turning the **Alert me before my meetings** switch off stops it.
 
 ## If it doesn't work
 

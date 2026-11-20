@@ -66,7 +66,7 @@ Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). 
 
 <img src="images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Re-authenticate Microsoft 365, Settings, Check for updates and Exit" width="260">
 
-The menu is kept short. The rest lives in the window and in Settings: **Party Mode** and **Follow Teams Status** in the window, **Disable All Light Functions** in Settings > Light Control, **Disable Teams Integration** in Settings > Microsoft Teams, and **Setup checklist...** and **Email crash log...** at the bottom of Settings.
+The menu is kept short. The rest lives in the window and in Settings: **Party Mode** and **Follow Teams Status** in the window, **Control my USB lights** in Settings > Light Control, **Sync with Microsoft Teams** in Settings > Microsoft Teams, and **Setup checklist...** and **Email crash log...** at the bottom of Settings.
 
 Each mode has a dot in its color, with a ring around the one that's on. The menu follows your Light or Dark **Appearance** setting.
 
@@ -164,11 +164,11 @@ The mute button's on/off switch and ring colors, and what each K2 USBC Key butto
 
 The **Light Control** page in Settings. At the top, a picture of a Blynclight and a Luxafor glows in whatever color your real lights are showing. Each change is saved at once and shows on your lights (and the picture) for a few seconds, whatever they were showing: the On a call slider flashes, a color shows that status, and brightness shows the lit color. The page scrolls.
 
-<img src="images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Disable All Light Functions switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="440">
+<img src="images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Control my USB lights switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="440">
 
 | Setting | What it does |
 | --- | --- |
-| **Disable All Light Functions** | Turns your USB lights off and stops controlling them, while Teams status and call detection keep working. The same setting as **Disable USB Light Integration** in the tray menu. While it's on, the other light settings are greyed out. |
+| **Control my USB lights** | On by default: BusyLightz sets your lights. Turn it off and your lights go dark and are left alone, while Teams status and call detection keep working. While it's off, the other light settings are greyed out. |
 | **Brightness** | A slider from 5% to 100% (the default), for every light and color. |
 | **On a call: switch colors every** | A slider for how long On a call shows each of its two flash colors: a tenth of a second to 2 seconds. The default is 1 second. |
 | **Colors** | The color for Busy, Available, Teams Away, Teams Do not disturb, and the two colors On a call flashes between. Click a dot to pick red, orange, yellow, green, cyan, blue, purple, pink or white; the chosen one is ringed with a check, and hovering a dot shows its name. The tray icon and window use your colors too. **Reset colors** puts the defaults back. |
