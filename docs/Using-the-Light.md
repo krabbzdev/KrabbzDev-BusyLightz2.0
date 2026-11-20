@@ -71,6 +71,7 @@ Each mode has a dot in its color, with a ring around the one that's on. The menu
 | Item | What it does |
 | --- | --- |
 | **Open KrabbzDev-BusyLightz2.0** | Opens the window. |
+| **Today's meetings** | Shows today's calendar in a small window by the tray icon. See [Meeting Alerts](Meeting-Alerts.md#todays-meetings). Clicking the tray icon once does the same; double-clicking opens the window. |
 | **[:15 Min Override] Red/Busy** / **Green/Available** | Same as the window's Busy and Available buttons. The time in brackets is your [override time](#override-timer) from Settings, e.g. *[1 Hr Override]*, or *[Override]* when overrides stay on until you change them. |
 | **[:15 Min Override] On A Call** | Same as the window's On a call button. |
 | **[:15 Min Override] Test Lights aka Party Mode!** | Same as the window's Party Mode button. |
