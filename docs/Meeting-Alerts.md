@@ -20,6 +20,7 @@ Click the BusyLightz icon in the system tray (near the clock) once, or choose **
 
 <img src="images/todays-meetings.png" alt="Illustration of the Today window: the date, then each meeting with its time, title and place, a finished one dimmed, the one on now highlighted, and Join buttons on online meetings" width="420">
 
+- A band at the top shows the product's name, *BusyLightz 2.0*, and *Click here or double-click the tray icon to open the program*. Click it to open the BusyLightz window.
 - Each meeting shows its **time**, **title** and **place**. All-day events come first.
 - The meeting on **right now** is highlighted and marked *Now*. Finished ones are dimmed.
 - Online meetings that haven't finished have a **Join** button.

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Media;
 using System.Threading;
 using System.Windows.Forms;
@@ -369,21 +370,27 @@ namespace Krabbz.Blynclight
     // user clicks anywhere else, or presses Esc.
     class AgendaForm : Form
     {
-        const int FormWidth = 400, HeaderHeight = 56, FooterHeight = 44, RowHeight = 70, MaxHeight = 560, EdgeGap = 12;
+        const int FormWidth = 400, BrandHeight = 60, DateHeight = 56, HeaderHeight = BrandHeight + DateHeight;
+        const int FooterHeight = 44, RowHeight = 70, MaxHeight = 600, EdgeGap = 12;
+        static readonly Font BrandFont = new Font("Segoe UI Semibold", 13f);
+        static readonly Font HintFont = new Font("Segoe UI", 8.5f);
+        static readonly Font ArrowFont = new Font("Segoe UI", 18f);
         const string CalendarUrl = "https://outlook.office.com/calendar";
 
         readonly Func<TeamsPresence> getPresence;
         readonly Action openMeetingSettings;
+        readonly Action openProgram;
         readonly Panel list = new Panel { AutoScroll = true };
         readonly Panel footer = new Panel();
         bool armed;
 
         // getPresence gives the Teams sign-in the calendar is read through; openMeetingSettings opens Settings on the
-        // Meeting Alerts page (for when calendar access isn't allowed yet).
-        public AgendaForm(Func<TeamsPresence> getPresence, Action openMeetingSettings)
+        // Meeting Alerts page (for when calendar access isn't allowed yet); openProgram opens the BusyLightz window.
+        public AgendaForm(Func<TeamsPresence> getPresence, Action openMeetingSettings, Action openProgram)
         {
             this.getPresence = getPresence;
             this.openMeetingSettings = openMeetingSettings;
+            this.openProgram = openProgram;
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
             TopMost = true;
@@ -392,13 +399,36 @@ namespace Krabbz.Blynclight
             BackColor = Theme.Card;
             Font = new Font("Segoe UI", 10);
 
+            // The top band: the product's name and how to open it. Clicking anywhere on it opens the BusyLightz window.
+            var brand = new Panel { Bounds = new Rectangle(0, 0, FormWidth, BrandHeight), BackColor = Theme.TeamsTint, Cursor = Cursors.Hand };
+            bool over = false;
+            brand.MouseEnter += delegate { over = true; brand.Invalidate(); };
+            brand.MouseLeave += delegate { over = false; brand.Invalidate(); };
+            brand.Paint += (sender, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                if (over) using (var wash = new SolidBrush(Color.FromArgb(34, Theme.Teams))) g.FillRectangle(wash, brand.ClientRectangle);
+                TextRenderer.DrawText(g, "BusyLightz 2.0", BrandFont, new Point(14, 8), Theme.TeamsText);
+                TextRenderer.DrawText(g, "Click here or double-click the tray icon to open the program", HintFont, new Point(16, 34), Theme.Muted);
+                TextRenderer.DrawText(g, "\u203A", ArrowFont, new Rectangle(FormWidth - 40, 0, 30, BrandHeight), Theme.TeamsText,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+                using (var pen = new Pen(Theme.Border)) g.DrawLine(pen, 0, BrandHeight - 1, FormWidth, BrandHeight - 1);
+            };
+            brand.Click += delegate
+            {
+                Close();
+                openProgram();
+            };
+            Controls.Add(brand);
+
             Controls.Add(new Label
             {
                 Text = "Today, " + DateTime.Now.ToString("dddd MMM d"),
                 Font = new Font("Segoe UI Semibold", 13f),
                 ForeColor = Theme.Text,
                 BackColor = Color.Transparent,
-                Bounds = new Rectangle(16, 14, FormWidth - 110, 28),
+                Bounds = new Rectangle(16, BrandHeight + 14, FormWidth - 110, 28),
             });
             var refresh = new LinkLabel
             {
@@ -408,7 +438,7 @@ namespace Krabbz.Blynclight
                 ActiveLinkColor = Theme.Teams,
                 LinkBehavior = LinkBehavior.HoverUnderline,
                 BackColor = Color.Transparent,
-                Location = new Point(FormWidth - 70, 20),
+                Location = new Point(FormWidth - 70, BrandHeight + 20),
             };
             refresh.LinkClicked += delegate { Load(); };
             Controls.Add(refresh);
