@@ -33,7 +33,7 @@ Start a call, then open **Settings > Test microphone...**. It shows live what Wi
 
 ## Follow Teams Status doesn't follow my Teams status
 
-- Are you connected? Tray menu > **Connect to Microsoft Teams** should be checked.
+- Are you connected? **Settings > Microsoft Teams** should say you're connected. If it's stopped working, click **Re-authenticate Microsoft 365** (there's one in the tray menu too) and sign in again.
 - Is **Disable Teams Integration** ticked (tray menu, or Settings > Microsoft Teams)? Then the app leaves Teams alone and says *Teams integration disabled*. Untick it.
 - Changes can take up to 20 seconds to show.
 - Did you pick Busy or Available since? Those override Teams until the override time runs out. Click **Follow Teams Status** to go back now.
@@ -54,10 +54,10 @@ Another program already uses that key combination; the app tells you when it sta
 
 ## The app didn't update
 
-- Click **Check for updates** in the window or tray menu. It says *"You're on the latest version"* if there's nothing newer.
+- Click **Check and install updates** in the tray menu (or **Check for updates** in the window). If there's a newer version it installs; otherwise it says *"You're on the latest version"* if there's nothing newer.
 - Updates only arrive once they're published on the [Releases](https://github.com/krabbzdev/KrabbzDev-BusyLightz2.0/releases) page.
 - Update logs are in `%LOCALAPPDATA%\Krabbz9999 Blynclight\updates`.
-- **Installed for everyone on the PC** (`C:\Program Files\BusyLightz`): updates come from the **BusyLightz Updater** task at startup and every 4 hours, not from the app. **Check for updates** only says whether a newer version is out. The updater's log is `C:\Program Files\BusyLightz Updates\updater.log`.
+- **Installed for everyone on the PC** (`C:\Program Files\BusyLightz`): updates come from the **BusyLightz Updater** task at startup and every hour, not from the app. **Check and install updates** starts that task straight away (Windows asks for an administrator's permission), so you don't have to wait for its next run. The updater's log is `C:\Program Files\BusyLightz Updates\updater.log`.
 
 ## If the app freezes
 
@@ -69,7 +69,7 @@ If it still freezes, wait a minute before forcing it closed, then start it again
 
 The app writes any unexpected error to its log, with the version and Windows version, and keeps running when it can. To send the log:
 
-1. Start the app again (Start menu), then click **Email crash log...** in Settings or the tray menu.
+1. Start the app again (Start menu), then click **Email crash log...** at the bottom of Settings.
 2. A new email to clove@showtechsolutions.com opens with the log attached. Add what you were doing when it crashed, and send it.
 
 With classic Outlook and most desktop mail apps, the log is attached for you. With the new Outlook or webmail, the folder with the log file opens next to the email: drag the file into the email.

@@ -56,7 +56,7 @@ The mode you picked is filled in with its color. The mode you pick is remembered
 
 ### Override timer
 
-Busy, Available, On a call, Party Mode and Disable Lights (in the tray menu) *override* your Teams status, so it's easy to forget one is still on. While one is on, the window shows the countdown and the tray icon gets a small white badge. After **15 minutes** the lights go back to **Follow Teams Status** on their own, and a notification says so. The countdown shows in the window and when you hover over the tray icon, and it keeps counting through restarts. Picking any mode again starts the timer over.
+Busy, Available, On a call and Party Mode *override* your Teams status, so it's easy to forget one is still on. While one is on, the window shows the countdown and the tray icon gets a small white badge. After **15 minutes** the lights go back to **Follow Teams Status** on their own, and a notification says so. The countdown shows in the window and when you hover over the tray icon, and it keeps counting through restarts. Picking any mode again starts the timer over.
 
 Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). To keep overrides on until you change them, switch off **Go back to Follow Teams Status after**.
 
@@ -64,7 +64,9 @@ Change how long overrides last (5 minutes to 4 hours) in [Settings](#settings). 
 
 ## The tray menu (right-click the tray icon)
 
-<img src="images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Follow Teams Status, Connect to Microsoft Teams, Settings, Check for updates and Exit" width="260">
+<img src="images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Re-authenticate Microsoft 365, Settings, Check for updates and Exit" width="260">
+
+The menu is kept short. The rest lives in the window and in Settings: **Party Mode** and **Follow Teams Status** in the window, **Disable All Light Functions** in Settings > Light Control, **Disable Teams Integration** in Settings > Microsoft Teams, and **Setup checklist...** and **Email crash log...** at the bottom of Settings.
 
 Each mode has a dot in its color, with a ring around the one that's on. The menu follows your Light or Dark **Appearance** setting.
 
@@ -74,18 +76,11 @@ Each mode has a dot in its color, with a ring around the one that's on. The menu
 | **Today's meetings** | Shows today's calendar in a small window by the tray icon. See [Meeting Alerts](Meeting-Alerts.md#todays-meetings). Clicking the tray icon once does the same; double-clicking opens the window. |
 | **[:15 Min Override] Red/Busy** / **Green/Available** | Same as the window's Busy and Available buttons. The time in brackets is your [override time](#override-timer) from Settings, e.g. *[1 Hr Override]*, or *[Override]* when overrides stay on until you change them. |
 | **[:15 Min Override] On A Call** | Same as the window's On a call button. |
-| **[:15 Min Override] Test Lights aka Party Mode!** | Same as the window's Party Mode button. |
-| **[:15 Min Override] Disable Lights** | Turns the lights off, then back to Follow Teams Status after the override time. A detected call still makes them flash. |
-| **Follow Teams Status** | Light follows Teams. |
-| **Connect to Microsoft Teams** | Sign in so the app can read your Teams status (checked when connected; click again to disconnect). |
-| **Disable USB Light Integration** | When checked, the app turns your USB lights off and stops controlling them. Teams status, call detection and the Teams status message keep working. Handy on a PC without a busy light, or when another app runs the light. Click again to turn the lights back on. Remembered after a restart. The same setting as **Disable All Light Functions** in [Light Control](#light-control). |
-| **Disable Teams Integration** | When checked, the app leaves Microsoft Teams alone: it stops reading your Teams status, setting Busy during other calls and setting a status message, and puts back your own status. Your lights and call detection keep working, and your Teams sign-in is kept. Click again to turn it back on. Remembered after a restart. The same setting as **Disable Teams Integration** in [Settings > Microsoft Teams](#microsoft-teams). |
+| **Re-authenticate Microsoft 365** | Signs in to Microsoft 365 again in your browser, for when Teams status or meeting alerts stopped working or the sign-in expired (Calendar access is kept if you allowed it). Connecting and disconnecting are in **Settings > Microsoft Teams**. |
 | **Settings...** | Opens [Settings](#settings). |
-| **Setup checklist...** | Opens the [Setup Checklist](Setup-Checklist.md). |
-| **Check for updates** | Looks for a newer version now. |
+| **Check and install updates** | Looks for a newer version now and installs it. For a copy installed for everyone on the PC, Windows asks for an administrator's permission first. |
 | **Help (user guide)** | Opens this guide. |
 | **Send feedback...** | Opens [Send feedback](#send-feedback): an idea, a problem or a question, as an issue on the project's GitHub page. |
-| **Email crash log...** | Starts an email with the app's log attached. See [If the app crashes](Troubleshooting-and-FAQ.md#if-the-app-crashes). |
 | **Buy me a coffee** | Opens KrabbzDev's Buy Me a Coffee page. |
 | **Exit tray app** | Closes the app. The light stays on its last color (Party Mode and flashing turn off). The app starts again at your next sign-in. |
 | **Version x** (at the bottom) | The version you're running. |
@@ -130,7 +125,7 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 | **Go back to Follow Teams Status after** | The [override timer](#override-timer) for every mode you pick by hand. On by default. Pick how long overrides last on the right: 5, 10, 15 (default) or 30 minutes, or 1, 2 or 4 hours. |
 | **Show a notification when the lights change** | The pop-ups described above. |
 | **Hotkeys: Alt+R / Alt+G** | Turn off if they clash with another program. |
-| **Install updates automatically** | When off, the app only updates when you click **Check now** / **Check for updates**. Greyed out when BusyLightz is installed for everyone on the PC: its background updater installs updates. |
+| **Install updates automatically** | When off, the app only updates when you click **Check and install** / **Check for updates**. Greyed out when BusyLightz is installed for everyone on the PC: its background updater installs updates. |
 | **Install for everyone** | Shown when BusyLightz is installed just for you. Installs it in `C:\Program Files\BusyLightz` for everyone on the PC (needs an admin). See [Installing and Updating](Installing-and-Updating.md#installing-for-everyone-on-a-pc-program-files). |
 | **Learn more about this project here** | Opens the project's page on GitHub. |
 
@@ -147,7 +142,6 @@ Open with the **⚙ Settings** button in the window or **Settings...** in the tr
 
 | Setting | What it does |
 | --- | --- |
-| **Disable Teams Integration** | Stops all syncing with Teams: reading your status, setting Busy during calls and the status message. The lights and call detection keep working, and your sign-in is kept. The options below are greyed out while it's on. The same setting as **Disable Teams Integration** in the tray menu. See [Teams Status](Teams-Status.md#turning-teams-off). |
 | **Connect** / **Disconnect** | Shows who you're connected as. **Organization's Teams app...** is for [organization setup](Setting-Up-Teams-for-Your-Organization.md). |
 | **Use Do Not Disturb instead of Busy** | On by default. Shows *Do not disturb* in Teams wherever the app would have shown *Busy*: when you pick Busy or On a call, and during any call, Teams' own included. Do Not Disturb also silences Teams notifications, except from your priority contacts. Untick it to show *Busy* again. See [Teams Status](Teams-Status.md#teams-matches-what-you-pick). |
 | **Match my Teams status when I pick Busy, Available or On a call** | See [Teams Status](Teams-Status.md#teams-matches-what-you-pick). |
@@ -161,10 +155,8 @@ The mute button's on/off switch and ring colors, and what each K2 USBC Key butto
 
 | Item | What it does |
 | --- | --- |
-| **Email crash log...** (left) | Starts an email with the app's log attached. See [If the app crashes](Troubleshooting-and-FAQ.md#if-the-app-crashes). |
 | **Version** (middle) | The version you're running and when it was last updated, e.g. *Version 2.31.0 · Last updated Nov 4, 2026*. |
 | **Buy me a coffee** (right) | Opens [KrabbzDev's Buy Me a Coffee page](https://buymeacoffee.com/krabbzdev), if you'd like to say thanks. Also in the tray menu. |
-| **Setup checklist...** | Opens the [Setup Checklist](Setup-Checklist.md). |
 | **Help** | Opens this guide. |
 | **Send feedback...** | Opens [Send feedback](#send-feedback). |
 

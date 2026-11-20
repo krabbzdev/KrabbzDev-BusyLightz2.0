@@ -323,7 +323,8 @@ namespace Krabbz.Blynclight
         MicApp callApp;
         // Reads Teams status and sets Teams to Busy during non-Teams calls; null when no Teams app is configured.
         TeamsPresence presence;
-        ToolStripMenuItem presenceItem, usbItem, teamsOffItem;
+        ToolStripMenuItem presenceItem;
+        const string ReauthText = "Re-authenticate Microsoft 365";
         readonly System.Threading.Timer teamsPoll;
         MeetingAlerts meetingAlerts;
         AgendaForm agendaForm;
@@ -364,45 +365,21 @@ namespace Krabbz.Blynclight
             AddStateItem(menu, "Red/Busy", LightState.Red);
             AddStateItem(menu, "Green/Available", LightState.Green);
             AddStateItem(menu, "On A Call", LightState.CallFlash);
-            AddStateItem(menu, "Test Lights aka Party Mode!", LightState.Party);
-            AddStateItem(menu, "Disable Lights", LightState.Off);
-            AddStateItem(menu, "Follow Teams Status", LightState.FollowTeams);
             menu.Items.Add(new ToolStripSeparator());
             presence = CreatePresence();
-            // Without a Teams app for this organization, the item opens the setup checklist to set one up.
-            presenceItem = new ToolStripMenuItem("Connect to Microsoft Teams", null, delegate
-            {
-                if (presence == null) ShowSetup();
-                else TogglePresence();
-            });
+            // Signs in to Microsoft 365 again, in the browser. Without a Teams app for this organization, it opens the
+            // setup checklist to set one up. (Connecting and disconnecting are in Settings > Microsoft Teams.)
+            presenceItem = new ToolStripMenuItem(ReauthText, null, delegate { ReauthTeams(); });
             menu.Items.Add(presenceItem);
             menuRenderer.Glyph(presenceItem, TeamsGlyph);
-            // Ticked while the app leaves USB lights alone (Teams status and call detection keep working).
-            usbItem = new ToolStripMenuItem("Disable USB Light Integration", null, delegate { ToggleUsbLights(); })
-            {
-                Checked = AppSettings.UsbLightsDisabled,
-                ToolTipText = "Turns the lights off and stops controlling them. Teams status and call detection keep working.",
-            };
-            menu.Items.Add(usbItem);
-            menuRenderer.Glyph(usbItem, UsbGlyph);
-            // Ticked while the app leaves Microsoft Teams alone (the lights and call detection keep working).
-            teamsOffItem = new ToolStripMenuItem("Disable Teams Integration", null, delegate { SetTeamsDisabled(!AppSettings.TeamsDisabled); })
-            {
-                Checked = AppSettings.TeamsDisabled,
-                ToolTipText = "Stops reading your Teams status and setting Busy or a status message. The lights and call detection keep working.",
-            };
-            menu.Items.Add(teamsOffItem);
-            menuRenderer.Glyph(teamsOffItem, TeamsGlyph);
             menu.Items.Add(new ToolStripSeparator());
             AddItem(menu, "Settings...", SettingsGlyph, delegate { ShowSettings(); });
-            AddItem(menu, "Setup checklist...", ChecklistGlyph, delegate { ShowSetup(); });
             if (Program.UpdateRepo != null)
             {
-                AddItem(menu, "Check for updates", UpdateGlyph, delegate { CheckForUpdates(true); });
+                AddItem(menu, "Check and install updates", UpdateGlyph, delegate { CheckForUpdates(true); });
                 AddItem(menu, "Help (user guide)", HelpGlyph, delegate { OpenHelp(); });
             }
             if (Program.UpdateRepo != null) AddItem(menu, "Send feedback...", FeedbackGlyph, delegate { ShowFeedback(); });
-            AddItem(menu, "Email crash log...", MailGlyph, delegate { CrashReport.Email(); });
             // A coffee-yellow dot: the coffee emoji came out as a half-drawn circle in the menu's font.
             var coffee = AddItem(menu, "Buy me a coffee", null, delegate { OpenCoffee(); });
             menuRenderer.Dot(coffee, () => new[] { Color.FromArgb(255, 221, 0) });
@@ -634,7 +611,7 @@ namespace Krabbz.Blynclight
             if (teams == null) { ShowSetup(); return; }
             if (!teams.SignedIn)
             {
-                ShowBalloon("Connect to Microsoft Teams first, then allow calendar access.", ToolTipIcon.Info);
+                ShowBalloon("Connect to Microsoft Teams first (Settings > Microsoft Teams), then allow calendar access.", ToolTipIcon.Info);
                 return;
             }
             Program.Background("Calendar access", delegate
@@ -952,10 +929,12 @@ namespace Krabbz.Blynclight
 
         public void CheckForUpdates(bool manual)
         {
-            // The all-users copy is updated by its background updater, which has the admin rights that needs.
+            // The all-users copy is updated by its background updater, which has the admin rights that needs. A manual
+            // check starts that updater straight away (Windows asks for permission) when a newer version is out.
             if (AllUsersInstall.IsThisCopy)
             {
-                if (manual) Program.Background("Update check", CheckAllUsersVersion);
+                if (manual) ForceUpdate();
+                else if (Program.UpdateRepo != null) OfferAllUsersUpdate();
                 return;
             }
             if (!manual && !AppSettings.AutoUpdate) return;
@@ -1018,17 +997,35 @@ namespace Krabbz.Blynclight
             });
         }
 
-        // Check for updates in the all-users copy: says whether a newer version is out, which installs on its own.
-        void CheckAllUsersVersion()
+        // The version of the all-users copy that the user was last told about, so each one is offered once per run.
+        string offeredUpdate;
+
+        // For the all-users copy, which can't update itself: when a newer version is out, says so with a click to
+        // install it now (Windows asks for permission), so nobody waits for the background updater's next run.
+        void OfferAllUsersUpdate()
         {
-            string message;
-            try
+            Program.Background("Update check", delegate
             {
-                var latest = Updater.LatestVersion(Program.UpdateRepo);
-                message = latest != null && latest > new Version(Program.Version.Major, Program.Version.Minor, Program.Version.Build)
-                    ? "Version " + latest.ToString(3) + " is out. It installs on its own in the background within a few hours."
-                    : "You're on the latest version (" + Program.VersionText + ").";
-            }
+                Version latest;
+                try { latest = Updater.LatestVersion(Program.UpdateRepo); }
+                catch (Exception) { return; } // Offline or rate limited; the next check tries again.
+                if (latest == null || latest <= new Version(Program.Version.Major, Program.Version.Minor, Program.Version.Build)) return;
+                string version = latest.ToString(3);
+                if (offeredUpdate == version) return;
+                offeredUpdate = version;
+                try
+                {
+                    messages.BeginInvoke((Action)delegate
+                    {
+                        balloonLink = null;
+                        balloonAction = ForceUpdate;
+                        tray.ShowBalloonTip(15000, "Update available",
+                            "Version " + version + " is out. Click here to install it now. Windows asks for permission first.", ToolTipIcon.Info);
+                    });
+                }
+                catch (InvalidOperationException) { } // Window already gone during exit.
+            });
+        }
             catch (Exception ex) { message = "Couldn't check for updates: " + ex.Message; }
             ShowBalloon(message, ToolTipIcon.Info);
         }
@@ -1132,6 +1129,47 @@ namespace Krabbz.Blynclight
         }
 
         // Signs in (browser) to connect to Teams, or signs out to disconnect.
+        // "Re-authenticate Microsoft 365" in the tray menu and Settings: signs in to Microsoft 365 again in the browser,
+        // for when the sign-in has expired or been revoked, or its permissions changed. Calendar access is kept if it
+        // was allowed. Without a Teams app set up for this organization, it opens the setup checklist instead.
+        public void ReauthTeams()
+        {
+            var signingIn = presence;
+            if (signingIn == null) { ShowSetup(); return; }
+            presenceItem.Enabled = false;
+            presenceItem.Text = "Signing in to Microsoft (check your browser)...";
+            Program.Background("Microsoft 365 sign-in", delegate
+            {
+                string message;
+                ToolTipIcon icon = ToolTipIcon.Info;
+                try
+                {
+                    if (signingIn.CalendarGranted) signingIn.GrantCalendarAccess();
+                    else signingIn.SignIn();
+                    message = "Signed in to Microsoft 365 as " + signingIn.Account + ".";
+                    if (callApp != null && !callApp.IsTeams && AppSettings.TeamsBusyOnCalls) signingIn.CallStarted();
+                    PollTeams();
+                    meetingAlerts.CheckNow();
+                }
+                catch (Exception ex)
+                {
+                    message = "Couldn't sign in to Microsoft 365: " + ex.Message;
+                    icon = ToolTipIcon.Warning;
+                }
+                try
+                {
+                    messages.BeginInvoke((Action)delegate
+                    {
+                        presenceItem.Enabled = true;
+                        presenceItem.Text = ReauthText;
+                        UpdateDisplay();
+                    });
+                }
+                catch (InvalidOperationException) { } // Window already gone during exit.
+                ShowBalloon(message, icon);
+            });
+        }
+
         void TogglePresence()
         {
             if (presence.SignedIn)
@@ -1182,7 +1220,7 @@ namespace Krabbz.Blynclight
                     messages.BeginInvoke((Action)delegate
                     {
                         presenceItem.Enabled = true;
-                        presenceItem.Text = "Connect to Microsoft Teams";
+                        presenceItem.Text = ReauthText;
                         UpdateDisplay();
                     });
                 }
@@ -1270,8 +1308,8 @@ namespace Krabbz.Blynclight
                     {
                         // Not signed in to Teams here, and no Embrava Connect to fall back on: say what to do.
                         tray.ShowBalloonTip(5000, Program.AppName, presence == null
-                            ? "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Open Setup checklist from the tray menu to set it up."
-                            : "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Use Connect to Microsoft Teams in the tray menu.",
+                            ? "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Open Setup checklist in Settings to set it up."
+                            : "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Connect in Settings > Microsoft Teams.",
                             ToolTipIcon.Warning);
                     });
                 }
@@ -1328,18 +1366,12 @@ namespace Krabbz.Blynclight
             presence.ShowPresence(status);
         }
 
-        // Turns USB light integration off (lights go dark and are left alone) or back on.
-        void ToggleUsbLights()
-        {
-            SetLightsDisabled(!AppSettings.UsbLightsDisabled);
-        }
-
-        // Disable USB Light Integration in the tray menu, also Disable All Light Functions in Light Control.
+        // Disable All Light Functions in Settings > Light Control: turns USB light integration off (the lights go dark
+        // and are left alone) or back on.
         public void SetLightsDisabled(bool disable)
         {
             if (disable == AppSettings.UsbLightsDisabled) return;
             AppSettings.UsbLightsDisabled = disable;
-            usbItem.Checked = disable;
             light.LightsEnabled = !disable;
             Refresh();
             ShowBalloon(disable
@@ -1347,12 +1379,11 @@ namespace Krabbz.Blynclight
                 : "USB lights turned back on.", ToolTipIcon.Info);
         }
 
-        // Disable Teams Integration in the tray menu, also in Settings > Microsoft Teams. Your sign-in is kept.
+        // Disable Teams Integration in Settings > Microsoft Teams. Your sign-in is kept.
         public void SetTeamsDisabled(bool disable)
         {
             if (disable == AppSettings.TeamsDisabled) return;
             AppSettings.TeamsDisabled = disable;
-            teamsOffItem.Checked = disable;
             if (disable)
             {
                 if (presence != null) presence.CallEnded(); // Clears the Busy this app set for a non-Teams call.
@@ -1427,7 +1458,7 @@ namespace Krabbz.Blynclight
             {
                 presenceItem.Checked = presence != null && presence.SignedIn;
                 presenceItem.ToolTipText = presence == null ? "Your organization's Teams app isn't set up yet. Click to open the setup checklist."
-                    : presence.SignedIn ? "Connected as " + presence.Account + ". Click to disconnect."
+                    : presence.SignedIn ? "Signed in as " + presence.Account + ". Click to sign in to Microsoft 365 again, if Teams status or meeting alerts stopped working."
                     : "Sign in to Microsoft so the light follows your Teams status and Teams shows Busy during other calls.";
             }
             NotifyIfChanged();

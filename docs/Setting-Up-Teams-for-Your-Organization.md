@@ -36,7 +36,7 @@ Sign in with the admin account when the Microsoft window opens. It may be behind
 
 Pick one:
 
-- **Each user:** tray menu > **Setup checklist...** > *Your organization's Teams app* > **Set up...**, paste both IDs, then click **Save**. The app checks the tenant ID exists. The directory ID is pre-filled when the PC is joined to Entra.
+- **Each user:** **Settings** > **Setup checklist...** > *Your organization's Teams app* > **Set up...**, paste both IDs, then click **Save**. The app checks the tenant ID exists. The directory ID is pre-filled when the PC is joined to Entra.
 - **Deploy to everyone:** pass them to the installer, run for each user:
   ```
   msiexec /i KrabbzDev-BusyLightz2.0.msi /qn TEAMSCLIENTID=<client ID> TEAMSTENANTID=<tenant ID>

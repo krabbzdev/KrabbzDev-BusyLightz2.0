@@ -1,6 +1,6 @@
 # Setup Checklist
 
-The Setup Checklist walks you through getting everything working. It opens by itself the first time the app runs, and anytime from the tray menu > **Setup checklist...**.
+The Setup Checklist walks you through getting everything working. It opens by itself the first time the app runs, and anytime from the bottom of **Settings** (**Setup checklist...**).
 
 Each step shows:
 

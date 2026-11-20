@@ -102,7 +102,7 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 <p>
 <img src="docs/images/settings.png" alt="Settings on its General page: a page list on the left, switches with an i for help, and a Learn more about this project here button" width="330">
 <img src="docs/images/light-control.png" alt="Settings on its Light Control page: a picture of the lights glowing, a Disable All Light Functions switch, Brightness and On a call speed sliders, and a row of color dots for each status" width="330">
-<img src="docs/images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Follow Teams Status, Connect to Microsoft Teams, Settings, Check for updates and Exit" width="230">
+<img src="docs/images/tray-menu.png" alt="The tray menu: a colored dot for each mode, Re-authenticate Microsoft 365, Settings, Check and install updates and Exit" width="230">
 </p>
 
 ## Install
