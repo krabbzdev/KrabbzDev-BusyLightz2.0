@@ -746,6 +746,52 @@ namespace Krabbz.Blynclight
 
         }
 
+        // "How often to check for updates": a Daily check or a Weekly one. For a copy installed for everyone, the choice
+        // is machine-wide and Windows asks for an administrator to save it.
+        void UpdateSchedulePicker()
+        {
+            var label = new Label { Text = "How often to check for updates", AutoSize = true, Location = new Point(24, y + 4) };
+            Add(label);
+            Info(label, "Daily checks for a new version once a day; Weekly once a week. A check is also made when you click Check and install. For a copy installed for everyone on this PC, the choice is for everyone and Windows asks for an administrator to save it.");
+            var picker = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Bounds = new Rectangle(350, y, 130, 30) };
+            picker.Items.Add("Daily check");
+            picker.Items.Add("Weekly check");
+            picker.SelectedIndex = AppSettings.UpdateSchedule == "Weekly" ? 1 : 0;
+            bool putBack = false;
+            picker.SelectedIndexChanged += delegate
+            {
+                if (putBack) return;
+                string choice = AppSettings.UpdateScheduleChoices[picker.SelectedIndex];
+                int before = choice == "Weekly" ? 0 : 1;
+                try
+                {
+                    if (AllUsersInstall.IsThisCopy)
+                    {
+                        if (!AllUsersInstall.SetMachineUpdateSchedule(choice))
+                        {
+                            // The administrator prompt was closed: nothing changed.
+                            putBack = true;
+                            picker.SelectedIndex = before;
+                            putBack = false;
+                            return;
+                        }
+                    }
+                    else AppSettings.UpdateSchedule = choice;
+                    tray.ApplyUpdateSchedule();
+                }
+                catch (Exception ex)
+                {
+                    Program.LogError("Saving the update schedule", ex);
+                    putBack = true;
+                    picker.SelectedIndex = before;
+                    putBack = false;
+                    MessageBox.Show(this, "Couldn't save that: " + ex.Message, "BusyLightz", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+            };
+            Add(picker);
+            y += 30 + RowGap;
+        }
+
         // The Transcripts page: save a copy of the transcript Teams makes of your Teams meetings (opt-in).
         void TranscriptsPage()
         {
