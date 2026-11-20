@@ -366,6 +366,10 @@ namespace Krabbz.Blynclight
         // that, with whatever was saved, through changed.
         public sealed class Finder : Form
         {
+            // True while the window is open: the normal K2 listener isn't started then, because raw input goes to one window at a
+            // time and it would take the key's presses away from this one (as soon as a key is added, the K2 is "plugged in").
+            public static volatile bool IsOpen;
+
             static readonly Regex IdPattern = new Regex("VID_[0-9A-F]{4}&PID_[0-9A-F]{4}", RegexOptions.Compiled);
 
             // What each row in the list stands for.
@@ -451,7 +455,8 @@ namespace Krabbz.Blynclight
                 message.Text = "Nothing yet. Press a button on your key.";
                 Controls.Add(message);
 
-                FormClosed += delegate { changed(); };
+                IsOpen = true;
+                FormClosed += delegate { IsOpen = false; changed(); };
             }
 
             // Says what just happened, in the normal text color so it's noticed.

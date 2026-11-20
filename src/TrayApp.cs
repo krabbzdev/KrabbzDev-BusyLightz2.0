@@ -640,6 +640,8 @@ namespace Krabbz.Blynclight
         // Starts or stops listening to the K2 to match whether one is plugged in and its functions are on.
         void UpdateK2Listener()
         {
+            // Not while Remap Custom Keys is open: it needs the key's presses, and starts this again when it closes.
+            if (K2Key.Finder.IsOpen) return;
             bool want = K2Connected && !AppSettings.K2Disabled;
             if (want && k2Key == null)
             {
