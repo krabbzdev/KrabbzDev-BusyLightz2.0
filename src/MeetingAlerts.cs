@@ -487,40 +487,215 @@ namespace Krabbz.Blynclight
         }
     }
 
-    // "Today's meetings": a small window by the tray icon with the day's calendar, opened by clicking the tray icon (if
-    // that's on in Settings > Meeting Alerts) or from the tray menu. Each meeting shows its time, title and place, the
-    // one on now is highlighted, finished ones are dimmed, and online ones have a Join button. It goes away when the
-    // user clicks anywhere else, or presses Esc.
+    // Drawing helpers for the schedule's custom-drawn pieces.
+    static class AgendaDraw
+    {
+        const TextFormatFlags Base = TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis;
+
+        public static GraphicsPath Round(RectangleF r, float radius)
+        {
+            float d = Math.Min(radius * 2f, Math.Min(r.Width, r.Height));
+            var path = new GraphicsPath();
+            path.AddArc(r.X, r.Y, d, d, 180, 90);
+            path.AddArc(r.Right - d, r.Y, d, d, 270, 90);
+            path.AddArc(r.Right - d, r.Bottom - d, d, d, 0, 90);
+            path.AddArc(r.X, r.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
+        }
+
+        public static void Left(Graphics g, string text, Font font, Color color, Rectangle r)
+        {
+            TextRenderer.DrawText(g, text, font, r, color, Base | TextFormatFlags.Left);
+        }
+
+        public static void Right(Graphics g, string text, Font font, Color color, Rectangle r)
+        {
+            TextRenderer.DrawText(g, text, font, r, color, Base | TextFormatFlags.Right);
+        }
+
+        public static void Center(Graphics g, string text, Font font, Color color, Rectangle r)
+        {
+            TextRenderer.DrawText(g, text, font, r, color, Base | TextFormatFlags.HorizontalCenter);
+        }
+
+        // 3h 30m, 2h, 45m.
+        public static string Span(double minutes)
+        {
+            int m = (int)Math.Round(Math.Max(0, minutes));
+            int h = m / 60;
+            m = m % 60;
+            if (h > 0 && m > 0) return h + "h " + m + "m";
+            if (h > 0) return h + "h";
+            return m + "m";
+        }
+
+        // 8 AM, 12 PM, 6 PM.
+        public static string Hour(int hour)
+        {
+            hour = hour % 24;
+            return (hour % 12 == 0 ? 12 : hour % 12) + (hour < 12 ? " AM" : " PM");
+        }
+
+        // The meeting's place in a few friendly words: Teams for a Teams meeting, Zoom, Calendly and so on for a link,
+        // else what the calendar says. "Online" for a meeting with a join link and no place.
+        public static string Place(CalendarMeeting meeting)
+        {
+            string location = (meeting.Location ?? "").Trim();
+            if (location.Length == 0) return string.IsNullOrEmpty(meeting.JoinUrl) ? "" : "Online";
+            if (location.StartsWith("Microsoft Teams", StringComparison.OrdinalIgnoreCase)) return "Teams";
+            Uri uri;
+            if (Uri.TryCreate(location, UriKind.Absolute, out uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                string host = uri.Host.ToLowerInvariant();
+                if (host.EndsWith("zoom.us")) return "Zoom";
+                if (host.Contains("teams.microsoft.com") || host.Contains("teams.live.com")) return "Teams";
+                if (host.Contains("calendly.com")) return "Calendly";
+                if (host.Contains("meet.google.com")) return "Google Meet";
+                if (host.Contains("webex.com")) return "Webex";
+                return host.StartsWith("www.") ? host.Substring(4) : host;
+            }
+            return location;
+        }
+
+        public static string Subject(CalendarMeeting meeting)
+        {
+            return string.IsNullOrWhiteSpace(meeting.Subject) ? "(no subject)" : meeting.Subject;
+        }
+
+        public static string Times(CalendarMeeting meeting)
+        {
+            if (meeting.IsAllDay) return "All day";
+            return meeting.StartUtc.ToLocalTime().ToShortTimeString() + " - " + meeting.EndUtc.ToLocalTime().ToShortTimeString();
+        }
+
+        // Hours into today, local time (0 to 24), for placing a time on the day's timeline.
+        public static double HourOfDay(DateTime utc)
+        {
+            var local = utc.ToLocalTime();
+            if (local.Date < DateTime.Today) return 0;
+            if (local.Date > DateTime.Today) return 24;
+            return local.TimeOfDay.TotalHours;
+        }
+    }
+
+    // A panel that paints without flicker, for the schedule's custom-drawn pieces.
+    class Surface : Panel
+    {
+        public Surface()
+        {
+            DoubleBuffered = true;
+            ResizeRedraw = true;
+        }
+    }
+
+    // A rounded "pill" button, the schedule's Join: the brand gradient, or white on a colored card.
+    class PillButton : Control
+    {
+        static readonly Font TextFont = new Font("Segoe UI Semibold", 10f);
+        static readonly Font GlyphFont = Theme.Icons == null ? null : new Font(Theme.Icons.FontFamily, 10f);
+        readonly bool white;
+        bool over;
+
+        public PillButton(string text, bool white)
+        {
+            Text = text;
+            this.white = white;
+            SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer
+                | ControlStyles.ResizeRedraw | ControlStyles.SupportsTransparentBackColor, true);
+            BackColor = Color.Transparent;
+            Cursor = Cursors.Hand;
+            TabStop = false;
+        }
+
+        protected override void OnMouseEnter(EventArgs e) { over = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { over = false; Invalidate(); base.OnMouseLeave(e); }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            var rect = new Rectangle(0, 0, Width - 1, Height - 1);
+            using (var path = AgendaDraw.Round(rect, Height / 2f))
+            {
+                if (white)
+                {
+                    using (var brush = new SolidBrush(over ? Color.FromArgb(232, 234, 255) : Color.White)) g.FillPath(brush, path);
+                }
+                else
+                {
+                    var from = over ? Color.FromArgb(126, 130, 238) : Color.FromArgb(106, 110, 224);
+                    var to = over ? Color.FromArgb(94, 98, 198) : Color.FromArgb(74, 78, 176);
+                    using (var brush = new LinearGradientBrush(rect, from, to, LinearGradientMode.Horizontal)) g.FillPath(brush, path);
+                }
+            }
+            Color ink = white ? Color.FromArgb(59, 63, 143) : Color.White;
+            int textWidth = TextRenderer.MeasureText(g, Text, TextFont, new Size(1000, 100), TextFormatFlags.NoPadding).Width;
+            int glyphWidth = GlyphFont == null ? 0 : 22;
+            int x = Math.Max(4, (Width - textWidth - glyphWidth) / 2);
+            if (GlyphFont != null)
+                TextRenderer.DrawText(g, "", GlyphFont, new Rectangle(x, 0, glyphWidth, Height), ink,
+                    TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+            TextRenderer.DrawText(g, Text, TextFont, new Rectangle(x + glyphWidth, 0, textWidth + 6, Height), ink,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+        }
+    }
+
+    // "My Schedule Today" / "Today's meetings": the day's calendar, in a panel beside the BusyLightz window or in a small
+    // window by the tray icon (from the tray menu). A header shows the date, the day as a timeline with a marker for now,
+    // and how much is booked and free. Below, finished meetings are small and dimmed, the meeting on now is a
+    // highlighted card with how long is left, free time between meetings is called out, and the rest are cards with a
+    // Join button when they're online. The window by the tray icon goes away when the user clicks anywhere else, or
+    // presses Esc; the panel beside the window stays.
     class AgendaForm : Form
     {
-        const int FormWidth = 400, BrandHeight = 60, DateHeight = 56, HeaderHeight = BrandHeight + DateHeight;
-        const int FooterHeight = 44, RowHeight = 70, MaxHeight = 600, EdgeGap = 12;
+        const int FormWidth = 400, BrandHeight = 60, BandHeight = 146;
+        const int FooterHeight = 56, MaxHeight = 700, EdgeGap = 12, Pad = 12;
         static readonly Font BrandFont = new Font("Segoe UI Semibold", 13f);
         static readonly Font HintFont = new Font("Segoe UI", 8.5f);
         static readonly Font ArrowFont = new Font("Segoe UI", 18f);
-        const int DockHeaderHeight = 72;
-        static readonly Font DockTitleFont = new Font("Segoe UI Semibold", 15f);
-        static readonly Font DockDateFont = new Font("Segoe UI", 9.5f);
+        static readonly Font TitleFont = new Font("Segoe UI Semibold", 16f);
+        static readonly Font DateFont = new Font("Segoe UI", 9.5f);
+        static readonly Font SummaryFont = new Font("Segoe UI Semibold", 9f);
+        static readonly Font AxisFont = new Font("Segoe UI", 7.5f);
+        static readonly Font NowFont = new Font("Segoe UI Semibold", 7.5f);
+        static readonly Font PillFont = new Font("Segoe UI Semibold", 7.5f);
+        static readonly Font HeroTitleFont = new Font("Segoe UI Semibold", 12.5f);
+        static readonly Font SmallFont = new Font("Segoe UI", 9f);
+        static readonly Font SmallStrongFont = new Font("Segoe UI Semibold", 8.5f);
+        static readonly Font CardTitleFont = new Font("Segoe UI Semibold", 10.5f);
+        static readonly Font MiniFont = new Font("Segoe UI Semibold", 9.5f);
+        static readonly Font TinyFont = new Font("Segoe UI", 8.5f);
+        static readonly Font IconFont = Theme.Icons == null ? null : new Font(Theme.Icons.FontFamily, 12f);
+        static readonly Font SmallIconFont = Theme.Icons == null ? null : new Font(Theme.Icons.FontFamily, 9f);
+        static readonly Color Teal = Color.FromArgb(20, 184, 166);
+        static readonly Color Yellow = Color.FromArgb(253, 224, 71);
+        static readonly Color Indigo = Color.FromArgb(59, 63, 143);
+        static readonly Rectangle RefreshRect = new Rectangle(FormWidth - 52, 14, 34, 34);
         const string CalendarUrl = "https://outlook.office.com/calendar";
 
         readonly Func<TeamsPresence> getPresence;
         readonly Action openMeetingSettings;
         readonly Action openProgram;
         readonly Panel list = new Panel { AutoScroll = true };
-        readonly Panel footer = new Panel();
+        readonly Surface header = new Surface();
+        readonly Surface footer = new Surface();
         // Docked: the panel beside the BusyLightz window, rather than the one opened from the tray icon.
         readonly bool docked;
         // Where the list starts, under the header.
         readonly int top;
         int contentHeight;
-        bool armed;
+        bool armed, footerOver;
+        // Today's meetings as last read (null while loading, or when they couldn't be read), for the header's timeline.
+        List<CalendarMeeting> todays;
 
         // getPresence gives the Teams sign-in the calendar is read through; openMeetingSettings opens Settings on the
         // Meeting Alerts page (for when calendar access isn't allowed yet); openProgram opens the BusyLightz window.
         public AgendaForm(Func<TeamsPresence> getPresence, Action openMeetingSettings, Action openProgram, bool docked = false)
         {
             this.docked = docked;
-            top = docked ? DockHeaderHeight : HeaderHeight;
+            int headerTop = docked ? 0 : BrandHeight;
+            top = headerTop + BandHeight;
             this.getPresence = getPresence;
             this.openMeetingSettings = openMeetingSettings;
             this.openProgram = openProgram;
@@ -529,30 +704,15 @@ namespace Krabbz.Blynclight
             TopMost = !docked;
             KeyPreview = true;
             StartPosition = FormStartPosition.Manual;
-            BackColor = Theme.Card;
+            BackColor = Theme.Page;
             Font = new Font("Segoe UI", 10);
 
-            if (docked) AddDockedHeader();
-            else AddFloatingHeader();
+            if (!docked) AddBrandBand();
+            AddHeader(headerTop);
 
+            list.BackColor = Theme.Page;
             Controls.Add(list);
-            var calendar = new LinkLabel
-            {
-                Text = "Open my calendar",
-                AutoSize = true,
-                LinkColor = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams,
-                ActiveLinkColor = Theme.Teams,
-                LinkBehavior = LinkBehavior.HoverUnderline,
-                Location = new Point(16, 12),
-            };
-            calendar.LinkClicked += delegate
-            {
-                MeetingAlertForm.OpenLink(CalendarUrl);
-                Dismiss();
-            };
-            footer.Controls.Add(calendar);
-            footer.Size = new Size(FormWidth, FooterHeight);
-            Controls.Add(footer);
+            AddFooter();
 
             ShowMessage("Loading...");
             Load();
@@ -584,10 +744,10 @@ namespace Krabbz.Blynclight
             };
         }
 
-        // The window opened from the tray icon: the product's name and how to open it, then the date.
-        void AddFloatingHeader()
+        // The window opened from the tray icon: a band with the product's name and how to open it. Clicking anywhere on
+        // it opens the BusyLightz window.
+        void AddBrandBand()
         {
-            // The top band: the product's name and how to open it. Clicking anywhere on it opens the BusyLightz window.
             var brand = new Panel { Bounds = new Rectangle(0, 0, FormWidth, BrandHeight), BackColor = Theme.TeamsTint, Cursor = Cursors.Hand };
             bool over = false;
             brand.MouseEnter += delegate { over = true; brand.Invalidate(); };
@@ -599,7 +759,7 @@ namespace Krabbz.Blynclight
                 if (over) using (var wash = new SolidBrush(Color.FromArgb(34, Theme.Teams))) g.FillRectangle(wash, brand.ClientRectangle);
                 TextRenderer.DrawText(g, "BusyLightz 2.0", BrandFont, new Point(14, 8), Theme.TeamsText);
                 TextRenderer.DrawText(g, "Click here or double-click the tray icon to open the program", HintFont, new Point(16, 34), Theme.Muted);
-                TextRenderer.DrawText(g, "\u203A", ArrowFont, new Rectangle(FormWidth - 40, 0, 30, BrandHeight), Theme.TeamsText,
+                TextRenderer.DrawText(g, "›", ArrowFont, new Rectangle(FormWidth - 40, 0, 30, BrandHeight), Theme.TeamsText,
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
                 using (var pen = new Pen(Theme.Border)) g.DrawLine(pen, 0, BrandHeight - 1, FormWidth, BrandHeight - 1);
             };
@@ -609,52 +769,152 @@ namespace Krabbz.Blynclight
                 openProgram();
             };
             Controls.Add(brand);
-
-            Controls.Add(new Label
-            {
-                Text = "Today, " + DateTime.Now.ToString("dddd MMM d"),
-                Font = new Font("Segoe UI Semibold", 13f),
-                ForeColor = Theme.Text,
-                BackColor = Color.Transparent,
-                Bounds = new Rectangle(16, BrandHeight + 14, FormWidth - 110, 28),
-            });
-            var refresh = new LinkLabel
-            {
-                Text = "Refresh",
-                AutoSize = true,
-                LinkColor = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams,
-                ActiveLinkColor = Theme.Teams,
-                LinkBehavior = LinkBehavior.HoverUnderline,
-                BackColor = Color.Transparent,
-                Location = new Point(FormWidth - 70, BrandHeight + 20),
-            };
-            refresh.LinkClicked += delegate { Load(); };
-            Controls.Add(refresh);
         }
 
-        // The panel beside the BusyLightz window: just its title, the date, and Refresh.
-        void AddDockedHeader()
+        // The header: a gradient with the title, the date, a refresh button, the day's timeline and a summary line.
+        void AddHeader(int y)
         {
-            var band = new Panel { Bounds = new Rectangle(0, 0, FormWidth, DockHeaderHeight), BackColor = Theme.TeamsTint };
-            band.Paint += (sender, e) =>
+            header.Bounds = new Rectangle(0, y, FormWidth, BandHeight);
+            header.Paint += (sender, e) => PaintHeader(e.Graphics);
+            header.MouseMove += (sender, e) => { header.Cursor = RefreshRect.Contains(e.Location) ? Cursors.Hand : Cursors.Default; };
+            header.MouseClick += (sender, e) => { if (RefreshRect.Contains(e.Location)) Load(); };
+            Controls.Add(header);
+        }
+
+        void PaintHeader(Graphics g)
+        {
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            var area = new Rectangle(0, 0, FormWidth, BandHeight);
+            using (var brush = new LinearGradientBrush(area, Color.FromArgb(106, 110, 224), Color.FromArgb(52, 62, 170), 35f))
+                g.FillRectangle(brush, area);
+            using (var soft = new SolidBrush(Color.FromArgb(26, 255, 255, 255)))
             {
-                TextRenderer.DrawText(e.Graphics, "My Schedule Today", DockTitleFont, new Point(14, 9), Theme.TeamsText);
-                TextRenderer.DrawText(e.Graphics, DateTime.Now.ToString("dddd, MMMM d"), DockDateFont, new Point(17, 42), Theme.Muted);
-                using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, DockHeaderHeight - 1, FormWidth, DockHeaderHeight - 1);
-            };
-            var refresh = new LinkLabel
+                g.FillEllipse(soft, FormWidth - 150, -80, 200, 200);
+                g.FillEllipse(soft, FormWidth - 100, 20, 90, 90);
+            }
+            TextRenderer.DrawText(g, "My Schedule Today", TitleFont, new Point(16, 10), Color.White);
+            TextRenderer.DrawText(g, DateTime.Now.ToString("dddd, MMMM d"), DateFont, new Point(18, 42), Color.FromArgb(226, 232, 255));
+
+            using (var circle = new SolidBrush(Color.FromArgb(56, 255, 255, 255))) g.FillEllipse(circle, RefreshRect);
+            AgendaDraw.Center(g, Theme.Icons == null ? "R" : "", Theme.Icons == null ? SmallFont : IconFont, Color.White, RefreshRect);
+
+            if (todays == null) return;
+            var timed = new List<CalendarMeeting>();
+            foreach (var meeting in todays) if (!meeting.IsAllDay) timed.Add(meeting);
+            if (timed.Count == 0)
             {
-                Text = "Refresh",
-                AutoSize = true,
-                LinkColor = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams,
-                ActiveLinkColor = Theme.Teams,
-                LinkBehavior = LinkBehavior.HoverUnderline,
-                BackColor = Color.Transparent,
-                Location = new Point(FormWidth - 70, 26),
+                TextRenderer.DrawText(g, todays.Count == 0 ? "Nothing on the calendar today" : "Only all-day events today", SummaryFont,
+                    new Point(18, 118), Color.White);
+                return;
+            }
+
+            // The day runs 8 AM to 6 PM, wider if a meeting starts earlier or ends later.
+            double startHour = 8, endHour = 18;
+            foreach (var meeting in timed)
+            {
+                startHour = Math.Min(startHour, Math.Floor(AgendaDraw.HourOfDay(meeting.StartUtc)));
+                endHour = Math.Max(endHour, Math.Ceiling(AgendaDraw.HourOfDay(meeting.EndUtc)));
+            }
+            startHour = Math.Max(0, startHour);
+            endHour = Math.Min(24, Math.Max(endHour, startHour + 4));
+            double span = endHour - startHour;
+            const int barX = 18, barY = 82, barH = 10;
+            int barW = FormWidth - 2 * barX;
+            Func<double, float> at = hour => (float)(barX + (hour - startHour) / span * barW);
+
+            using (var track = new SolidBrush(Color.FromArgb(56, 255, 255, 255)))
+            using (var trackPath = AgendaDraw.Round(new RectangleF(barX, barY, barW, barH), 5))
+                g.FillPath(track, trackPath);
+            var now = DateTime.UtcNow;
+            foreach (var meeting in timed)
+            {
+                float x0 = at(Math.Max(startHour, AgendaDraw.HourOfDay(meeting.StartUtc)));
+                float x1 = at(Math.Min(endHour, AgendaDraw.HourOfDay(meeting.EndUtc)));
+                if (x1 - x0 < 4) x1 = x0 + 4;
+                Color fill;
+                if (meeting.EndUtc <= now) fill = Color.FromArgb(120, 255, 255, 255);
+                else if (string.IsNullOrEmpty(meeting.JoinUrl)) fill = Color.FromArgb(94, 234, 212);
+                else fill = Color.White;
+                using (var brush = new SolidBrush(fill))
+                using (var path = AgendaDraw.Round(new RectangleF(x0, barY, x1 - x0, barH), 5))
+                    g.FillPath(brush, path);
+            }
+
+            double nowHour = AgendaDraw.HourOfDay(now);
+            if (nowHour >= startHour && nowHour <= endHour)
+            {
+                float nx = at(nowHour);
+                using (var marker = new SolidBrush(Yellow)) g.FillRectangle(marker, nx - 1.5f, barY - 6, 3, barH + 12);
+                AgendaDraw.Center(g, "NOW", NowFont, Yellow, new Rectangle((int)nx - 24, barY - 22, 48, 14));
+            }
+
+            // Hour labels at the ends and, when there's room, at noon.
+            AgendaDraw.Left(g, AgendaDraw.Hour((int)startHour), AxisFont, Color.FromArgb(214, 220, 250), new Rectangle(barX, barY + 14, 60, 14));
+            AgendaDraw.Right(g, AgendaDraw.Hour((int)endHour), AxisFont, Color.FromArgb(214, 220, 250), new Rectangle(barX + barW - 60, barY + 14, 60, 14));
+            if (startHour < 12 && endHour > 12)
+            {
+                float nx = at(12);
+                if (nx - barX > 70 && barX + barW - nx > 70)
+                    AgendaDraw.Center(g, "12 PM", AxisFont, Color.FromArgb(214, 220, 250), new Rectangle((int)nx - 30, barY + 14, 60, 14));
+            }
+
+            // How much of the day is booked, with meetings that overlap counted once.
+            var ranges = new List<double[]>();
+            foreach (var meeting in timed)
+                ranges.Add(new double[] { AgendaDraw.HourOfDay(meeting.StartUtc), AgendaDraw.HourOfDay(meeting.EndUtc) });
+            ranges.Sort((a, b) => a[0].CompareTo(b[0]));
+            double bookedHours = 0, runStart = ranges[0][0], runEnd = ranges[0][1];
+            for (int i = 1; i < ranges.Count; i++)
+            {
+                if (ranges[i][0] <= runEnd) runEnd = Math.Max(runEnd, ranges[i][1]);
+                else
+                {
+                    bookedHours += runEnd - runStart;
+                    runStart = ranges[i][0];
+                    runEnd = ranges[i][1];
+                }
+            }
+            bookedHours += runEnd - runStart;
+            double freeHours = Math.Max(0, span - bookedHours);
+            string summary = timed.Count + (timed.Count == 1 ? " meeting" : " meetings") + "  ·  " + AgendaDraw.Span(bookedHours * 60) + " booked  ·  "
+                + AgendaDraw.Span(freeHours * 60) + " free";
+            TextRenderer.DrawText(g, summary, SummaryFont, new Point(18, 118), Color.White);
+        }
+
+        // The footer: an outlined "Open my calendar" button.
+        void AddFooter()
+        {
+            footer.Size = new Size(FormWidth, FooterHeight);
+            footer.BackColor = Theme.Page;
+            var pill = new Rectangle((FormWidth - 200) / 2, 11, 200, 34);
+            Color ink = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams;
+            footer.Paint += (sender, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                var rect = new Rectangle(pill.X, pill.Y, pill.Width - 1, pill.Height - 1);
+                using (var path = AgendaDraw.Round(rect, 17f))
+                {
+                    if (footerOver) using (var wash = new SolidBrush(Color.FromArgb(30, Theme.Teams))) g.FillPath(wash, path);
+                    using (var pen = new Pen(ink, 1.5f)) g.DrawPath(pen, path);
+                }
+                AgendaDraw.Center(g, Theme.Icons == null ? "Open my calendar" : "Open my calendar  ",
+                    Theme.Icons == null ? MiniFont : MiniFont, ink, pill);
             };
-            refresh.LinkClicked += delegate { Load(); };
-            band.Controls.Add(refresh);
-            Controls.Add(band);
+            footer.MouseMove += (sender, e) =>
+            {
+                bool inside = pill.Contains(e.Location);
+                footer.Cursor = inside ? Cursors.Hand : Cursors.Default;
+                if (inside != footerOver) { footerOver = inside; footer.Invalidate(); }
+            };
+            footer.MouseLeave += delegate { if (footerOver) { footerOver = false; footer.Invalidate(); } };
+            footer.MouseClick += (sender, e) =>
+            {
+                if (!pill.Contains(e.Location)) return;
+                MeetingAlertForm.OpenLink(CalendarUrl);
+                Dismiss();
+            };
+            Controls.Add(footer);
         }
 
         // Closes the window, unless it's the one beside the BusyLightz window, which stays.
@@ -705,6 +965,8 @@ namespace Krabbz.Blynclight
         // Replaces the list with one message, and (when settingsLink is set) a button to the Meeting Alerts settings.
         void ShowMessage(string text, bool settingsLink = false)
         {
+            todays = null;
+            header.Invalidate();
             ClearList();
             list.Controls.Add(new Label
             {
@@ -746,75 +1008,199 @@ namespace Krabbz.Blynclight
                 if (a.IsAllDay != b.IsAllDay) return a.IsAllDay ? -1 : 1;
                 return a.StartUtc.CompareTo(b.StartUtc);
             });
+            todays = shown;
+            header.Invalidate();
             if (shown.Count == 0)
             {
                 ShowMessage("No meetings today.");
+                todays = shown;
+                header.Invalidate();
                 return;
             }
-            int y = 0;
+
+            int width = FormWidth - SystemInformation.VerticalScrollBarWidth - 2 * Pad;
+            var now = DateTime.UtcNow;
+            int y = Pad;
+            DateTime busyUntil = DateTime.MinValue;
+            bool anyTimed = false;
             foreach (var meeting in shown)
             {
-                list.Controls.Add(Row(meeting, y));
-                y += RowHeight;
+                bool ended = !meeting.IsAllDay && meeting.EndUtc <= now;
+                bool current = !meeting.IsAllDay && meeting.StartUtc <= now && now < meeting.EndUtc;
+                // Free time before this meeting, from the later of the last one's end and now.
+                if (!meeting.IsAllDay && anyTimed && meeting.StartUtc > now)
+                {
+                    var from = busyUntil > now ? busyUntil : now;
+                    double free = (meeting.StartUtc - from).TotalMinutes;
+                    if (free >= 15)
+                    {
+                        list.Controls.Add(FreeRow(AgendaDraw.Span(free) + " free", y, width));
+                        y += 28;
+                    }
+                }
+                Control row;
+                int height;
+                if (ended) { row = MiniRow(meeting, y, width); height = 50; }
+                else if (current) { row = HeroCard(meeting, y, width); height = 116; }
+                else { row = Card(meeting, y, width); height = 68; }
+                list.Controls.Add(row);
+                y += height + 8;
+                if (!meeting.IsAllDay)
+                {
+                    anyTimed = true;
+                    if (meeting.EndUtc > busyUntil) busyUntil = meeting.EndUtc;
+                }
             }
-            FitToList(y);
+            FitToList(y + 4);
         }
 
-        Panel Row(CalendarMeeting meeting, int y)
+        // A finished meeting: small and dimmed, with a check.
+        Control MiniRow(CalendarMeeting meeting, int y, int width)
         {
-            var now = DateTime.UtcNow;
-            bool ended = !meeting.IsAllDay && meeting.EndUtc <= now;
-            bool current = !meeting.IsAllDay && meeting.StartUtc <= now && now < meeting.EndUtc;
-            int width = FormWidth - SystemInformation.VerticalScrollBarWidth;
-            var row = new Panel { Bounds = new Rectangle(0, y, width, RowHeight), BackColor = current ? Theme.TeamsTint : Theme.Card };
+            var row = new Surface { Bounds = new Rectangle(Pad, y, width, 50) };
             row.Paint += (sender, e) =>
             {
-                using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, RowHeight - 1, width, RowHeight - 1);
-                if (current) using (var brush = new SolidBrush(Theme.Teams)) e.Graphics.FillRectangle(brush, 0, 0, 4, RowHeight - 1);
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(Theme.Page);
+                using (var path = AgendaDraw.Round(new Rectangle(0, 0, width - 1, 49), 12))
+                using (var fill = new SolidBrush(Theme.Mix(Theme.Page, Theme.Border, 0.4)))
+                    g.FillPath(fill, path);
+                var green = Color.FromArgb(46, 160, 67);
+                using (var disc = new SolidBrush(Color.FromArgb(46, green))) g.FillEllipse(disc, 14, 13, 24, 24);
+                AgendaDraw.Center(g, Theme.Icons == null ? "✓" : "", Theme.Icons == null ? SmallFont : SmallIconFont, green, new Rectangle(14, 13, 24, 24));
+                string when = meeting.StartUtc.ToLocalTime().ToShortTimeString() + " · done";
+                AgendaDraw.Right(g, when, TinyFont, Theme.Muted, new Rectangle(width - 14 - 110, 0, 110, 50));
+                AgendaDraw.Left(g, AgendaDraw.Subject(meeting), MiniFont, Theme.Muted, new Rectangle(48, 0, width - 48 - 14 - 116, 50));
             };
-            bool join = !ended && !string.IsNullOrEmpty(meeting.JoinUrl);
-            int textWidth = width - 32 - (join ? 84 : 0);
-            string time = meeting.IsAllDay
-                ? "All day"
-                : meeting.StartUtc.ToLocalTime().ToShortTimeString() + " - " + meeting.EndUtc.ToLocalTime().ToShortTimeString() + (current ? "   Now" : "");
-            row.Controls.Add(new Label
+            return row;
+        }
+
+        // Free time between two meetings: a dashed line with how long it is.
+        Control FreeRow(string text, int y, int width)
+        {
+            var row = new Surface { Bounds = new Rectangle(Pad, y, width, 28) };
+            row.Paint += (sender, e) =>
             {
-                Text = time,
-                Font = new Font("Segoe UI", 9f),
-                ForeColor = current ? Theme.TeamsText : Theme.Muted,
-                BackColor = Color.Transparent,
-                AutoEllipsis = true,
-                Bounds = new Rectangle(16, 8, textWidth, 18),
-            });
-            row.Controls.Add(new Label
+                var g = e.Graphics;
+                g.Clear(Theme.Page);
+                int textWidth = TextRenderer.MeasureText(g, text, TinyFont, new Size(1000, 100), TextFormatFlags.NoPadding).Width;
+                int left = (width - textWidth) / 2;
+                using (var pen = new Pen(Theme.Border, 1.5f) { DashStyle = DashStyle.Dash })
+                {
+                    g.DrawLine(pen, 8, 14, left - 10, 14);
+                    g.DrawLine(pen, left + textWidth + 10, 14, width - 8, 14);
+                }
+                AgendaDraw.Center(g, text, TinyFont, Theme.Muted, new Rectangle(left - 4, 0, textWidth + 8, 28));
+            };
+            return row;
+        }
+
+        // The meeting on right now: a highlighted card with how long is left and a progress bar.
+        Control HeroCard(CalendarMeeting meeting, int y, int width)
+        {
+            bool join = !string.IsNullOrEmpty(meeting.JoinUrl);
+            var hero = new Surface { Bounds = new Rectangle(Pad, y, width, 116) };
+            hero.Paint += (sender, e) =>
             {
-                Text = string.IsNullOrWhiteSpace(meeting.Subject) ? "(no subject)" : meeting.Subject,
-                Font = new Font("Segoe UI Semibold", 10.5f),
-                ForeColor = ended ? Theme.Muted : Theme.Text,
-                BackColor = Color.Transparent,
-                AutoEllipsis = true,
-                Bounds = new Rectangle(16, 27, textWidth, 22),
-            });
-            row.Controls.Add(new Label
-            {
-                Text = meeting.Location ?? "",
-                Font = new Font("Segoe UI", 9f),
-                ForeColor = Theme.Muted,
-                BackColor = Color.Transparent,
-                AutoEllipsis = true,
-                Bounds = new Rectangle(16, 48, textWidth, 18),
-            });
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(Theme.Page);
+                var rect = new Rectangle(0, 0, width - 1, 115);
+                using (var path = AgendaDraw.Round(rect, 14))
+                {
+                    using (var brush = new LinearGradientBrush(rect, Color.FromArgb(111, 115, 234), Color.FromArgb(59, 63, 143), 35f))
+                        g.FillPath(brush, path);
+                    g.SetClip(path);
+                    using (var glow = new SolidBrush(Color.FromArgb(28, 255, 255, 255))) g.FillEllipse(glow, width - 110, -60, 150, 150);
+                    g.ResetClip();
+                }
+                var pill = new Rectangle(14, 12, 108, 18);
+                using (var pillPath = AgendaDraw.Round(pill, 9))
+                using (var yellow = new SolidBrush(Yellow))
+                    g.FillPath(yellow, pillPath);
+                AgendaDraw.Center(g, "HAPPENING NOW", PillFont, Indigo, pill);
+
+                int textWidth = width - 28 - (join ? 100 : 0);
+                AgendaDraw.Left(g, AgendaDraw.Subject(meeting), HeroTitleFont, Color.White, new Rectangle(14, 36, textWidth, 24));
+                string place = AgendaDraw.Place(meeting);
+                string sub = AgendaDraw.Times(meeting) + (place.Length > 0 ? "  ·  " + place : "");
+                AgendaDraw.Left(g, sub, SmallFont, Color.FromArgb(226, 230, 255), new Rectangle(14, 62, textWidth, 18));
+
+                var now = DateTime.UtcNow;
+                double total = Math.Max(1, (meeting.EndUtc - meeting.StartUtc).TotalSeconds);
+                double done = Math.Min(1, Math.Max(0, (now - meeting.StartUtc).TotalSeconds / total));
+                AgendaDraw.Right(g, "ends in " + AgendaDraw.Span((meeting.EndUtc - now).TotalMinutes), TinyFont, Color.White,
+                    new Rectangle(width - 14 - 140, 80, 140, 16));
+                var bar = new RectangleF(14, 100, width - 28, 6);
+                using (var track = new SolidBrush(Color.FromArgb(70, 255, 255, 255)))
+                using (var trackPath = AgendaDraw.Round(bar, 3))
+                    g.FillPath(track, trackPath);
+                if (done > 0)
+                    using (var fill = new SolidBrush(Yellow))
+                    using (var fillPath = AgendaDraw.Round(new RectangleF(bar.X, bar.Y, Math.Max(6f, (float)(bar.Width * done)), bar.Height), 3))
+                        g.FillPath(fill, fillPath);
+            };
             if (join)
             {
-                var button = new ModernButton { Text = "Join", Accent = true, Bounds = new Rectangle(width - 16 - 68, 18, 68, 34) };
+                var button = new PillButton("Join", true) { Bounds = new Rectangle(width - 14 - 84, 34, 84, 36) };
                 button.Click += delegate
                 {
                     MeetingAlertForm.OpenLink(meeting.JoinUrl);
                     Dismiss();
                 };
-                row.Controls.Add(button);
+                hero.Controls.Add(button);
             }
-            return row;
+            return hero;
+        }
+
+        // An upcoming (or all-day) meeting: a card with an accent stripe and icon, when it starts, and Join if online.
+        Control Card(CalendarMeeting meeting, int y, int width)
+        {
+            bool join = !string.IsNullOrEmpty(meeting.JoinUrl);
+            string place = AgendaDraw.Place(meeting);
+            Color accent = join ? Theme.Teams : Teal;
+            var card = new Surface { Bounds = new Rectangle(Pad, y, width, 68) };
+            card.Paint += (sender, e) =>
+            {
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.Clear(Theme.Page);
+                var rect = new Rectangle(0, 0, width - 1, 67);
+                using (var path = AgendaDraw.Round(rect, 12))
+                {
+                    using (var fill = new SolidBrush(Theme.Card)) g.FillPath(fill, path);
+                    g.SetClip(path);
+                    using (var stripe = new SolidBrush(accent)) g.FillRectangle(stripe, 0, 0, 5, 68);
+                    g.ResetClip();
+                    using (var pen = new Pen(Theme.Border)) g.DrawPath(pen, path);
+                }
+                using (var disc = new SolidBrush(Color.FromArgb(40, accent))) g.FillEllipse(disc, 18, 16, 36, 36);
+                string glyph = meeting.IsAllDay ? "" : join ? "" : place.Length > 0 ? "" : "";
+                if (IconFont != null) AgendaDraw.Center(g, glyph, IconFont, accent, new Rectangle(18, 16, 36, 36));
+
+                int textWidth = width - 66 - (join ? 104 : 16);
+                AgendaDraw.Left(g, AgendaDraw.Subject(meeting), CardTitleFont, Theme.Text, new Rectangle(66, 8, textWidth, 22));
+                AgendaDraw.Left(g, AgendaDraw.Times(meeting), SmallFont, Theme.Muted, new Rectangle(66, 30, textWidth, 16));
+                string third = place;
+                if (!meeting.IsAllDay)
+                {
+                    double minutes = (meeting.StartUtc - DateTime.UtcNow).TotalMinutes;
+                    third = (minutes > 0 ? "in " + AgendaDraw.Span(minutes) : "starting now") + (place.Length > 0 ? "  ·  " + place : "");
+                }
+                AgendaDraw.Left(g, third, SmallStrongFont, accent, new Rectangle(66, 46, textWidth, 16));
+            };
+            if (join)
+            {
+                var button = new PillButton("Join", false) { Bounds = new Rectangle(width - 12 - 84, 16, 84, 36) };
+                button.Click += delegate
+                {
+                    MeetingAlertForm.OpenLink(meeting.JoinUrl);
+                    Dismiss();
+                };
+                card.Controls.Add(button);
+            }
+            return card;
         }
 
         void ClearList()
@@ -838,10 +1224,10 @@ namespace Krabbz.Blynclight
                 footer.Top = top + room;
                 return;
             }
-            int listHeight = Math.Min(listContentHeight, MaxHeight - HeaderHeight - FooterHeight);
-            list.Bounds = new Rectangle(0, HeaderHeight, FormWidth, listHeight);
-            footer.Top = HeaderHeight + listHeight;
-            ClientSize = new Size(FormWidth, HeaderHeight + listHeight + FooterHeight);
+            int listHeight = Math.Min(listContentHeight, MaxHeight - top - FooterHeight);
+            list.Bounds = new Rectangle(0, top, FormWidth, listHeight);
+            footer.Top = top + listHeight;
+            ClientSize = new Size(FormWidth, top + listHeight + FooterHeight);
             var area = Screen.PrimaryScreen.WorkingArea;
             Location = new Point(area.Right - Width - EdgeGap, area.Bottom - Height - EdgeGap);
         }

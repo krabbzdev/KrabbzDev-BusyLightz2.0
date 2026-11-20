@@ -21,10 +21,12 @@ Click the BusyLightz icon in the system tray (near the clock) and choose **Today
 <img src="images/todays-meetings.png" alt="Illustration of the Today window: the date, then each meeting with its time, title and place, a finished one dimmed, the one on now highlighted, and Join buttons on online meetings" width="420">
 
 - A band at the top shows the product's name, *BusyLightz 2.0*, and *Click here or double-click the tray icon to open the program*. Click it to open the BusyLightz window.
-- Each meeting shows its **time**, **title** and **place**. All-day events come first.
-- The meeting on **right now** is highlighted and marked *Now*. Finished ones are dimmed.
+- A header shows the date, the day as a **timeline** with a marker for *now*, and how much of the day is **booked** and **free**.
+- The meeting on **right now** is a highlighted card marked *Happening now*, with a bar for how far through it you are and how long is left. Finished meetings are small and dimmed, with a check.
+- The ones still to come are cards with their **time**, **title**, how long until they start and their place (*Teams*, *Zoom* and so on, or what the calendar says). All-day events come first.
+- Where there's 15 minutes or more between meetings, a dashed line shows how long you're **free**.
 - Online meetings that haven't finished have a **Join** button.
-- **Refresh** reads the calendar again, and **Open my calendar** opens Outlook on the web.
+- The round button in the header (or **Refresh**) reads the calendar again, and **Open my calendar** opens Outlook on the web.
 - It closes when you click anywhere else, or press **Esc**.
 - A normal click on the tray icon opens the tray menu, the same as a right-click. **Double-click** opens the BusyLightz window.
 
@@ -34,7 +36,7 @@ It uses the same calendar access as the alerts, so if you haven't allowed that y
 
 <img src="images/window-with-schedule.png" alt="Illustration of the BusyLightz window with My Schedule Today docked against its right side: the date, then each meeting with its time, title and place, the one on now highlighted, finished ones dimmed, Join buttons on online meetings, and Open my calendar at the bottom" width="760">
 
-When you open the BusyLightz window, a **My Schedule Today** panel sits against its right side, the same height, with today's meetings: time, title and place, the one on now highlighted and marked *Now*, finished ones dimmed, and a **Join** button on online meetings that haven't finished. It moves with the window, goes when you close or minimize it, and reads the calendar again every minute while it's showing. If the right side of the screen is too close, it goes on the left instead.
+When you open the BusyLightz window, a **My Schedule Today** panel sits against its right side, the same height, with today's meetings in the same look as the window above: the timeline header, the meeting on now highlighted, finished ones dimmed, free time between meetings, and a **Join** button on online meetings that haven't finished. It moves with the window, goes when you close or minimize it, and reads the calendar again every minute while it's showing. If the right side of the screen is too close, it goes on the left instead.
 
 Turn it off with **Show today's meetings beside the window** in Settings > Meeting Alerts. If you haven't allowed calendar access yet, the panel says so, with a button to the right Settings page.
 
