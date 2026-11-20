@@ -339,6 +339,21 @@ namespace Krabbz.Blynclight
             {
                 Controls.Add(new PictureTile(picture) { Bounds = new Rectangle(16, 16, PictureSize, PictureSize) });
                 textLeft = 16 + PictureSize + 12;
+                // Online meetings keep a small video camera, on the picture's corner, so they still stand out.
+                if (!string.IsNullOrEmpty(meeting.JoinUrl) && Theme.Icons != null)
+                {
+                    var badge = new Label
+                    {
+                        Text = "",
+                        Font = new Font(Theme.Icons.FontFamily, 11f),
+                        ForeColor = Theme.TeamsText,
+                        BackColor = Theme.TeamsTint,
+                        TextAlign = ContentAlignment.MiddleCenter,
+                        Bounds = new Rectangle(16 + PictureSize - 24, 16 + PictureSize - 24, 28, 28),
+                    };
+                    Controls.Add(badge);
+                    badge.BringToFront();
+                }
             }
 
             // An icon tile on the left: a video camera for online meetings, a calendar for the rest. Left out if the
