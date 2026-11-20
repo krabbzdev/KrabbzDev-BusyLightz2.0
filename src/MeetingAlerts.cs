@@ -375,6 +375,9 @@ namespace Krabbz.Blynclight
         static readonly Font BrandFont = new Font("Segoe UI Semibold", 13f);
         static readonly Font HintFont = new Font("Segoe UI", 8.5f);
         static readonly Font ArrowFont = new Font("Segoe UI", 18f);
+        const int DockHeaderHeight = 72;
+        static readonly Font DockTitleFont = new Font("Segoe UI Semibold", 15f);
+        static readonly Font DockDateFont = new Font("Segoe UI", 9.5f);
         const string CalendarUrl = "https://outlook.office.com/calendar";
 
         readonly Func<TeamsPresence> getPresence;
@@ -382,23 +385,85 @@ namespace Krabbz.Blynclight
         readonly Action openProgram;
         readonly Panel list = new Panel { AutoScroll = true };
         readonly Panel footer = new Panel();
+        // Docked: the panel beside the BusyLightz window, rather than the one opened from the tray icon.
+        readonly bool docked;
+        // Where the list starts, under the header.
+        readonly int top;
+        int contentHeight;
         bool armed;
 
         // getPresence gives the Teams sign-in the calendar is read through; openMeetingSettings opens Settings on the
         // Meeting Alerts page (for when calendar access isn't allowed yet); openProgram opens the BusyLightz window.
-        public AgendaForm(Func<TeamsPresence> getPresence, Action openMeetingSettings, Action openProgram)
+        public AgendaForm(Func<TeamsPresence> getPresence, Action openMeetingSettings, Action openProgram, bool docked = false)
         {
+            this.docked = docked;
+            top = docked ? DockHeaderHeight : HeaderHeight;
             this.getPresence = getPresence;
             this.openMeetingSettings = openMeetingSettings;
             this.openProgram = openProgram;
             FormBorderStyle = FormBorderStyle.None;
             ShowInTaskbar = false;
-            TopMost = true;
+            TopMost = !docked;
             KeyPreview = true;
             StartPosition = FormStartPosition.Manual;
             BackColor = Theme.Card;
             Font = new Font("Segoe UI", 10);
 
+            if (docked) AddDockedHeader();
+            else AddFloatingHeader();
+
+            Controls.Add(list);
+            var calendar = new LinkLabel
+            {
+                Text = "Open my calendar",
+                AutoSize = true,
+                LinkColor = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams,
+                ActiveLinkColor = Theme.Teams,
+                LinkBehavior = LinkBehavior.HoverUnderline,
+                Location = new Point(16, 12),
+            };
+            calendar.LinkClicked += delegate
+            {
+                MeetingAlertForm.OpenLink(CalendarUrl);
+                Dismiss();
+            };
+            footer.Controls.Add(calendar);
+            footer.Size = new Size(FormWidth, FooterHeight);
+            Controls.Add(footer);
+
+            ShowMessage("Loading...");
+            Load();
+
+            if (docked)
+            {
+                // Beside the BusyLightz window it stays up, and reads the calendar again every minute while it's
+                // showing, so the meeting on now and the finished ones stay right.
+                var again = new System.Windows.Forms.Timer { Interval = 60 * 1000 };
+                again.Tick += delegate { if (Visible) Load(); };
+                VisibleChanged += delegate
+                {
+                    if (Visible) { Load(); again.Start(); }
+                    else again.Stop();
+                };
+                FormClosed += delegate { again.Dispose(); };
+                return;
+            }
+            // It closes when the user clicks elsewhere. Not for the first moment, while the click on the tray icon
+            // that opened it is still settling.
+            Deactivate += delegate { if (armed) Close(); };
+            KeyDown += (sender, e) => { if (e.KeyCode == Keys.Escape) Close(); };
+            Shown += delegate
+            {
+                Activate();
+                var arm = new System.Windows.Forms.Timer { Interval = 400 };
+                arm.Tick += delegate { arm.Dispose(); armed = true; };
+                arm.Start();
+            };
+        }
+
+        // The window opened from the tray icon: the product's name and how to open it, then the date.
+        void AddFloatingHeader()
+        {
             // The top band: the product's name and how to open it. Clicking anywhere on it opens the BusyLightz window.
             var brand = new Panel { Bounds = new Rectangle(0, 0, FormWidth, BrandHeight), BackColor = Theme.TeamsTint, Cursor = Cursors.Hand };
             bool over = false;
@@ -442,40 +507,48 @@ namespace Krabbz.Blynclight
             };
             refresh.LinkClicked += delegate { Load(); };
             Controls.Add(refresh);
+        }
 
-            Controls.Add(list);
-            var calendar = new LinkLabel
+        // The panel beside the BusyLightz window: just its title, the date, and Refresh.
+        void AddDockedHeader()
+        {
+            var band = new Panel { Bounds = new Rectangle(0, 0, FormWidth, DockHeaderHeight), BackColor = Theme.TeamsTint };
+            band.Paint += (sender, e) =>
             {
-                Text = "Open my calendar",
+                TextRenderer.DrawText(e.Graphics, "My Schedule Today", DockTitleFont, new Point(14, 9), Theme.TeamsText);
+                TextRenderer.DrawText(e.Graphics, DateTime.Now.ToString("dddd, MMMM d"), DockDateFont, new Point(17, 42), Theme.Muted);
+                using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, DockHeaderHeight - 1, FormWidth, DockHeaderHeight - 1);
+            };
+            var refresh = new LinkLabel
+            {
+                Text = "Refresh",
                 AutoSize = true,
                 LinkColor = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams,
                 ActiveLinkColor = Theme.Teams,
                 LinkBehavior = LinkBehavior.HoverUnderline,
-                Location = new Point(16, 12),
+                BackColor = Color.Transparent,
+                Location = new Point(FormWidth - 70, 26),
             };
-            calendar.LinkClicked += delegate
-            {
-                MeetingAlertForm.OpenLink(CalendarUrl);
-                Close();
-            };
-            footer.Controls.Add(calendar);
-            footer.Size = new Size(FormWidth, FooterHeight);
-            Controls.Add(footer);
+            refresh.LinkClicked += delegate { Load(); };
+            band.Controls.Add(refresh);
+            Controls.Add(band);
+        }
 
-            ShowMessage("Loading...");
-            Load();
+        // Closes the window, unless it's the one beside the BusyLightz window, which stays.
+        void Dismiss()
+        {
+            if (!docked) Close();
+        }
 
-            // It closes when the user clicks elsewhere. Not for the first moment, while the click on the tray icon
-            // that opened it is still settling.
-            Deactivate += delegate { if (armed) Close(); };
-            KeyDown += (sender, e) => { if (e.KeyCode == Keys.Escape) Close(); };
-            Shown += delegate
-            {
-                Activate();
-                var arm = new System.Windows.Forms.Timer { Interval = 400 };
-                arm.Tick += delegate { arm.Dispose(); armed = true; };
-                arm.Start();
-            };
+        // Docked: sits flush against the right of the BusyLightz window, or its left when the screen's edge is in the
+        // way, at the same height.
+        public void DockTo(Rectangle window)
+        {
+            var area = Screen.FromRectangle(window).WorkingArea;
+            int x = window.Right;
+            if (x + FormWidth > area.Right) x = window.Left - FormWidth >= area.Left ? window.Left - FormWidth : area.Right - FormWidth;
+            Bounds = new Rectangle(x, window.Top, FormWidth, window.Height);
+            FitToList(contentHeight);
         }
 
         // Reads today's calendar in the background, then fills the window in.
@@ -524,7 +597,7 @@ namespace Krabbz.Blynclight
                 var open = new ModernButton { Text = "Open Meeting Alerts settings", Bounds = new Rectangle(16, 62, 230, 34) };
                 open.Click += delegate
                 {
-                    Close();
+                    Dismiss();
                     openMeetingSettings();
                 };
                 list.Controls.Add(open);
@@ -614,7 +687,7 @@ namespace Krabbz.Blynclight
                 button.Click += delegate
                 {
                     MeetingAlertForm.OpenLink(meeting.JoinUrl);
-                    Close();
+                    Dismiss();
                 };
                 row.Controls.Add(button);
             }
@@ -633,6 +706,15 @@ namespace Krabbz.Blynclight
         // Sizes the window to its list (scrolling past a screenful) and puts it above the taskbar, bottom right.
         void FitToList(int listContentHeight)
         {
+            contentHeight = listContentHeight;
+            if (docked)
+            {
+                // Fills the height of the BusyLightz window, and scrolls when there's more than fits.
+                int room = Math.Max(0, Height - top - FooterHeight);
+                list.Bounds = new Rectangle(0, top, FormWidth, room);
+                footer.Top = top + room;
+                return;
+            }
             int listHeight = Math.Min(listContentHeight, MaxHeight - HeaderHeight - FooterHeight);
             list.Bounds = new Rectangle(0, HeaderHeight, FormWidth, listHeight);
             footer.Top = HeaderHeight + listHeight;
@@ -640,6 +722,9 @@ namespace Krabbz.Blynclight
             var area = Screen.PrimaryScreen.WorkingArea;
             Location = new Point(area.Right - Width - EdgeGap, area.Bottom - Height - EdgeGap);
         }
+
+        // The panel beside the window shouldn't take the keyboard when it appears.
+        protected override bool ShowWithoutActivation { get { return docked; } }
 
         protected override void OnPaint(PaintEventArgs e)
         {

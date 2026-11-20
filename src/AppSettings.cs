@@ -165,6 +165,8 @@ namespace Krabbz.Blynclight
         public static bool MeetingAlertsOn { get { return Get("MeetingAlertsOn"); } set { Set("MeetingAlertsOn", value); } }
         // Set once the one-time "New: Meeting Alerts" notice has been shown (or isn't needed), so it never comes back.
         public static bool MeetingAlertsIntroShown { get { return Get("MeetingAlertsIntroShown", false); } set { Set("MeetingAlertsIntroShown", value); } }
+        // Today's meetings in a panel attached to the right of the BusyLightz window while it's open. On unless changed.
+        public static bool AgendaBesideWindow { get { return Get("AgendaBesideWindow"); } set { Set("AgendaBesideWindow", value); } }
         public static bool MeetingAlertSound { get { return Get("MeetingAlertSound"); } set { Set("MeetingAlertSound", value); } }
         // How many minutes before a meeting the alert shows.
         public static readonly int[] MeetingAlertMinuteChoices = { 1, 2, 5, 10, 15 };

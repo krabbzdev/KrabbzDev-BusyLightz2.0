@@ -766,7 +766,9 @@ namespace Krabbz.Blynclight
                     var at = form.Location;
                     form.Dispose();
                     form = new ControlForm(this) { StartPosition = FormStartPosition.Manual, Location = at };
+                    AttachDock(form);
                     if (shown) form.Show();
+                    PlaceDock(form);
                 }
                 if (settingsForm != null && !settingsForm.IsDisposed)
                 {
@@ -864,10 +866,48 @@ namespace Krabbz.Blynclight
 
         public void ShowWindow()
         {
-            if (form == null || form.IsDisposed) form = new ControlForm(this);
+            if (form == null || form.IsDisposed)
+            {
+                form = new ControlForm(this);
+                AttachDock(form);
+            }
             form.Show();
             if (form.WindowState == FormWindowState.Minimized) form.WindowState = FormWindowState.Normal;
             form.Activate();
+            PlaceDock(form);
+        }
+
+        // The "My Schedule Today" panel attached to the right of the BusyLightz window while it's showing.
+        AgendaForm dockedAgenda;
+
+        // Keeps the panel with the window as it moves, resizes, hides or minimizes.
+        void AttachDock(ControlForm window)
+        {
+            EventHandler follow = delegate { PlaceDock(window); };
+            window.LocationChanged += follow;
+            window.SizeChanged += follow;
+            window.VisibleChanged += follow;
+        }
+
+        void PlaceDock(ControlForm window)
+        {
+            bool want = AppSettings.AgendaBesideWindow && window != null && !window.IsDisposed && window.Visible
+                && window.WindowState == FormWindowState.Normal;
+            bool have = dockedAgenda != null && !dockedAgenda.IsDisposed;
+            if (!want)
+            {
+                if (have && dockedAgenda.Visible) dockedAgenda.Hide();
+                return;
+            }
+            if (!have) dockedAgenda = new AgendaForm(() => presence, ShowMeetingAlertsSettings, ShowWindow, true);
+            dockedAgenda.DockTo(window.Bounds);
+            if (!dockedAgenda.Visible) dockedAgenda.Show(window);
+        }
+
+        // From Settings, when "Show today's meetings beside the window" is switched.
+        public void UpdateDock()
+        {
+            PlaceDock(form);
         }
 
         // Downloads and installs a newer release in the background. Only a manual check reports "up to date" or errors.
