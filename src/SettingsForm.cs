@@ -840,6 +840,13 @@ namespace Krabbz.Blynclight
             ShowPage(meetingAlertsPage);
         }
 
+        // "Connected as name@company.com. ": whose calendar and transcripts these are.
+        static string ConnectedAs(TeamsPresence presence)
+        {
+            string account = presence.Account;
+            return string.IsNullOrEmpty(account) ? "" : "Connected as " + account + ". ";
+        }
+
         // Whether BusyLightz may read the calendar yet, and why not if something's wrong.
         void RefreshMeetings()
         {
@@ -857,14 +864,15 @@ namespace Krabbz.Blynclight
             }
             RefreshTranscripts(presence);
             meetingButton.Enabled = true;
+            string who = ConnectedAs(presence);
             if (!presence.CalendarGranted)
             {
-                meetingStatus.Text = "Not allowed yet. BusyLightz only reads the times, titles and links of your meetings, and keeps none of it.";
+                meetingStatus.Text = who + "Not allowed yet. BusyLightz only reads the times, titles and links of your meetings, and keeps none of it.";
                 meetingButton.Text = "Allow access...";
             }
             else
             {
-                meetingStatus.Text = problem == null ? "Calendar access is allowed." : "Calendar access is allowed, but: " + problem;
+                meetingStatus.Text = who + (problem == null ? "Calendar access is allowed." : "Calendar access is allowed, but: " + problem);
                 meetingButton.Text = "Allow again...";
             }
         }
@@ -880,15 +888,15 @@ namespace Krabbz.Blynclight
                 return;
             }
             transcriptButton.Enabled = true;
-            string problem = tray.TranscriptProblem;
+            string problem = tray.TranscriptProblem, who = ConnectedAs(presence);
             if (!presence.TranscriptsGranted)
             {
-                transcriptStatus.Text = "Transcript access isn't allowed yet. An administrator of your Microsoft 365 has to approve it.";
+                transcriptStatus.Text = who + "Transcript access isn't allowed yet. An administrator of your Microsoft 365 has to approve it.";
                 transcriptButton.Text = "Allow access...";
             }
             else
             {
-                transcriptStatus.Text = problem == null ? "Transcript access is allowed." : "Transcript access is allowed, but: " + problem;
+                transcriptStatus.Text = who + (problem == null ? "Transcript access is allowed." : "Transcript access is allowed, but: " + problem);
                 transcriptButton.Text = "Allow again...";
             }
         }
