@@ -326,6 +326,9 @@ namespace Krabbz.Blynclight
         ToolStripMenuItem presenceItem, usbItem, teamsOffItem;
         readonly System.Threading.Timer teamsPoll;
         MeetingAlerts meetingAlerts;
+        AgendaForm agendaForm;
+        DateTime agendaClosedUtc;
+        readonly System.Windows.Forms.Timer clickTimer = new System.Windows.Forms.Timer { Interval = SystemInformation.DoubleClickTime };
         // Last Teams availability read while signed in (e.g. "Available"), or null.
         string teamsAvailability;
         bool embravaWarned;
@@ -356,6 +359,7 @@ namespace Krabbz.Blynclight
         {
             var menu = new ContextMenuStrip();
             AddItem(menu, "Open " + Program.AppName, OpenGlyph, delegate { ShowWindow(); }).Font = new Font("Segoe UI Semibold", 9.5f);
+            AddItem(menu, "Today's meetings", "\uE787", delegate { ShowAgenda(); });
             menu.Items.Add(new ToolStripSeparator());
             AddStateItem(menu, "Red/Busy", LightState.Red);
             AddStateItem(menu, "Green/Available", LightState.Green);
@@ -411,7 +415,22 @@ namespace Krabbz.Blynclight
 
             tray = new NotifyIcon();
             tray.ContextMenuStrip = menu;
-            tray.DoubleClick += delegate { ShowWindow(); };
+            // One click shows today's meetings; a double-click opens the window, so the single click waits to see if a
+            // second one follows.
+            clickTimer.Tick += delegate
+            {
+                clickTimer.Stop();
+                ShowAgenda();
+            };
+            tray.MouseClick += (sender, e) =>
+            {
+                if (e.Button == MouseButtons.Left && AppSettings.AgendaOnClick && !clickTimer.Enabled) clickTimer.Start();
+            };
+            tray.DoubleClick += delegate
+            {
+                clickTimer.Stop();
+                ShowWindow();
+            };
             tray.Visible = true;
 
             // Cycle the tray icon round the color wheel at the light's speed, in half as many steps.
@@ -628,6 +647,21 @@ namespace Krabbz.Blynclight
                 }
                 catch (Exception ex) { ShowBalloon("Couldn't allow calendar access: " + ex.Message, ToolTipIcon.Warning); }
             });
+        }
+
+        // Today's meetings, in a small window by the tray icon: from a click on the tray icon, or the tray menu.
+        public void ShowAgenda()
+        {
+            if (agendaForm != null && !agendaForm.IsDisposed)
+            {
+                agendaForm.Close();
+                return;
+            }
+            // Clicking the tray icon takes focus from the window, which closes it; don't open it again for that click.
+            if ((DateTime.UtcNow - agendaClosedUtc).TotalMilliseconds < 700) return;
+            agendaForm = new AgendaForm(() => presence, ShowMeetingAlertsSettings);
+            agendaForm.FormClosed += delegate { agendaClosedUtc = DateTime.UtcNow; };
+            agendaForm.Show();
         }
 
         public void ShowTestMeetingAlert()

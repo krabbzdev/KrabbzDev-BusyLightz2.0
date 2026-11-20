@@ -334,7 +334,7 @@ namespace Krabbz.Blynclight
         }
 
         // Opens the meeting link in the browser, which hands it to Teams. Only web links.
-        static void OpenLink(string url)
+        internal static void OpenLink(string url)
         {
             Uri uri;
             if (!Uri.TryCreate(url, UriKind.Absolute, out uri)) return;
@@ -354,6 +354,261 @@ namespace Krabbz.Blynclight
                 parameters.ExStyle |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
                 return parameters;
             }
+        }
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            using (var pen = new Pen(Theme.Border)) e.Graphics.DrawRectangle(pen, 0, 0, Width - 1, Height - 1);
+        }
+    }
+
+    // "Today's meetings": a small window by the tray icon with the day's calendar, opened by clicking the tray icon (if
+    // that's on in Settings > Meeting Alerts) or from the tray menu. Each meeting shows its time, title and place, the
+    // one on now is highlighted, finished ones are dimmed, and online ones have a Join button. It goes away when the
+    // user clicks anywhere else, or presses Esc.
+    class AgendaForm : Form
+    {
+        const int FormWidth = 400, HeaderHeight = 56, FooterHeight = 44, RowHeight = 70, MaxHeight = 560, EdgeGap = 12;
+        const string CalendarUrl = "https://outlook.office.com/calendar";
+
+        readonly Func<TeamsPresence> getPresence;
+        readonly Action openMeetingSettings;
+        readonly Panel list = new Panel { AutoScroll = true };
+        readonly Panel footer = new Panel();
+        bool armed;
+
+        // getPresence gives the Teams sign-in the calendar is read through; openMeetingSettings opens Settings on the
+        // Meeting Alerts page (for when calendar access isn't allowed yet).
+        public AgendaForm(Func<TeamsPresence> getPresence, Action openMeetingSettings)
+        {
+            this.getPresence = getPresence;
+            this.openMeetingSettings = openMeetingSettings;
+            FormBorderStyle = FormBorderStyle.None;
+            ShowInTaskbar = false;
+            TopMost = true;
+            KeyPreview = true;
+            StartPosition = FormStartPosition.Manual;
+            BackColor = Theme.Card;
+            Font = new Font("Segoe UI", 10);
+
+            Controls.Add(new Label
+            {
+                Text = "Today, " + DateTime.Now.ToString("dddd MMM d"),
+                Font = new Font("Segoe UI Semibold", 13f),
+                ForeColor = Theme.Text,
+                BackColor = Color.Transparent,
+                Bounds = new Rectangle(16, 14, FormWidth - 110, 28),
+            });
+            var refresh = new LinkLabel
+            {
+                Text = "Refresh",
+                AutoSize = true,
+                LinkColor = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams,
+                ActiveLinkColor = Theme.Teams,
+                LinkBehavior = LinkBehavior.HoverUnderline,
+                BackColor = Color.Transparent,
+                Location = new Point(FormWidth - 70, 20),
+            };
+            refresh.LinkClicked += delegate { Load(); };
+            Controls.Add(refresh);
+
+            Controls.Add(list);
+            var calendar = new LinkLabel
+            {
+                Text = "Open my calendar",
+                AutoSize = true,
+                LinkColor = AppSettings.DarkMode ? Theme.TeamsText : Theme.Teams,
+                ActiveLinkColor = Theme.Teams,
+                LinkBehavior = LinkBehavior.HoverUnderline,
+                Location = new Point(16, 12),
+            };
+            calendar.LinkClicked += delegate
+            {
+                MeetingAlertForm.OpenLink(CalendarUrl);
+                Close();
+            };
+            footer.Controls.Add(calendar);
+            footer.Size = new Size(FormWidth, FooterHeight);
+            Controls.Add(footer);
+
+            ShowMessage("Loading...");
+            Load();
+
+            // It closes when the user clicks elsewhere. Not for the first moment, while the click on the tray icon
+            // that opened it is still settling.
+            Deactivate += delegate { if (armed) Close(); };
+            KeyDown += (sender, e) => { if (e.KeyCode == Keys.Escape) Close(); };
+            Shown += delegate
+            {
+                Activate();
+                var arm = new System.Windows.Forms.Timer { Interval = 400 };
+                arm.Tick += delegate { arm.Dispose(); armed = true; };
+                arm.Start();
+            };
+        }
+
+        // Reads today's calendar in the background, then fills the window in.
+        void Load()
+        {
+            Program.Background("Today's meetings", delegate
+            {
+                List<CalendarMeeting> meetings = null;
+                string problem = null;
+                var presence = getPresence();
+                if (presence == null || !presence.SignedIn) problem = "Connect to Microsoft Teams first, in Settings > Microsoft Teams.";
+                else if (!presence.CalendarGranted) problem = "Calendar access isn't allowed yet.";
+                else
+                {
+                    try { meetings = presence.GetMeetings(DateTime.Today.ToUniversalTime(), DateTime.Today.AddDays(1).ToUniversalTime()); }
+                    catch (Exception ex) { problem = ex.Message; }
+                }
+                try
+                {
+                    BeginInvoke((Action)delegate
+                    {
+                        if (IsDisposed) return;
+                        if (problem != null) ShowMessage(problem, !(presence != null && presence.CalendarGranted));
+                        else Fill(meetings);
+                    });
+                }
+                catch (InvalidOperationException) { } // Closed before the answer came.
+            });
+        }
+
+        // Replaces the list with one message, and (when settingsLink is set) a button to the Meeting Alerts settings.
+        void ShowMessage(string text, bool settingsLink = false)
+        {
+            ClearList();
+            list.Controls.Add(new Label
+            {
+                Text = text,
+                ForeColor = Theme.Muted,
+                AutoSize = false,
+                BackColor = Color.Transparent,
+                Bounds = new Rectangle(16, 14, FormWidth - 32, 44),
+            });
+            int height = 70;
+            if (settingsLink)
+            {
+                var open = new ModernButton { Text = "Open Meeting Alerts settings", Bounds = new Rectangle(16, 62, 230, 34) };
+                open.Click += delegate
+                {
+                    Close();
+                    openMeetingSettings();
+                };
+                list.Controls.Add(open);
+                height = 110;
+            }
+            FitToList(height);
+        }
+
+        void Fill(List<CalendarMeeting> meetings)
+        {
+            ClearList();
+            var today = DateTime.Today;
+            var shown = new List<CalendarMeeting>();
+            foreach (var meeting in meetings)
+            {
+                if (meeting.IsCancelled || meeting.Response == "declined") continue;
+                // All-day events come as dates at midnight, so compare dates, not times; the end date is exclusive.
+                if (meeting.IsAllDay && !(meeting.StartUtc.Date <= today && meeting.EndUtc.Date > today)) continue;
+                shown.Add(meeting);
+            }
+            shown.Sort((a, b) =>
+            {
+                if (a.IsAllDay != b.IsAllDay) return a.IsAllDay ? -1 : 1;
+                return a.StartUtc.CompareTo(b.StartUtc);
+            });
+            if (shown.Count == 0)
+            {
+                ShowMessage("No meetings today.");
+                return;
+            }
+            int y = 0;
+            foreach (var meeting in shown)
+            {
+                list.Controls.Add(Row(meeting, y));
+                y += RowHeight;
+            }
+            FitToList(y);
+        }
+
+        Panel Row(CalendarMeeting meeting, int y)
+        {
+            var now = DateTime.UtcNow;
+            bool ended = !meeting.IsAllDay && meeting.EndUtc <= now;
+            bool current = !meeting.IsAllDay && meeting.StartUtc <= now && now < meeting.EndUtc;
+            int width = FormWidth - SystemInformation.VerticalScrollBarWidth;
+            var row = new Panel { Bounds = new Rectangle(0, y, width, RowHeight), BackColor = current ? Theme.TeamsTint : Theme.Card };
+            row.Paint += (sender, e) =>
+            {
+                using (var pen = new Pen(Theme.Border)) e.Graphics.DrawLine(pen, 0, RowHeight - 1, width, RowHeight - 1);
+                if (current) using (var brush = new SolidBrush(Theme.Teams)) e.Graphics.FillRectangle(brush, 0, 0, 4, RowHeight - 1);
+            };
+            bool join = !ended && !string.IsNullOrEmpty(meeting.JoinUrl);
+            int textWidth = width - 32 - (join ? 84 : 0);
+            string time = meeting.IsAllDay
+                ? "All day"
+                : meeting.StartUtc.ToLocalTime().ToShortTimeString() + " - " + meeting.EndUtc.ToLocalTime().ToShortTimeString() + (current ? "   Now" : "");
+            row.Controls.Add(new Label
+            {
+                Text = time,
+                Font = new Font("Segoe UI", 9f),
+                ForeColor = current ? Theme.TeamsText : Theme.Muted,
+                BackColor = Color.Transparent,
+                AutoEllipsis = true,
+                Bounds = new Rectangle(16, 8, textWidth, 18),
+            });
+            row.Controls.Add(new Label
+            {
+                Text = string.IsNullOrWhiteSpace(meeting.Subject) ? "(no subject)" : meeting.Subject,
+                Font = new Font("Segoe UI Semibold", 10.5f),
+                ForeColor = ended ? Theme.Muted : Theme.Text,
+                BackColor = Color.Transparent,
+                AutoEllipsis = true,
+                Bounds = new Rectangle(16, 27, textWidth, 22),
+            });
+            row.Controls.Add(new Label
+            {
+                Text = meeting.Location ?? "",
+                Font = new Font("Segoe UI", 9f),
+                ForeColor = Theme.Muted,
+                BackColor = Color.Transparent,
+                AutoEllipsis = true,
+                Bounds = new Rectangle(16, 48, textWidth, 18),
+            });
+            if (join)
+            {
+                var button = new ModernButton { Text = "Join", Accent = true, Bounds = new Rectangle(width - 16 - 68, 18, 68, 34) };
+                button.Click += delegate
+                {
+                    MeetingAlertForm.OpenLink(meeting.JoinUrl);
+                    Close();
+                };
+                row.Controls.Add(button);
+            }
+            return row;
+        }
+
+        void ClearList()
+        {
+            // Copied first: disposing a control takes it out of the collection being walked.
+            var all = new Control[list.Controls.Count];
+            list.Controls.CopyTo(all, 0);
+            list.Controls.Clear();
+            foreach (var control in all) control.Dispose();
+        }
+
+        // Sizes the window to its list (scrolling past a screenful) and puts it above the taskbar, bottom right.
+        void FitToList(int listContentHeight)
+        {
+            int listHeight = Math.Min(listContentHeight, MaxHeight - HeaderHeight - FooterHeight);
+            list.Bounds = new Rectangle(0, HeaderHeight, FormWidth, listHeight);
+            footer.Top = HeaderHeight + listHeight;
+            ClientSize = new Size(FormWidth, HeaderHeight + listHeight + FooterHeight);
+            var area = Screen.PrimaryScreen.WorkingArea;
+            Location = new Point(area.Right - Width - EdgeGap, area.Bottom - Height - EdgeGap);
         }
 
         protected override void OnPaint(PaintEventArgs e)

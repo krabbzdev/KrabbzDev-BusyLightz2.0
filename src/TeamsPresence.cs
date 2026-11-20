@@ -509,7 +509,7 @@ namespace Krabbz.Blynclight
             string url = "https://graph.microsoft.com/v1.0/me/calendarView" +
                 "?startDateTime=" + fromUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture) +
                 "&endDateTime=" + toUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture) +
-                "&$orderby=start/dateTime&$top=25" +
+                "&$orderby=start/dateTime&$top=50" +
                 "&$select=id,subject,start,end,isAllDay,isCancelled,isOnlineMeeting,onlineMeeting,location,organizer,responseStatus";
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
             string body;
