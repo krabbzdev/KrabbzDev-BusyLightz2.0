@@ -732,6 +732,26 @@ namespace Krabbz.Blynclight
             });
         }
 
+        // For an administrator: approve the app's permissions for the whole organization, signing in as the administrator
+        // without changing the account BusyLightz is connected as.
+        public void ApproveAsAdmin()
+        {
+            var teams = presence;
+            if (teams == null) { ShowSetup(); return; }
+            if (GrantAlreadyOpen()) return;
+            grantOpen = true;
+            Program.Background("Admin approval", delegate
+            {
+                try
+                {
+                    teams.ApproveAsAdmin();
+                    ShowBalloon("Approved for your organization. Now each person clicks Allow access with their own account.", ToolTipIcon.Info);
+                }
+                catch (Exception ex) { ShowBalloon("Admin approval: " + ex.Message, ToolTipIcon.Warning); }
+                finally { grantOpen = false; }
+            });
+        }
+
         public void OpenTranscriptsFolder()
         {
             try
@@ -1389,7 +1409,7 @@ namespace Krabbz.Blynclight
                 ToolTipIcon icon = ToolTipIcon.Info;
                 try
                 {
-                    if (signingIn.CalendarGranted) signingIn.GrantCalendarAccess();
+                    if (signingIn.CalendarGranted) signingIn.GrantCalendarAccess(false);
                     else signingIn.SignIn();
                     message = "Signed in to Microsoft 365 as " + signingIn.Account + ".";
                     if (callApp != null && !callApp.IsTeams && AppSettings.TeamsBusyOnCalls) signingIn.CallStarted();

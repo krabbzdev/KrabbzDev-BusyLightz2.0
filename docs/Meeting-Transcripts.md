@@ -30,6 +30,7 @@ BusyLightz can save a copy of the transcript Microsoft Teams makes of your Teams
 
 ## If it doesn't work
 
+- **An administrator approves with a different account than yours:** the administrator opens **Settings > Transcripts** in BusyLightz and clicks **Admin approval...**, then signs in with their *administrator* account in the browser and approves. Nothing is signed in or stored for that account, and BusyLightz stays connected as you. Afterwards, you click **Allow access...** and sign in with *your own* account. If you pick a different account there, BusyLightz refuses and keeps yours.
 - **The page says *Transcript access isn't allowed yet*:** click **Allow access...** and accept in the browser. If Microsoft says it needs admin approval, ask your admin.
 - **It says your organization turned off access to transcripts:** that's a Teams admin setting (*Graph API access to transcripts*). Only they can change it.
 - **No notice after a meeting:** was transcription on in the meeting? Is **Save a transcript of my Teams meetings** on? Did you decline the meeting? Give it 5 to 10 minutes after the meeting ends.

@@ -105,9 +105,9 @@ namespace Krabbz.Blynclight
 
         // Signs in again, this time also asking Microsoft to let BusyLightz read the user's calendar (for Meeting Alerts).
         // Only the user's own calendar, read-only. Throws with a readable message if it isn't allowed.
-        public void GrantCalendarAccess()
+        public void GrantCalendarAccess(bool keepAccount = true)
         {
-            SignInWith(Scopes + " " + CalendarScope + (TranscriptsGranted ? " " + TranscriptScope : ""));
+            SignInWith(Scopes + " " + CalendarScope + (TranscriptsGranted ? " " + TranscriptScope : ""), keepAccount);
             lock (sync) calendarGranted = true;
             Save();
             problemReported = false;
@@ -118,14 +118,19 @@ namespace Krabbz.Blynclight
         // message if it isn't allowed.
         public void GrantTranscriptAccess()
         {
-            SignInWith(Scopes + (CalendarGranted ? " " + CalendarScope : "") + " " + TranscriptScope);
+            SignInWith(Scopes + (CalendarGranted ? " " + CalendarScope : "") + " " + TranscriptScope, true);
             lock (sync) transcriptsGranted = true;
             Save();
             problemReported = false;
         }
 
-        void SignInWith(string scopes)
+        // keepAccount: this is only allowing more access for the account already connected. Signing in as someone else (an
+        // administrator approving, say) is refused, so BusyLightz keeps showing and using the user's own account.
+        void SignInWith(string scopes, bool keepAccount = false)
         {
+            string connectedAs;
+            lock (sync) connectedAs = account;
+            if (!keepAccount) connectedAs = null;
             string verifier = Base64Url(RandomBytes(32));
             string challenge;
             using (var sha = SHA256.Create()) challenge = Base64Url(sha.ComputeHash(Encoding.ASCII.GetBytes(verifier)));
@@ -153,6 +158,7 @@ namespace Krabbz.Blynclight
                     "&scope=" + Uri.EscapeDataString(scopes) +
                     "&state=" + state +
                     "&code_challenge=" + challenge + "&code_challenge_method=S256" +
+                    (connectedAs != null ? "&login_hint=" + Uri.EscapeDataString(connectedAs) : "") +
                     "&prompt=select_account");
 
                 NameValueCollection reply = WaitForRedirect(listeners, SignInTimeoutMs);
@@ -168,14 +174,56 @@ namespace Krabbz.Blynclight
                     { "code_verifier", verifier },
                 }, scopes);
                 var claims = JwtPayload((string)tokens["id_token"]);
+                object signedInName;
+                string signedInAs = claims.TryGetValue("preferred_username", out signedInName) ? signedInName as string : null;
+                if (connectedAs != null && signedInAs != null && !string.Equals(connectedAs, signedInAs, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("You signed in as " + signedInAs + ", but BusyLightz is connected as " + connectedAs +
+                        ". Sign in as " + connectedAs + " (nothing was changed). An administrator approves for the whole organization with Admin approval instead.");
                 lock (sync)
                 {
                     userId = (string)claims["oid"];
-                    object name;
-                    account = claims.TryGetValue("preferred_username", out name) ? name as string : null;
+                    account = signedInAs;
                 }
                 StoreTokens(tokens);
                 problemReported = false;
+            }
+            finally
+            {
+                foreach (var listener in listeners) listener.Stop();
+            }
+        }
+
+        // For an administrator: approves this app's permissions (calendar and transcripts included) for the whole organization.
+        // Nothing is signed in or stored here, so it can be an administrator's own account, not the user's. Each person
+        // then allows access with their own account. Throws with a readable message if it wasn't approved.
+        public void ApproveAsAdmin()
+        {
+            if (string.IsNullOrEmpty(tenantId) || tenantId == "common" || tenantId == "organizations" || tenantId == "consumers")
+                throw new InvalidOperationException("Your organization's directory (tenant) ID isn't set yet; set up your organization's Teams app first.");
+            string state = Base64Url(RandomBytes(16));
+            var listeners = new List<TcpListener> { new TcpListener(IPAddress.Loopback, 0) };
+            listeners[0].Start();
+            int port = ((IPEndPoint)listeners[0].LocalEndpoint).Port;
+            try
+            {
+                try
+                {
+                    var v6 = new TcpListener(IPAddress.IPv6Loopback, port);
+                    v6.Start();
+                    listeners.Add(v6);
+                }
+                catch (SocketException) { }
+                Process.Start("https://login.microsoftonline.com/" + Uri.EscapeDataString(tenantId) + "/v2.0/adminconsent" +
+                    "?client_id=" + Uri.EscapeDataString(clientId) +
+                    "&scope=" + Uri.EscapeDataString("https://graph.microsoft.com/.default") +
+                    "&redirect_uri=" + Uri.EscapeDataString("http://localhost:" + port) +
+                    "&state=" + state);
+                NameValueCollection reply = WaitForRedirect(listeners, SignInTimeoutMs);
+                if (reply == null) throw new InvalidOperationException("Admin approval timed out.");
+                if (reply["state"] != state) throw new InvalidOperationException("The reply didn't match this request.");
+                if (reply["error"] != null) throw new InvalidOperationException("Approval failed: " + (reply["error_description"] ?? reply["error"]));
+                if (!string.Equals(reply["admin_consent"], "True", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("It wasn't approved.");
             }
             finally
             {

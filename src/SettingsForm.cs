@@ -815,6 +815,11 @@ namespace Krabbz.Blynclight
             var folderButton = new ModernButton { Text = "Open transcripts folder", Bounds = new Rectangle(182, y, 200, 34) };
             folderButton.Click += delegate { tray.OpenTranscriptsFolder(); };
             Add(folderButton);
+            // An administrator approves once for the organization, signing in as themselves; nothing here changes whose
+            // account BusyLightz is connected as.
+            var adminButton = new ModernButton { Text = "Admin approval...", Bounds = new Rectangle(390, y, 130, 34) };
+            adminButton.Click += delegate { tray.ApproveAsAdmin(); };
+            Add(adminButton);
             y += 34 + RowGap;
             Add(new Label
             {
