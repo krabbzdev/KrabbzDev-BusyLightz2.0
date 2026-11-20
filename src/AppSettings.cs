@@ -341,13 +341,15 @@ namespace Krabbz.Blynclight
 
         // The email address "Type my email address" types; asked for in the setup checklist. Until it's set, an
         // example address.
-        public const string ExampleEmail = "YourEmailHere@spacex.com";
+        public const string ExampleEmail = "ChangeMe@ChangeMe.Com";
+        // The placeholder earlier versions used; still treated as "not set yet".
+        const string OldExampleEmail = "YourEmailHere@spacex.com";
         public static string MacroEmail
         {
             get
             {
                 string saved = GetString("MacroEmail");
-                return string.IsNullOrWhiteSpace(saved) ? ExampleEmail : saved.Trim();
+                return string.IsNullOrWhiteSpace(saved) || string.Equals(saved.Trim(), OldExampleEmail, StringComparison.OrdinalIgnoreCase) ? ExampleEmail : saved.Trim();
             }
             set { SetString("MacroEmail", value == null ? "" : value.Trim()); }
         }

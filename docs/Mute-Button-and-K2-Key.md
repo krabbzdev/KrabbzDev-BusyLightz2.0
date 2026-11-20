@@ -78,7 +78,7 @@ BusyLightz recognizes the K2 by its hardware ID (USB `VID_04D9&PID_A2D0`) and ex
 
 ### Your email address
 
-**My email address** is what *Type my email address* types. Until you set it, it's the example address `YourEmailHere@spacex.com`. The [Setup Checklist](Setup-Checklist.md#7-your-email-address) asks for it, or change it any time in **Settings > K2 USBC Key**.
+**My email address** is what *Type my email address* types. Until you set it, it's the example address `ChangeMe@ChangeMe.Com`. The [Setup Checklist](Setup-Checklist.md#7-your-email-address) asks for it, or change it any time in **Settings > K2 USBC Key**.
 
 ### F13 and F14
 
