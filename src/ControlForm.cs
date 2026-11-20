@@ -218,6 +218,33 @@ namespace Krabbz.Blynclight
         // The Microsoft 365 connections: Teams signed in (and on), and calendar access allowed.
         public bool Teams, Calendar;
         public string TeamsText;
+        // A greyed-out Teams or Calendar tile connects when clicked.
+        public event Action TeamsClicked, CalendarClicked;
+        const int TeamsSlot = 4, CalendarSlot = 5;
+
+        Rectangle Grid { get { return new Rectangle(4, 40, Width - 8, DeviceTiles.GridHeight); } }
+
+        // 1 for the Teams tile, 2 for the Calendar tile, when they're disconnected (so clicking would connect), else 0.
+        int ClickableAt(Point p)
+        {
+            if (!Teams && DeviceTiles.SlotBounds(Grid, TeamsSlot).Contains(p)) return 1;
+            if (!Calendar && DeviceTiles.SlotBounds(Grid, CalendarSlot).Contains(p)) return 2;
+            return 0;
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            Cursor = ClickableAt(e.Location) != 0 ? Cursors.Hand : Cursors.Default;
+        }
+
+        protected override void OnMouseClick(MouseEventArgs e)
+        {
+            base.OnMouseClick(e);
+            int which = ClickableAt(e.Location);
+            if (which == 1 && TeamsClicked != null) TeamsClicked();
+            else if (which == 2 && CalendarClicked != null) CalendarClicked();
+        }
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -840,6 +867,7 @@ namespace Krabbz.Blynclight
         ColorBlock block;
         ModeList list;
         readonly DevicePanel devices;
+        readonly ToolTip deviceHint = new ToolTip();
 
         public ControlForm(TrayContext tray)
         {
@@ -882,6 +910,20 @@ namespace Krabbz.Blynclight
 
             // Every device BusyLightz works with, greyed out when it isn't plugged in.
             devices = new DevicePanel { Bounds = new Rectangle(Pad, y, width, DevicePanel.PanelHeight) };
+            // A greyed-out Teams tile signs in to Microsoft (or turns Teams sync back on); a greyed-out Calendar tile asks
+            // for calendar access (after signing in, if that hasn't happened yet).
+            devices.TeamsClicked += delegate
+            {
+                if (AppSettings.TeamsDisabled) tray.SetTeamsDisabled(false);
+                else tray.ReauthTeams();
+            };
+            devices.CalendarClicked += delegate
+            {
+                var teams = tray.Presence;
+                if (teams != null && teams.SignedIn) tray.GrantCalendarAccess();
+                else tray.ReauthTeams();
+            };
+            deviceHint.SetToolTip(devices, "A greyed-out Teams or Calendar tile connects when you click it.");
             Controls.Add(devices);
             y = devices.Bottom + 8;
 

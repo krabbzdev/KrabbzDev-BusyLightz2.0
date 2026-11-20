@@ -17,6 +17,15 @@ namespace Krabbz.Blynclight
         // The Active Devices grid: every device BusyLightz works with, in a row across area. Plugged-in ones are lit
         // with a green dot and "Connected"; the rest are greyed out with "Disconnected". Height is what it needs.
         public const int GridHeight = TileSize + 6 + 2 * LabelHeight;
+        // How many tiles are in the row (the lights, MuteSync, K2 Key, Teams and Calendar), and where tile index sits.
+        public const int DeviceCount = 6;
+
+        // The slot a tile and its labels take in the row, for clicking on it.
+        public static Rectangle SlotBounds(Rectangle area, int index)
+        {
+            int slot = area.Width / DeviceCount;
+            return new Rectangle(area.X + index * slot, area.Y, slot, GridHeight);
+        }
 
         public static void DrawGrid(Graphics g, Rectangle area, int blynclights, int luxafors, bool k2, bool teams, string teamsText, bool calendar, Color glow,
             Color tile, Color border, Color text, Color muted)
