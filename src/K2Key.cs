@@ -391,6 +391,9 @@ namespace Krabbz.Blynclight
             // Every signal the key sends, as it arrives: key presses and releases, clicks, and other kinds of reports.
             readonly TextBox activity = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Font = new Font("Consolas", 8.5f) };
             readonly Action changed;
+            // While teaching a button (0 Left, 1 Right, 2 Both together): which, and the device whose next key it takes.
+            int learnSlot = -1;
+            string learnId;
 
             public Finder(Action changed)
             {
@@ -410,9 +413,9 @@ namespace Krabbz.Blynclight
                     Text = "Press the buttons on your two-button key. Every device that sends a button press or a key shows up below with " +
                            "its hardware ID and what it sent. Your normal mouse and keyboard show up too: ignore those.\r\n" +
                            "Sends mouse clicks (Left button, Right button)? Select its row and click Use this key.\r\n" +
-                           "Sends a key (like Key Z)? Select its row, press the key's LEFT button and click Use as Left, then press its RIGHT " +
-                           "button and click Use as Right. If it sends its own key when you press both buttons together, press both and click " +
-                           "Use as Both.",
+                           "Sends a key (like Key Z)? Select its row, click Use as Left and press the key's LEFT button once, then click " +
+                           "Use as Right and press its RIGHT button once. If it sends its own key when you press both buttons together, click " +
+                           "Use as Both and press both. Then press the buttons again: this window says what it recognized.",
                     Bounds = new Rectangle(16, 10, 528, 112),
                 });
                 list.Bounds = new Rectangle(16, 128, 528, 190);
@@ -560,7 +563,7 @@ namespace Krabbz.Blynclight
                     {
                         ushort make = (ushort)Marshal.ReadInt16(data, 0), flags = (ushort)Marshal.ReadInt16(data, 2), vkey = (ushort)Marshal.ReadInt16(data, 6);
                         LogLine("Key      " + devId + "   " + ((flags & KeyBreak) != 0 ? "UP    " : "DOWN  ") + "vkey " + vkey + " (" + (Keys)vkey + ")   scan " + make + "   flags " + flags);
-                        if ((flags & KeyBreak) == 0) { what = "Key " + (Keys)vkey; key = vkey; }
+                        if ((flags & KeyBreak) == 0) { what = "Key " + (Keys)vkey; key = vkey; HandleKey(devId, vkey); }
                     }
                     if (what == null) return;
                     Record(h.Type == RIM_TYPEMOUSE ? "Mouse" : "Keyboard", NameOf(h.Device), what, key);
@@ -609,19 +612,41 @@ namespace Krabbz.Blynclight
                 Say("Added " + row.Id + ". Close this window, then press a button on the key: the K2 page's Test your buttons list should show it.");
             }
 
-            // The key sends keys: teach which one is the Left button and which the Right.
+            // The key sends keys: start teaching which one is the Left button, the Right, or the Both press. The next key the
+            // selected device sends becomes that button.
             void MapSelected(int slot)
             {
                 var row = Selected();
                 if (row == null) return;
-                if (row.Key == 0 || !IdPattern.IsMatch(row.Id)) { Say("Press the button on your key first, so this row shows the key it sends."); return; }
-                AppSettings.AddK2Id(row.Id);
-                AppSettings.SetK2Key(row.Id, slot, row.Key);
-                string[] names = { "Left button", "Right button", "Both buttons together" };
-                string next = slot == 0 ? " Now press the key's RIGHT button, then click Use as Right."
-                    : slot == 1 ? " If the key sends its own key when you press both buttons together, press both and click Use as Both. Otherwise close this window and press the buttons: Test your buttons on the K2 page should list them."
-                    : " Close this window and press both buttons: Test your buttons on the K2 page should list it.";
-                Say(names[slot] + " is now " + (Keys)row.Key + " on " + row.Id + "." + next);
+                if (row.Key == 0 || !IdPattern.IsMatch(row.Id)) { Say("Press a button on your key first, so this row shows the key it sends."); return; }
+                learnSlot = slot;
+                learnId = row.Id;
+                string[] buttons = { "LEFT", "RIGHT", "BOTH (together)" };
+                Say("Now press the key's " + buttons[slot] + " button once.");
+            }
+
+            // A key went down on a device: it's taught as the button being learned, or (when it's one already taught) said to be
+            // recognized, so you can see that it works without leaving this window.
+            void HandleKey(string devId, int vkey)
+            {
+                if (learnSlot >= 0 && devId == learnId)
+                {
+                    int slot = learnSlot;
+                    learnSlot = -1;
+                    AppSettings.AddK2Id(devId);
+                    AppSettings.SetK2Key(devId, slot, vkey);
+                    string[] names = { "Left button", "Right button", "Both buttons together" };
+                    string next = slot == 0 ? " Now click Use as Right and press the key's RIGHT button."
+                        : slot == 1 ? " Press each button again to check it: this window says what it recognized. If the key has its own key for both buttons together, click Use as Both and press both. Then close this window."
+                        : " Press both buttons again to check, then close this window.";
+                    Say(names[slot] + " is now " + (Keys)vkey + "." + next);
+                    return;
+                }
+                int[] keys;
+                if (!AppSettings.K2KeyMap().TryGetValue(devId, out keys)) return;
+                if (keys[0] != 0 && vkey == keys[0]) Say("Recognized: the LEFT button (" + (Keys)vkey + ").");
+                else if (keys[1] != 0 && vkey == keys[1]) Say("Recognized: the RIGHT button (" + (Keys)vkey + ").");
+                else if (keys[2] != 0 && vkey == keys[2]) Say("Recognized: BOTH buttons together (" + (Keys)vkey + ").");
             }
 
             // The list as text, to paste into an email.
