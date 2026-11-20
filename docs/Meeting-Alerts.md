@@ -8,7 +8,7 @@ A small pop-up shortly before each meeting in your Microsoft 365 calendar, so yo
 2. Open **Settings > Meeting Alerts** and click **Allow access...**. Microsoft asks in your browser whether BusyLightz may read your calendar. Click **Accept**.
 3. That's it. The page says *Calendar access is allowed*, and alerts start about a minute later.
 
-Meeting Alerts is **on by default**, but does nothing until you allow calendar access.
+Meeting Alerts is **on by default**, but does nothing until you allow calendar access. When BusyLightz updates to a version that has it, it shows a one-time notice, *New: Meeting Alerts*. Click it to open this page in Settings. It doesn't come back, and isn't shown if you've already allowed calendar access.
 
 **Is it safe?** BusyLightz asks for Microsoft's read-only `Calendars.Read` permission, for your own calendar only. It reads the time, title, place, organizer and join link of upcoming meetings, uses them for the alert, and keeps none of it. It can't change, accept, decline or delete anything. You can take the permission back any time at [myapps.microsoft.com](https://myapps.microsoft.com).
 

@@ -475,6 +475,50 @@ namespace Krabbz.Blynclight
             string lastVersion = AppSettings.LastVersion;
             try { AppSettings.LastVersion = Program.VersionText; } catch (Exception) { }
             if (justUpdated || (lastVersion != null && lastVersion != Program.VersionText)) ShowWhatsNew();
+            tray.BalloonTipClicked += delegate
+            {
+                var action = balloonAction;
+                balloonAction = null;
+                if (action != null) action();
+            };
+            tray.BalloonTipClosed += delegate { balloonAction = null; };
+            // Not a brand new install (the setup checklist covers those): tell them about Meeting Alerts, once.
+            ScheduleMeetingAlertsIntro(lastVersion != null);
+        }
+
+        // What clicking the notification just shown does, if anything.
+        Action balloonAction;
+
+        // A while after the "Updated to version" card, a one-time notice about Meeting Alerts that opens its page in
+        // Settings. Not shown when calendar access is already allowed, alerts are off, or no Teams app is set up.
+        void ScheduleMeetingAlertsIntro(bool existingInstall)
+        {
+            if (AppSettings.MeetingAlertsIntroShown) return;
+            if (!existingInstall) { AppSettings.MeetingAlertsIntroShown = true; return; }
+            var wait = new System.Windows.Forms.Timer { Interval = 25000 };
+            wait.Tick += delegate
+            {
+                wait.Dispose();
+                var teams = presence;
+                if (teams == null || !AppSettings.MeetingAlertsOn) return; // Try again at the next start.
+                AppSettings.MeetingAlertsIntroShown = true;
+                if (teams.CalendarGranted) return;
+                balloonLink = null;
+                balloonAction = ShowMeetingAlertsSettings;
+                tray.ShowBalloonTip(15000, "New: Meeting Alerts",
+                    teams.SignedIn
+                        ? "Get a pop-up before each meeting, with a Join button. Click here to connect your calendar."
+                        : "Get a pop-up before each meeting, with a Join button. Click here to see how to set it up.",
+                    ToolTipIcon.Info);
+            };
+            wait.Start();
+        }
+
+        // Opens Settings on the Meeting Alerts page.
+        public void ShowMeetingAlertsSettings()
+        {
+            ShowSettings();
+            settingsForm.ShowMeetingAlerts();
         }
 
         // Clicking the "what changed" card opens this release page; other cards open nothing.
