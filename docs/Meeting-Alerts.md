@@ -43,7 +43,7 @@ Turn it off with **Show today's meetings beside the window** in Settings > Meeti
 ## What the alert shows
 
 - An **icon** at the left: a video camera for online meetings, a calendar for the rest.
-- A first line with a **live timer** that ticks every second, like a stopwatch: *Meeting starting in 4:32*. If the alert only appears after the meeting has started, it counts up instead: *Meeting started 0:42 ago*.
+- A first line with a **live timer** that ticks every second, like a stopwatch: *Meeting starting in 4:32*. It turns **red** for the last minute. If the alert only appears after the meeting has started, it counts up instead: *Meeting started 0:42 ago*.
 - The meeting's **title**, its **start and end time**, and its **place** and **organizer** (when it has them).
 - **Join** (online meetings only): opens the meeting link in your browser, which hands it to Teams.
 - **Snooze 2 min**: shows the alert again in two minutes.

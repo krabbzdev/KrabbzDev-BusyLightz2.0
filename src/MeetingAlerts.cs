@@ -393,6 +393,13 @@ namespace Krabbz.Blynclight
                 Bounds = new Rectangle(textLeft, 12, textWidth, 22),
             };
             Controls.Add(headlineLabel);
+            // The first line turns red for the last minute before the meeting (and stays red once it has started).
+            Action colorHeadline = delegate
+            {
+                bool urgent = (meeting.StartUtc - DateTime.UtcNow).TotalSeconds <= 60;
+                headlineLabel.ForeColor = urgent ? (AppSettings.DarkMode ? Color.FromArgb(255, 107, 107) : Theme.Red) : Theme.TeamsText;
+            };
+            colorHeadline();
             Controls.Add(new Label
             {
                 Text = string.IsNullOrWhiteSpace(meeting.Subject) ? "(no subject)" : meeting.Subject,
@@ -451,6 +458,7 @@ namespace Krabbz.Blynclight
             tick.Tick += delegate
             {
                 headlineLabel.Text = headline();
+                colorHeadline();
                 if (DateTime.UtcNow > closeAtUtc) Close();
             };
             Shown += delegate { tick.Start(); };
