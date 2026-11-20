@@ -142,7 +142,7 @@ namespace Krabbz.Blynclight
 
             bool embravaRunning = EmbravaConnect.IsRunning;
             if (!teamsConnected)
-                Show(embravaStep, Mark.Info, "Keep Embrava Connect until you've connected to Teams; it's what shows your Teams status until then.", false);
+                Show(embravaStep, Mark.Info, "BusyLightz closes Embrava Connect when it finds it running, because the two fight over the light. Connect to Teams so BusyLightz shows your status, and uninstall Embrava Connect from Settings > Apps.", false);
             else if (embravaRunning)
                 Show(embravaStep, Mark.Todo, "It's running and will fight this app over the light. Quit it, then uninstall it from Settings > Apps so it doesn't start again.", true);
             else

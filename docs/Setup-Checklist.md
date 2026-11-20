@@ -25,11 +25,12 @@ The app needs an "app registration" in your organization's Microsoft 365 before 
 Click **Connect** and sign in with your work account. See [Teams Status](Teams-Status.md).
 
 ### 4. Close Embrava Connect
-Once you're connected to Teams, this app replaces Embrava Connect, and running both makes them fight over the light.
+This app replaces Embrava Connect, and running both makes them fight over the light. So **BusyLightz closes Embrava Connect whenever it finds it running**, and shows a warning to uninstall it (at most every 6 hours; click the warning to open Windows Apps).
 
 - Click **Quit it** to close Embrava Connect now.
-- Then uninstall it from **Settings > Apps** so it doesn't start again at sign-in.
-- Until you're connected to Teams, keep Embrava Connect; this step shows a dash.
+- Then uninstall it from **Settings > Apps**. Closing it only lasts until the next sign-in, when it starts again.
+- Connect to Teams (step 3) so BusyLightz shows your Teams status itself.
+- If you've turned **Control my USB lights** off, BusyLightz leaves Embrava Connect alone.
 
 ### 5. Light follows your Teams status
 This is on by default for new installs. If it shows **Turn on**, click it to switch back to Follow Teams Status. Picking Busy, Available or another mode overrides it until the override time runs out, or until you turn it back on.

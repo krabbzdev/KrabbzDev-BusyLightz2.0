@@ -13,7 +13,7 @@ The app sends every color to every light it can see, so a light that stays dark 
 
 ## The light keeps changing back on its own
 
-Embrava Connect is probably still running and fighting the app. Quit it (Setup Checklist > **Quit it**) and uninstall it from **Settings > Apps**. If you're not connected to Teams yet, see [Teams Status](Teams-Status.md#without-connecting-to-teams).
+Embrava Connect is probably still running and fighting the app. BusyLightz closes it when it finds it running and warns you to uninstall it, but it starts again at every sign-in until you uninstall it from **Settings > Apps**. If you're not connected to Teams yet, see [Teams Status](Teams-Status.md#without-connecting-to-teams).
 
 ## The light stays red when I'm not on a call
 
@@ -44,7 +44,7 @@ Start a call, then open **Settings > Test microphone...**. It shows live what Wi
 
 ## "Not connected to Microsoft Teams" notification
 
-The app shows this when the light goes back to **Follow Teams Status** but there's no Teams sign-in and no Embrava Connect to show your status. Connect to Teams (**Settings > Microsoft Teams > Connect**, or the [Setup Checklist](Setup-Checklist.md) if your organization's Teams app isn't set up yet). If you don't use Teams, switch **Sync with Microsoft Teams** off in Settings > Microsoft Teams and it stops.
+The app shows this when the light goes back to **Follow Teams Status** but there's no Teams sign-in to show your status from. Connect to Teams (**Settings > Microsoft Teams > Connect**, or the [Setup Checklist](Setup-Checklist.md) if your organization's Teams app isn't set up yet). If you don't use Teams, switch **Sync with Microsoft Teams** off in Settings > Microsoft Teams and it stops.
 
 ## "Connect to Microsoft Teams" fails
 

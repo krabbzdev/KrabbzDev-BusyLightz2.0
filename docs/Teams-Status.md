@@ -71,9 +71,9 @@ The lights have the matching switch: **Control my USB lights** in Settings > Lig
 
 ## Without connecting to Teams
 
-You can still use the light without connecting. **Follow Teams Status** then hands the light to **Embrava Connect**, if it's installed, which shows your Teams status its own way. Embrava Connect only drives Blynclights, so any Luxafor lights keep their last color in this mode. Once you're connected, Embrava Connect isn't needed. Quit and uninstall it so the two apps don't fight over the light (the [Setup Checklist](Setup-Checklist.md) helps).
+Without connecting, BusyLightz can't read your Teams status, so **Follow Teams Status** has nothing to show. BusyLightz no longer hands the light to **Embrava Connect**: it closes Embrava Connect when it finds it running (it fights BusyLightz over the light) and warns you to uninstall it. Connect to Teams so BusyLightz shows your status itself (the [Setup Checklist](Setup-Checklist.md) helps). Picking Busy, Available or On a call, and call detection, work without Teams.
 
-If you go back to **Follow Teams Status** without being connected, and Embrava Connect isn't installed either, the app shows a notification: *"Not connected to Microsoft Teams, so your Teams status isn't showing on the light."* It says what to do next: open the Setup Checklist if your organization's Teams app isn't set up yet, or use **Connect to Microsoft Teams** in the tray menu.
+If you go back to **Follow Teams Status** without being connected, the app shows a notification: *"Not connected to Microsoft Teams, so your Teams status isn't showing on the light."* It says what to do next: open the Setup Checklist if your organization's Teams app isn't set up yet, or use **Connect to Microsoft Teams** in the tray menu.
 
 ---
 [Guide home](README.md) · [Installing and Updating](Installing-and-Updating.md) · [Using the Light](Using-the-Light.md) · [Mutesync Button and K2 USBC Key](Mute-Button-and-K2-Key.md) · [Teams Status](Teams-Status.md) · [Meeting Alerts](Meeting-Alerts.md) · [Teams Meeting Transcripts](Meeting-Transcripts.md) · [Call Detection](Call-Detection.md) · [Setup Checklist](Setup-Checklist.md) · [Setting Up Teams for Your Organization](Setting-Up-Teams-for-Your-Organization.md) · [Troubleshooting and FAQ](Troubleshooting-and-FAQ.md) · [For Developers](For-Developers.md)

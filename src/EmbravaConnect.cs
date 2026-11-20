@@ -5,8 +5,8 @@ using Microsoft.Win32;
 
 namespace Krabbz.Blynclight
 {
-    // Hands the light back to Embrava Connect, which sets it from Teams/Calendar presence.
-    // Embrava Connect only repaints when presence changes or when it starts, so we restart it.
+    // Embrava Connect, Embrava's own app, fights BusyLightz over the light. BusyLightz closes it when it finds it running
+    // (see TrayApp.CheckEmbrava) and never starts it.
     public static class EmbravaConnect
     {
         const string ProcessName = "EmbravaConnect";
@@ -23,16 +23,6 @@ namespace Krabbz.Blynclight
                     using (running) if (running.SessionId == session) return true;
                 return false;
             }
-        }
-
-        // Returns false if Embrava Connect isn't installed.
-        public static bool Restart()
-        {
-            string exe = FindExe();
-            if (exe == null) return false;
-            Quit();
-            Process.Start(new ProcessStartInfo(exe) { WorkingDirectory = Path.GetDirectoryName(exe) });
-            return true;
         }
 
         // Closes Embrava Connect for this Windows session. It starts again at the next sign-in unless it's uninstalled.

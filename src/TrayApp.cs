@@ -333,7 +333,6 @@ namespace Krabbz.Blynclight
         DateTime menuSuppressedUntil;
         // Last Teams availability read while signed in (e.g. "Available"), or null.
         string teamsAvailability;
-        bool embravaWarned;
         // What the last notification described, so only real changes notify.
         string lastNotifiedKey;
         readonly System.Threading.Timer updateTimer;
@@ -580,8 +579,47 @@ namespace Krabbz.Blynclight
         public event Action<K2Key.Button> K2Pressed;
         readonly System.Windows.Forms.Timer deviceCheck = new System.Windows.Forms.Timer { Interval = 3000 };
 
+        // Embrava Connect fights this app over the light, so when it's found running it's closed, with a warning to uninstall it
+        // (it starts again at every sign-in until it's uninstalled). It's left alone while the USB lights are turned off here,
+        // and a close is tried at most every 30 seconds, the warning every 6 hours.
+        DateTime embravaTriedAt = DateTime.MinValue, embravaWarnedAt = DateTime.MinValue;
+
+        void CheckEmbrava()
+        {
+            if (AppSettings.UsbLightsDisabled) return;
+            if (DateTime.UtcNow - embravaTriedAt < TimeSpan.FromSeconds(30)) return;
+            if (!EmbravaConnect.IsRunning) return;
+            embravaTriedAt = DateTime.UtcNow;
+            Program.Background("Close Embrava Connect", delegate
+            {
+                EmbravaConnect.Quit();
+                bool closed = !EmbravaConnect.IsRunning;
+                Program.LogEvent(closed ? "Closed Embrava Connect, which fights this app over the light" : "Couldn't close Embrava Connect");
+                try { messages.BeginInvoke((Action)delegate { WarnAboutEmbrava(closed); }); }
+                catch (InvalidOperationException) { } // Window already gone during exit.
+            });
+        }
+
+        void WarnAboutEmbrava(bool closed)
+        {
+            if (exiting || DateTime.UtcNow - embravaWarnedAt < TimeSpan.FromHours(6)) return;
+            embravaWarnedAt = DateTime.UtcNow;
+            balloonLink = null;
+            balloonAction = delegate
+            {
+                try { System.Diagnostics.Process.Start("ms-settings:appsfeatures"); }
+                catch (Exception ex) { Program.LogError("Opening Windows Apps settings", ex); }
+            };
+            string text = closed
+                ? "BusyLightz closed Embrava Connect because the two fight over the light. Please uninstall it: click here to open Apps."
+                : "Embrava Connect is running and fights BusyLightz over the light, and couldn't be closed. Please uninstall it: click here to open Apps.";
+            if (presence == null || !presence.SignedIn) text += " Then connect to Teams.";
+            tray.ShowBalloonTip(20000, "Uninstall Embrava Connect", text, ToolTipIcon.Warning);
+        }
+
         void CheckDevices()
         {
+            CheckEmbrava();
             bool k2 = K2Key.Present();
             if (k2 == K2Connected) return;
             K2Connected = k2;
@@ -1387,11 +1425,6 @@ namespace Krabbz.Blynclight
             string availability = presence.ReadAvailability();
             if (availability == null) return;
 
-            if (!embravaWarned && System.Diagnostics.Process.GetProcessesByName("EmbravaConnect").Length > 0)
-            {
-                embravaWarned = true;
-                ShowBalloon("Embrava Connect is also running and may change the light. This app now shows your Teams status itself, so you can quit or uninstall Embrava Connect.", ToolTipIcon.Info);
-            }
             try
             {
                 messages.BeginInvoke((Action)delegate
@@ -1430,8 +1463,8 @@ namespace Krabbz.Blynclight
             }
         }
 
-        // Puts the light back on Teams status: read directly when signed in, otherwise through Embrava Connect
-        // (restarted so it repaints from current Teams/Calendar presence).
+        // Puts the light back on Teams status: read directly when signed in. Otherwise there's nothing to show it from (Embrava
+        // Connect isn't started any more: it fights this app over the light), so say what to do.
         void HandBackToTeams()
         {
             if (AppSettings.TeamsDisabled) return;
@@ -1440,25 +1473,17 @@ namespace Krabbz.Blynclight
                 Program.Background("Teams status check", delegate { PollTeams(); });
                 return;
             }
-            Program.Background("Embrava Connect restart", delegate
+            try
             {
-                bool installed;
-                try { installed = EmbravaConnect.Restart(); }
-                catch (Exception) { installed = false; }
-                if (installed) return;
-                try
+                messages.BeginInvoke((Action)delegate
                 {
-                    messages.BeginInvoke((Action)delegate
-                    {
-                        // Not signed in to Teams here, and no Embrava Connect to fall back on: say what to do.
-                        tray.ShowBalloonTip(5000, Program.AppName, presence == null
-                            ? "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Open Setup checklist in Settings to set it up."
-                            : "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Connect in Settings > Microsoft Teams.",
-                            ToolTipIcon.Warning);
-                    });
-                }
-                catch (InvalidOperationException) { } // Window already gone during exit.
-            });
+                    tray.ShowBalloonTip(5000, Program.AppName, presence == null
+                        ? "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Open Setup checklist in Settings to set it up."
+                        : "Not connected to Microsoft Teams, so your Teams status isn't showing on the light. Connect in Settings > Microsoft Teams.",
+                        ToolTipIcon.Warning);
+                });
+            }
+            catch (InvalidOperationException) { } // Window already gone during exit.
         }
 
         // While On a call flashes, the tray icon and window flash the same two colors as the lights, at the On a call
@@ -1589,7 +1614,7 @@ namespace Krabbz.Blynclight
             // Teams status colors, when the app reads presence itself.
             else if (State == "yellow") DisplayColor = PickedColor("AwayColor", Color.Gold);
             else if (State == "purple") DisplayColor = PickedColor("DndColor", Color.MediumPurple);
-            // The real color is up to Embrava Connect; show Teams purple to mean "Teams decides".
+            // Waiting for a Teams color; show Teams purple to mean "Teams decides".
             else if (State == LightState.FollowTeams) DisplayColor = Color.FromArgb(98, 100, 167);
             else DisplayColor = Color.Black;
 
@@ -1621,7 +1646,7 @@ namespace Krabbz.Blynclight
             string message;
             if (NoLight) message = "No light found. Plug your Blynclight or Luxafor back in.";
             else if (State == LightState.Party) message = "Party Mode: cycling through every color.";
-            else if (State == LightState.FollowTeams) message = "Light handed to Embrava Connect to show your Teams status.";
+            else if (State == LightState.FollowTeams) message = "Following your Teams status.";
             else if (State == LightState.Off) message = "Light turned off.";
             else if (State == LightState.CallFlash) message = "Light flashing red and blue: " + StatusText + ".";
             else

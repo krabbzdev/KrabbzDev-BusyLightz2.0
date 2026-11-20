@@ -79,7 +79,7 @@ GitHub records a SHA-256 digest for each upload. The app, the background updater
 | `src/MicTestForm.cs` | Test microphone window |
 | `src/TeamsPresence.cs` | Browser sign-in (auth code + PKCE), encrypted token, Graph presence read/set |
 | `src/TeamsAppConfig.cs` | Which Entra app registration to use; PC tenant detection |
-| `src/EmbravaConnect.cs` | Detects, quits and restarts Embrava Connect |
+| `src/EmbravaConnect.cs` | Detects and quits Embrava Connect (it fights BusyLightz over the light) |
 | `src/Updater.cs` | Checks GitHub Releases, verifies and silently installs updates |
 | `src/AllUsers.cs` | The all-users install: hand-over from per-user copies, the SYSTEM background updater, Install for everyone |
 | `src/CrashReport.cs` | Email crash log |

@@ -49,7 +49,7 @@ A small Windows app that controls USB busy lights, so the people around you can 
 2. The **Setup checklist** opens the first time. Follow it top to bottom:
    - Check your lights are found.
    - Click **Connect** and sign in with your work account. (Meeting alerts ask for calendar access separately, later, in Settings > Meeting Alerts.)
-   - Click **Quit it** for Embrava Connect, then uninstall Embrava Connect from **Settings > Apps**.
+   - BusyLightz closes Embrava Connect when it finds it running; uninstall it from **Settings > Apps** so it doesn't start again.
    - *Light follows your Teams status* is already on.
 3. That's it. The app starts with Windows and lives in the system tray (bottom-right, near the clock).
 
