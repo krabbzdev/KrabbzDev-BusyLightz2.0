@@ -2,7 +2,7 @@
 
 ## Reporting a problem
 
-Please don't open a public issue for a security problem. Use **Security > Report a vulnerability** on this repository's GitHub page, which sends it to the maintainer privately. Include what you found, the version (shown at the bottom of the window) and the steps to repeat it.
+Please don't open a public issue for a security problem. Email **clove@showtechsolutions.com** instead. Include what you found, the version (shown at the bottom of the window) and the steps to repeat it. You'll get a reply from a person.
 
 ## Supported versions
 
